@@ -1,10 +1,6 @@
 # Bỏ qua thư mục chứa ảnh upload
 src/uploads/
 
-# Bỏ qua file cấu hình database của mỗi người
-# (Nếu nhóm bạn thống nhất dùng chung mật khẩu rỗng của XAMPP thì có thể xóa dòng dưới đi)
-src/config/database.php
-
 # Bỏ qua các file rác hệ thống
 .DS_Store
 Thumbs.db
