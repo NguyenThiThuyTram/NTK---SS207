@@ -55,7 +55,7 @@
             <button class="close-btn">&times;</button>
             <h2 class="title">ĐĂNG KÝ</h2>
 
-            <form action="" method="POST">
+            <form action="../controllers/registerController.php" method="POST">
                 
                 <div class="input-group">
                     <label>HỌ VÀ TÊN</label>
