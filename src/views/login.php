@@ -105,7 +105,7 @@
         </form>
 
         <div class="footer-link">
-            Chưa có tài khoản? <a href="register.html">Đăng ký</a>
+            Chưa có tài khoản? <a href="register.php">Đăng ký</a>
         </div>
     </div>
     </div>
