@@ -85,7 +85,7 @@
             </form>
 
             <div class="footer-link">
-                Đã có tài khoản? <a href="login.html">Đăng nhập</a>
+                Đã có tài khoản? <a href="login.php">Đăng nhập</a>
             </div>
         </div>
     </div>
