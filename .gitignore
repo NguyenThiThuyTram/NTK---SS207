@@ -1,6 +1,3 @@
-# Bỏ qua thư mục chứa ảnh upload
-src/uploads/
-
 # Bỏ qua các file rác hệ thống
 .DS_Store
 Thumbs.db
