@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -16,7 +17,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0; /* Xóa khoảng trắng viền mặc định của body */
+            margin: 0;
         }
 
         /* Cái hộp trắng */
@@ -53,15 +54,18 @@
 
         /* Icon mắt */
         .password-wrapper { position: relative; }
-        .eye-icon { position: absolute; right: 0; top: 10px; cursor: pointer; color: #999; }
+        .eye-icon { 
+            position: absolute; 
+            right: 0; 
+            top: 10px; 
+            cursor: pointer; 
+            color: #999; 
+            user-select: none; /* Tránh bị bôi đen khi click nhanh */
+        }
 
         /* Căn ngang Checkbox và Quên mật khẩu */
         .row-flex { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 25px; }
         .forgot-pass { color: #666; text-decoration: none; }
-
-        /* Hộp vàng Demo */
-        .demo-box { background-color: #fdfaf0; padding: 15px; font-size: 14px; color: #555; margin-bottom: 30px; line-height: 1.6;}
-        .demo-box p { margin: 0; }
 
         /* Nút Đăng nhập */
         .btn-login {
@@ -72,42 +76,72 @@
         .footer-link { text-align: center; margin-top: 30px; font-size: 14px; color: #666; }
         .footer-link a { color: #5b3e31; font-weight: bold; text-decoration: none; }
     </style>
-    </head>
-<body style="margin: 0;"> <div class="modal-overlay">
+</head>
+<body> 
+    <div class="modal-overlay">
         <div class="login-box">
-        <button class="close-btn">&times;</button>
-        <h2 class="title">ĐĂNG NHẬP</h2>
+            <button class="close-btn">&times;</button>
+            <h2 class="title">ĐĂNG NHẬP</h2>
 
-        <form action="" method="POST">
-            
-            <div class="input-group">
-                <label>EMAIL HOẶC SỐ ĐIỆN THOẠI</label>
-                <input type="text" name="email" placeholder="demo@ntk.vn hoặc admin@ntk.vn" required>
-            </div>
-
-            <div class="input-group">
-                <label>MẬT KHẨU</label>
-                <div class="password-wrapper">
-                    <input type="password" name="password" placeholder="........" required>
-                    <span class="eye-icon">👁️</span>
+            <?php if (isset($_SESSION['login_error'])): ?>
+                <div style="background-color: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 14px; font-weight: 500; border: 1px solid #f87171;">
+                    <?php 
+                        echo $_SESSION['login_error']; 
+                        unset($_SESSION['login_error']); // Xóa lỗi sau khi hiện để lần sau không bị dính
+                    ?>
                 </div>
+            <?php endif; ?>
+
+            <form action="../controllers/loginController.php" method="POST">
+                
+                <div class="input-group">
+                    <label>EMAIL HOẶC SỐ ĐIỆN THOẠI</label>
+                    <input type="text" name="email" placeholder="Nhập email của bạn..." required>
+                </div>
+
+                <div class="input-group">
+                    <label>MẬT KHẨU</label>
+                    <div class="password-wrapper">
+                        <input type="password" name="password" id="password" placeholder="........" required>
+                        <span class="eye-icon" id="togglePassword">👁️</span>
+                    </div>
+                </div>
+
+                <div class="row-flex">
+                    <label class="remember-me">
+                        <input type="checkbox" name="remember"> Ghi nhớ đăng nhập
+                    </label>
+                    <a href="#" class="forgot-pass">Quên mật khẩu?</a>
+                </div>
+
+                <button type="submit" class="btn-login">ĐĂNG NHẬP</button>
+                
+            </form>
+
+            <div class="footer-link">
+                Chưa có tài khoản? <a href="register.php">Đăng ký</a>
             </div>
-
-            <div class="row-flex">
-                <label class="remember-me">
-                    <input type="checkbox" name="remember"> Ghi nhớ đăng nhập
-                </label>
-                <a href="#" class="forgot-pass">Quên mật khẩu?</a>
-            </div>
-
-            <button type="submit" class="btn-login">ĐĂNG NHẬP</button>
-            
-        </form>
-
-        <div class="footer-link">
-            Chưa có tài khoản? <a href="register.php">Đăng ký</a>
         </div>
     </div>
-    </div>
-    </body>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            // Kiểm tra xem input đang ẩn (password) hay hiện (text)
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            
+            // Đổi thuộc tính type của ô input
+            password.setAttribute('type', type);
+            
+            // Đổi icon: Nếu đang hiện chữ (text) thì nhắm mắt lại, ngược lại thì mở mắt ra
+            if (type === 'text') {
+                this.textContent = '🙈'; // Icon nhắm mắt
+            } else {
+                this.textContent = '👁️'; // Icon mở mắt
+            }
+        });
+    </script>
+</body>
 </html>
