@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ - NTK Fashion</title>
+
+    <style>
+        /* 1. Chung */
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #fdfcfb; color: #333; }
+        
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 40px; background: white; border-bottom: 1px solid #eee;
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .logo img {
+            height: 60px; width: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            border: 2px solid #f5f1eb;
+        }
+
+        nav a { margin: 0 15px; text-decoration: none; color: #333; font-weight: 600; }
+
+        /* 2. Banner */
+        .banner {
+            background: url('banner(loang).png') center/cover;
+            height: 450px;
+            display: flex; align-items: center; padding-left: 80px;
+            color: #3b2a1a;
+        }
+        .banner h1 { font-size: 50px; margin: 0; text-transform: uppercase; }
+        .btn-primary {
+            margin-top: 40px;
+            padding: 12px 30px; background: #3b2a1a; color: white;
+            border: none; cursor: pointer; font-weight: bold; text-transform: uppercase;
+        }
+
+        /* 3. Section Common */
+        .section { padding: 60px 40px; background: white; }
+        .section-header { text-align: center; margin-bottom: 40px; }
+        .section-header p { font-size: 12px; color: #8a6d51; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+        .section-header h2 { font-size: 32px; margin: 0; color: #3b2a1a; font-weight: 500; }
+
+        /* Danh mục */
+        .category-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+        .category-card { position: relative; height: 350px; border-radius: 15px; overflow: hidden; cursor: pointer; }
+        .category-card img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .category-card:hover img { transform: scale(1.1); }
+        .category-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(transparent, rgba(0,0,0,0.6)); color: white; font-size: 16px; }
+
+        /* 4. Best Seller Slider */
+        .bg-be { background-color: #f5f1eb; }
+        .grid-slider { display: flex; overflow-x: auto; scroll-behavior: smooth; gap: 20px; padding: 10px 0; scrollbar-width: none; }
+        .grid-slider::-webkit-scrollbar { display: none; }
+        
+        /* 5. Product Card Style (Dùng chung cho cả 2 mục) */
+        .product-card {
+            min-width: calc(25% - 15px); flex-shrink: 0;
+            background: #fff; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.3s;
+        }
+        .product-card:hover { transform: translateY(-5px); }
+        .product-card img { width: 100%; height: 280px; object-fit: cover; }
+        
+        .product-info { padding: 15px; text-align: left; }
+        .product-info h4 { margin: 0 0 8px 0; font-size: 15px; color: #333; font-weight: 500; }
+        .product-meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .product-meta span { color: #f1c40f; margin-right: 5px; }
+        .price { color: #333; font-weight: bold; font-size: 16px; }
+
+        .dots-container { text-align: center; margin-top: 20px; }
+        .dot { height: 8px; width: 8px; margin: 0 5px; background: #ccc; border-radius: 50%; display: inline-block; cursor: pointer; }
+        .dot.active { background: #3b2a1a; width: 20px; border-radius: 10px; }
+
+        /* 6. New Arrivals Grid (4 cột cố định) */
+        .arrival-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        footer { text-align: center; padding: 40px; background: #222; color: #777; }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="#" class="logo">
+        <img src="unnamed (8).jpg" alt="Logo">
+    </a>
+
+</header>
+
+<div class="banner">
+    <div>
+        
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-header">
+        <p>MỚI RA MẮT</p>
+        <h2>New Arrivals</h2>
+    </div>
+    <div class="arrival-grid" id="newArrivals"></div>
+</div>
+
+
+<div class="section bg-be">
+    <div class="section-header">
+        <p>ĐƯỢC YÊU THÍCH NHẤT</p>
+        <h2>Best Sellers</h2>
+    </div>
+    <div class="grid-slider" id="bestSeller"></div>
+    <div class="dots-container" id="bestSellerDots">
+        <span class="dot active" onclick="scrollToProduct(0)"></span>
+        <span class="dot" onclick="scrollToProduct(1)"></span>
+    </div>
+</div>
+
+
+<div class="section">
+    <div class="section-header">
+        <p>DANH MỤC</p>
+        <h2>Shop by Category</h2>
+    </div>
+    <div class="category-grid">
+        <div class="category-card"><img src="https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m7ne96vcjmiu46@resize_w900_nl.webp"><div class="category-overlay">Áo thun</div></div>
+        <div class="category-card"><img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mitmevxbal1j0b@resize_w900_nl.webp"><div class="category-overlay">Áo khoác</div></div>
+        <div class="category-card"><img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mg6a54vwzvv002@resize_w900_nl.webp"><div class="category-overlay">Hoodie</div></div>
+        <div class="category-card"><img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mfxc3xhxoop9ed@resize_w900_nl.webp"><div class="category-overlay">Quần</div></div>
+        <div class="category-card"><img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-me8igxycndhj04@resize_w900_nl.webp"><div class="category-overlay">Áo sơ mi</div></div>
+    </div>
+</div>
+
+
+<script>
+// Danh sách sản phẩm Best Sellers
+const bestProducts = [
+    { name: "Áo Thun Baby Tee", price: "179.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mmiex4xgmw3od4@resize_w900_nl.webp", star: 4.8, sold: 234 },
+    { name: "Áo Sơ Mi Babydoll", price: "279.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mcswuusxcjvx85@resize_w900_nl.webp", star: 4.9, sold: 189 },
+    { name: "Quần Jeans Ống Rộng", price: "239.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mh9x7bhmtb7vea@resize_w900_nl.webp", star: 5.0, sold: 112 },
+    { name: "Áo Khoác Denim", price: "459.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mgvn5j1lf1u00c.webp", star: 4.7, sold: 456 },
+    { name: "Áo Jeans Dáng Lửng", price: "229.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mbc529lr4zbsf1@resize_w900_nl.webp", star: 4.8, sold: 356 },
+    { name: "Chân Váy Dài Xếp Ly", price: "299.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mmk19huu99u711@resize_w900_nl.webp", star: 4.9, sold: 486 }
+];
+
+// Danh sách sản phẩm New Arrivals (Dựa trên ảnh Bee gửi)
+const newProducts = [
+    { name: "Áo Sơ Mi Cổ Sen", price: "189.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-820l4-miwu7ska4tfr42@resize_w900_nl.webp", star: 4.8, sold: 234 },
+    { name: "Áo Khoác Da Biker", price: "429.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-81ztc-mm8depmmwd1h56@resize_w900_nl.webp", star: 4.9, sold: 189 },
+    { name: "Quần Jeans Đinh Tán", price: "319.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mi6p0p4dknbb86@resize_w900_nl.webp", star: 4.7, sold: 155 },
+    { name: "Quần Short Kaki", price: "199.000đ", img: "https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mf7s9gg775sdb2@resize_w900_nl.webp", star: 5.0, sold: 312 }
+];
+
+// Hàm Render chung
+function renderProducts(id, data) {
+    const area = document.getElementById(id);
+    if (!area) return;
+    area.innerHTML = data.map(p => `
+        <div class="product-card">
+            <img src="${p.img}">
+            <div class="product-info">
+                <h4>${p.name}</h4>
+                <div class="product-meta"><span>★</span>${p.star} • Đã bán ${p.sold}</div>
+                <div class="price">${p.price}</div>
+            </div>
+        </div>
+    `).join("");
+}
+
+function scrollToProduct(index) {
+    const slider = document.getElementById('bestSeller');
+    const dots = document.querySelectorAll('#bestSellerDots .dot');
+    const cardWidth = slider.querySelector('.product-card').offsetWidth + 20;
+    slider.scrollLeft = index * (cardWidth * 2);
+    dots.forEach(dot => dot.classList.remove('active'));
+    dots[index].classList.add('active');
+}
+
+// Chạy hàm cho cả 2 mục
+renderProducts("bestSeller", bestProducts);
+renderProducts("newArrivals", newProducts);
+</script>
+
+</body>
+</html>
