@@ -1,3 +1,7 @@
 # Bỏ qua các file rác hệ thống
 .DS_Store
+<<<<<<< HEAD
 Thumbs.db
+=======
+Thumbs.db
+>>>>>>> be433364b0289eab2448ef74b22de381c1c0e484

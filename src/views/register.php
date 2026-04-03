@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -55,6 +56,15 @@
             <button class="close-btn" onclick="goToHome()">&times;</button>
             <h2 class="title">ĐĂNG KÝ</h2>
 
+            <?php if (isset($_SESSION['register_error'])): ?>
+                <div style="background-color: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 14px; font-weight: 500; border: 1px solid #f87171;">
+                    <?php 
+                        echo $_SESSION['register_error']; 
+                        unset($_SESSION['register_error']); 
+                    ?>
+                </div>
+            <?php endif; ?>
+
             <form action="../controllers/registerController.php" method="POST">
                 
                 <div class="input-group">
@@ -75,8 +85,8 @@
                 <div class="input-group">
                     <label>MẬT KHẨU</label>
                     <div class="password-wrapper">
-                        <input type="password" id="myPassword" name="password" placeholder="........" required>
-                        <span class="eye-icon" id="toggleEye">👁️</span>
+                        <input type="password" name="password" id="password" placeholder="........" required>
+                        <span class="eye-icon" id="togglePassword">👁️</span>
                     </div>
                 </div>
 
@@ -91,34 +101,35 @@
     </div>
 
     <script>
-        // --- 1. CODE XỬ LÝ CON MẮT HIỂN THỊ MẬT KHẨU (Đã có sẵn của bạn) ---
-        const toggleEye = document.getElementById('toggleEye');
-        const passwordInput = document.getElementById('myPassword');
-
-        toggleEye.addEventListener('click', function () {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            this.style.opacity = type === 'password' ? '1' : '0.5';
-        });
-
-        // --- 2. CODE XỬ LÝ CLICK VÙNG XÁM & CHUYỂN TRANG MỚI THÊM ---
-        
-        // Bắt sự kiện click ra nền xám
+        // --- 1. Xử lý click ra ngoài nền xám để về trang chủ ---
         document.getElementById('modal-overlay').addEventListener('click', function(event) {
             if (event.target === this) {
                 goToHome();
             }
         });
 
-        // Hàm thoát về trang chủ
         function goToHome() {
             window.location.replace('../index.php');
         }
 
-        // Hàm chuyển sang trang Đăng nhập
         function goToLogin() {
             window.location.replace('login.php');
         }
+
+        // --- 2. Xử lý tắt/bật con mắt mật khẩu ---
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            
+            if (type === 'text') {
+                this.textContent = '🙈'; 
+            } else {
+                this.textContent = '👁️'; 
+            }
+        });
     </script>
 
 </body>

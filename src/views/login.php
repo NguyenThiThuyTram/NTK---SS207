@@ -1,3 +1,4 @@
+<?php session_start(); ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -16,7 +17,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            margin: 0; /* Xóa khoảng trắng viền mặc định của body */
+            margin: 0; 
         }
 
         /* Cái hộp trắng */
@@ -53,15 +54,18 @@
 
         /* Icon mắt */
         .password-wrapper { position: relative; }
-        .eye-icon { position: absolute; right: 0; top: 10px; cursor: pointer; color: #999; }
+        .eye-icon { 
+            position: absolute; 
+            right: 0; 
+            top: 10px; 
+            cursor: pointer; 
+            color: #999; 
+            user-select: none; /* Tránh bị bôi đen khi click nhanh */
+        }
 
         /* Căn ngang Checkbox và Quên mật khẩu */
         .row-flex { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 25px; }
         .forgot-pass { color: #666; text-decoration: none; }
-
-        /* Hộp vàng Demo */
-        .demo-box { background-color: #fdfaf0; padding: 15px; font-size: 14px; color: #555; margin-bottom: 30px; line-height: 1.6;}
-        .demo-box p { margin: 0; }
 
         /* Nút Đăng nhập */
         .btn-login {
@@ -79,18 +83,27 @@
             <button class="close-btn" onclick="goToHome()">&times;</button>
             <h2 class="title">ĐĂNG NHẬP</h2>
 
-            <form action="" method="POST">
+            <?php if (isset($_SESSION['login_error'])): ?>
+                <div style="background-color: #fee2e2; color: #dc2626; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 14px; font-weight: 500; border: 1px solid #f87171;">
+                    <?php 
+                        echo $_SESSION['login_error']; 
+                        unset($_SESSION['login_error']); 
+                    ?>
+                </div>
+            <?php endif; ?>
+
+            <form action="../controllers/loginController.php" method="POST">
                 
                 <div class="input-group">
                     <label>EMAIL HOẶC SỐ ĐIỆN THOẠI</label>
-                    <input type="text" name="email" placeholder="demo@ntk.vn hoặc admin@ntk.vn" required>
+                    <input type="text" name="email" placeholder="Nhập email của bạn..." required>
                 </div>
 
                 <div class="input-group">
                     <label>MẬT KHẨU</label>
                     <div class="password-wrapper">
-                        <input type="password" name="password" placeholder="........" required>
-                        <span class="eye-icon">👁️</span>
+                        <input type="password" name="password" id="password" placeholder="........" required>
+                        <span class="eye-icon" id="togglePassword">👁️</span>
                     </div>
                 </div>
 
@@ -112,23 +125,37 @@
     </div>
 
     <script>
-        // Xử lý click ra ngoài nền xám để về trang chủ
+        // --- 1. Xử lý click ra ngoài nền xám để về trang chủ ---
         document.getElementById('modal-overlay').addEventListener('click', function(event) {
-            // Đảm bảo chỉ thoát khi click đúng nền xám, không bị thoát khi click vào form trắng
             if (event.target === this) {
                 goToHome();
             }
         });
 
-        // Hàm quay về trang chủ (Dùng replace để không lưu lịch sử, thoát 1 lần là xong)
+        // Hàm quay về trang chủ
         function goToHome() {
             window.location.replace('../index.php');
         }
 
-        // Hàm chuyển sang trang Đăng ký (Dùng replace để không dồn lịch sử bấm Back)
+        // Hàm chuyển sang trang Đăng ký
         function goToRegister() {
             window.location.replace('register.php');
         }
+
+        // --- 2. Xử lý tắt/bật con mắt mật khẩu ---
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            
+            if (type === 'text') {
+                this.textContent = '🙈'; 
+            } else {
+                this.textContent = '👁️'; 
+            }
+        });
     </script>
 </body>
 </html>
