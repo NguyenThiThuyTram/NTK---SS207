@@ -548,3 +548,31 @@ VALUES
 ('W04', 'U04', 'T04', '2025-02-01'),
 ('W05', 'U05', 'T05', '2024-11-11'),
 ('W06', 'U06', 'T06', '2025-12-06');
+
+
+-- Lệnh cập nhật cấu trúc bảng Users
+ALTER TABLE Users ADD bank_name nvarchar(100);
+ALTER TABLE Users ADD bank_account_number varchar(20);
+ALTER TABLE Users ADD bank_account_name nvarchar(100);
+
+-- Cập nhật dữ liệu ngân hàng cho 20 user
+UPDATE Users SET bank_name = 'Vietcombank', bank_account_number = '1012233445', bank_account_name = 'QUAN TRI VIEN' WHERE user_id = 'U01';
+UPDATE Users SET bank_name = 'MB Bank', bank_account_number = '987654321', bank_account_name = 'NGUYEN VAN A' WHERE user_id = 'U02';
+UPDATE Users SET bank_name = 'Techcombank', bank_account_number = '19033445566', bank_account_name = 'TRAN THI B' WHERE user_id = 'U03';
+UPDATE Users SET bank_name = 'VietinBank', bank_account_number = '1028877665', bank_account_name = 'LE THI C' WHERE user_id = 'U04';
+UPDATE Users SET bank_name = 'BIDV', bank_account_number = '21510001234', bank_account_name = 'HOANG LONG' WHERE user_id = 'U05';
+UPDATE Users SET bank_name = 'ACB', bank_account_number = '77889955', bank_account_name = 'NGUYEN THANH THUY' WHERE user_id = 'U06';
+UPDATE Users SET bank_name = 'TPBank', bank_account_number = '4455667701', bank_account_name = 'PHAM MINH QUAN' WHERE user_id = 'U07';
+UPDATE Users SET bank_name = 'Sacombank', bank_account_number = '601223344', bank_account_name = 'VO KIEU OANH' WHERE user_id = 'U08';
+UPDATE Users SET bank_name = 'Agribank', bank_account_number = '15002051234', bank_account_name = 'DO DUC ANH' WHERE user_id = 'U09';
+UPDATE Users SET bank_name = 'VPBank', bank_account_number = '155667788', bank_account_name = 'BUI THUY TIEN' WHERE user_id = 'U10';
+UPDATE Users SET bank_name = 'HDBank', bank_account_number = '6870407123', bank_account_name = 'NGO XUAN BACH' WHERE user_id = 'U11';
+UPDATE Users SET bank_name = 'VIB', bank_account_number = '257040655', bank_account_name = 'NGUYEN THU HA' WHERE user_id = 'U12';
+UPDATE Users SET bank_name = 'SHB', bank_account_number = '1011223344', bank_account_name = 'TRAN GIA HUY' WHERE user_id = 'U13';
+UPDATE Users SET bank_name = 'VietCapitalBank', bank_account_number = '8007041234', bank_account_name = 'DANG MY LINH' WHERE user_id = 'U14';
+UPDATE Users SET bank_name = 'MSB', bank_account_number = '3501017788', bank_account_name = 'PHAN QUOC BAO' WHERE user_id = 'U15';
+UPDATE Users SET bank_name = 'SeABank', bank_account_number = '123456', bank_account_name = 'LY CAM TU' WHERE user_id = 'U16';
+UPDATE Users SET bank_name = 'OCB', bank_account_number = '41000123', bank_account_name = 'VU NHAT MINH' WHERE user_id = 'U17';
+UPDATE Users SET bank_name = 'LienVietPostBank', bank_account_number = '223344556', bank_account_name = 'CHU PHUONG THAO' WHERE user_id = 'U18';
+UPDATE Users SET bank_name = 'Nam A Bank', bank_account_number = '3010223344', bank_account_name = 'LE HUYNH ANH' WHERE user_id = 'U19';
+UPDATE Users SET bank_name = 'Eximbank', bank_account_number = '20001484123', bank_account_name = 'LAM KHAI MINH' WHERE user_id = 'U20';
