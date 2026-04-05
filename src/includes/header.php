@@ -49,8 +49,9 @@ $cart_count = isset($_SESSION['cart']) ? count($_SESSION['cart']) : 3; // Tạm 
                 <a href="javascript:void(0)" onclick="toggleSearch()"><i class="fa-solid fa-magnifying-glass"></i></a>
                 <a href="#"><i class="fa-regular fa-heart"></i></a>
                 
+                
                 <?php if(isset($_SESSION['user_id'])): ?>
-                    <a href="profile.php" title="Tài khoản của tôi"><i class="fa-solid fa-user"></i></a>
+                    <a href="views/user/dashboard.php" title="Tài khoản của tôi"><i class="fa-solid fa-user"></i></a>
                 <?php else: ?>
                     <a href="views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>
