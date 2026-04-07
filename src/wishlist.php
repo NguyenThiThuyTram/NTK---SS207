@@ -29,7 +29,7 @@ $wishlist_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <main class="container">
     <div class="section-header" style="text-align: center; margin-top: 40px;">
-        <p>DANH SÁCH MÓN ĐỒ BẠN YÊU THÍCH NHẤT</p>
+        <p>DANH SÁCH SẢN PHẨM ĐƯỢC YÊU THÍCH</p>
         <h2>WISHLIST</h2>
     </div>
 

@@ -63,7 +63,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
             
             <div class="header-icons">
                 <a href="javascript:void(0)" onclick="toggleSearch()"><i class="fa-solid fa-magnifying-glass"></i></a>
-                <a href="#"><i class="fa-regular fa-heart"></i></a>
+                <a href="wishlist.php"><i class="fa-regular fa-heart"></i></a>
                 
                 
                 <?php if(isset($_SESSION['user_id'])): ?>
