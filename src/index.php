@@ -36,26 +36,30 @@ require_once 'includes/header.php';
         <h2>Shop by Category</h2>
     </div>
     <div class="category-grid">
-        <div class="category-card">
+        <a href="product.php?cat=CAT01" class="category-card">
             <img src="https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m7ne96vcjmiu46@resize_w900_nl.webp" alt="Áo thun">
             <div class="category-overlay">Áo thun</div>
-        </div>
-        <div class="category-card">
+        </a>
+
+        <a href="product.php?cat=CAT02" class="category-card">
             <img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mitmevxbal1j0b@resize_w900_nl.webp" alt="Áo khoác">
             <div class="category-overlay">Áo khoác</div>
-        </div>
-        <div class="category-card">
+        </a>
+
+        <a href="product.php?cat=CAT03" class="category-card">
             <img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mg6a54vwzvv002@resize_w900_nl.webp" alt="Hoodie">
             <div class="category-overlay">Hoodie</div>
-        </div>
-        <div class="category-card">
+        </a>
+
+        <a href="product.php?cat=CAT04" class="category-card">
             <img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mfxc3xhxoop9ed@resize_w900_nl.webp" alt="Quần">
             <div class="category-overlay">Quần</div>
-        </div>
-        <div class="category-card">
+        </a>
+
+        <a href="product.php?cat=CAT05" class="category-card">
             <img src="https://down-vn.img.susercontent.com/file/vn-11134207-820l4-me8igxycndhj04@resize_w900_nl.webp" alt="Áo sơ mi">
             <div class="category-overlay">Áo sơ mi</div>
-        </div>
+        </a>
     </div>
 </div>
 

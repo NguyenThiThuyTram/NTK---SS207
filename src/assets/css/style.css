@@ -586,4 +586,395 @@ ul {
             gap: 20px;
         }
 
+/* =========================================
+   TRANG DANH SÁCH SẢN PHẨM (SHOP PAGE)
+   ========================================= */
+
+/* Breadcrumb - Điều hướng */
+.breadcrumb {
+    font-size: 13px;
+    margin: 20px 0;
+    color: #999;
+    letter-spacing: 1px;
+}
+
+/* Thanh lọc danh mục theo style Figma */
+.category-filter {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.btn-cat {
+    padding: 10px 22px;
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    background: var(--beige-color);
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-cat:hover, .btn-cat.active {
+    background: var(--primary-color);
+    color: #ffffff;
+}
+
+/* Lưới sản phẩm - CHIA 4 CỘT CHUẨN */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Ép đúng 4 cột đều nhau */
+    gap: 30px;
+    margin-bottom: 50px;
+}
+
+/* Card sản phẩm (mục nhỏ) */
+.product-card {
+    background: transparent;
+    transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-8px);
+}
+
+/* Khung ảnh tỉ lệ 3:4 Luxury */
+.img-wrapper {
+    width: 100%;
+    aspect-ratio: 3/4;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+
+.img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.product-card:hover img {
+    transform: scale(1.05);
+}
+
+/* Thông tin tên và giá */
+.product-info {
+    text-align: left;
+}
+
+.product-name {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 6px;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Tên dài quá sẽ hiện dấu ... */
+}
+
+.price {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--primary-color);
+}
+
+/* Responsive cho Mobile (2 cột) */
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+}
+
+/* --- CHI TIẾT SẢN PHẨM --- */
+.product-detail-container {
+    display: flex;
+    gap: 60px;
+    margin-top: 20px;
+}
+
+.product-image-section { flex: 1.2; }
+.product-info-section { flex: 1; }
+
+.main-image img {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.detail-title {
+    font-size: 28px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.detail-meta { margin-bottom: 20px; font-size: 14px; color: #666; }
+
+.detail-price-box {
+    background: #fdfaf7;
+    padding: 25px;
+    border-radius: 4px;
+    margin-bottom: 30px;
+}
+
+.detail-sale-price { font-size: 32px; font-weight: bold; color: #2f1c00; }
+.detail-old-price { text-decoration: line-through; color: #999; margin-left: 15px; }
+.detail-discount { background: #ff4d4f; color: #fff; padding: 3px 8px; border-radius: 4px; margin-left: 10px; font-size: 14px; }
+
+.detail-options { margin-bottom: 25px; }
+.option-label { font-weight: 500; margin-bottom: 10px; }
+.option-list { display: flex; gap: 10px; }
+
+.btn-option {
+    padding: 8px 25px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-option:hover { border-color: var(--primary-color); }
+
+.detail-actions { display: flex; gap: 15px; align-items: center; margin-top: 40px; }
+
+.quantity-selector { display: flex; border: 1px solid #ddd; }
+.qty-btn { padding: 10px 15px; background: none; border: none; cursor: pointer; }
+.qty-input { width: 50px; text-align: center; border: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+
+.btn-add-to-cart {
+    flex: 1;
+    padding: 15px;
+    border: 1px solid var(--primary-color);
+    background: #fff;
+    color: var(--primary-color);
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-buy-now {
+    flex: 1;
+    padding: 15px;
+    background: #a6825c; /* Màu nâu đất Figma */
+    color: #fff;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.detail-policy { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; color: #666; font-size: 14px; line-height: 2; }
+
+
+/* Layout Shop 4 cột */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Ép 4 cột đều nhau */
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.product-card {
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    transition: 0.3s;
+}
+
+.product-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+
+.img-wrapper {
+    width: 100%;
+    aspect-ratio: 3/4; /* Tỉ lệ ảnh đứng sang trọng */
+    overflow: hidden;
+}
+
+.img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Giúp ảnh không bị méo */
+}
+
+.product-info { padding: 15px; text-align: center; }
+.product-name { font-size: 14px; color: #2f1c00; margin-bottom: 5px; }
+.price { font-weight: bold; color: #2f1c00; }
+
+/* Filter danh mục */
+.category-filter { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.btn-cat { padding: 8px 15px; border: 1px solid #6B4F3B; border-radius: 5px; background: #f5f1eb; text-decoration: none; color: #2f1c00; font-size: 13px; }
+.btn-cat.active { background: #2f1c00; color: #fff; }
+
+
+
+/*Layout chi tiết sản phẩm*/
+/* --- TỐI ƯU CỤM SỐ LƯỢNG VÀ NÚT BẤM --- */
+
+/* 1. Làm nhỏ thanh tăng giảm số lượng */
+.quantity-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.quantity-selector {
+    display: flex;
+    border: 1px solid #e5e5e5; /* Sử dụng biến border-color của Bee */
+    border-radius: 4px;
+    overflow: hidden;
+    height: 35px; /* Giảm chiều cao cho nhỏ lại */
+}
+
+.qty-btn {
+    width: 35px;
+    height: 100%;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+}
+
+.qty-btn:hover {
+    background: #f0f0f0;
+}
+
+#quantity {
+    width: 45px;
+    height: 100%;
+    text-align: center;
+    border: none;
+    border-left: 1px solid #e5e5e5;
+    border-right: 1px solid #e5e5e5;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* 2. Hai nút bấm bằng nhau trên một hàng */
+.detail-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+.btn-add-cart, .btn-buy-now {
+    flex: 1; /* Chia tỷ lệ 1:1 để hai nút bằng chằn chặn nhau */
+    height: 50px;
+    border: none;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 14px;
+    border-radius: 4px;
+    transition: opacity 0.3s;
+}
+
+.btn-add-cart {
+    background-color: var(--primary-color); /* Màu đen nâu #2f1c00 */
+    color: #fff;
+}
+
+.btn-buy-now {
+    background-color: #a6825c; /* Màu nâu đất Figma */
+    color: #fff;
+}
+
+.btn-add-cart:hover, .btn-buy-now:hover {
+    opacity: 0.9;
+}
+
+/* Nút wishlist giữ nguyên kích thước vuông */
+.btn-wishlist {
+    width: 50px;
+    height: 50px;
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--primary-color);
+}
+
+/*Thêm vào wishlist*/
+.detail-actions {
+    display: flex;
+    gap: 10px; /* Khoảng cách giữa các nút */
+    align-items: center;
+    margin-top: 20px;
+}
+
+.btn-add-cart, .btn-buy-now {
+    flex: 1; /* Hai nút này chiếm phần lớn không gian và bằng nhau */
+    height: 45px;
+    border-radius: 8px; /* Bo góc nhẹ cho giống ảnh Bee gửi */
+    border: none;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-wishlist {
+    width: 45px; /* Chiều rộng bằng chiều cao để tạo hình vuông */
+    height: 45px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.btn-wishlist:hover {
+    border-color: #ff4d4f;
+}
+
+.btn-wishlist i {
+    font-size: 20px;
+}
+
+/* 1. Ngôi sao màu vàng rực rỡ */
+.stars {
+    color: #FFD700; /* Màu vàng Gold chuẩn */
+    font-size: 18px;
+    letter-spacing: 2px; /* Khoảng cách giữa các sao cho thoáng */
+}
+
+/* 2. Ô phần trăm giảm giá màu đỏ hình chữ nhật */
+.discount-tag {
+    background-color: #EE4D2D; /* Màu đỏ cam đặc trưng của các sàn TMĐT */
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 2px 8px; /* Tạo độ dày cho ô chữ nhật */
+    border-radius: 3px; /* Bo góc cực nhẹ để giữ dáng chữ nhật */
+    margin-left: 10px;
+    display: inline-block;
+    vertical-align: middle;
+    text-transform: uppercase;
+}
+
+/* Chỉnh lại giá cũ cho nhỏ và mờ đi để làm nổi ô giảm giá */
+.detail-old-price {
+    color: #999;
+    text-decoration: line-through;
+    font-size: 16px;
+    margin-left: 10px;
+}
         footer { text-align: center; padding: 40px; background: #222; color: #777; }
