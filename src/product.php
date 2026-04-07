@@ -39,21 +39,41 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endforeach; ?>
     </div>
 
-    <div class="product-grid">
-        <?php foreach ($products as $p): ?>
-            <div class="product-card">
-                <a href="product_detail.php?id=<?php echo $p['product_id']; ?>">
-                    <div class="img-wrapper">
-                        <img src="<?php echo $p['image']; ?>" alt="<?php echo $p['name']; ?>">
+
+<div class="product-grid">
+    <?php foreach ($products as $p): ?>
+        <div class="product-card">
+            <a href="product_detail.php?id=<?php echo $p['product_id']; ?>">
+                <div class="img-wrapper">
+                    <img src="<?php echo $p['image']; ?>" alt="">
+                    
+                    <?php /* if ($p['sale_price'] < $p['original_price']): ?>
+                        <span class="badge-sale">SALE</span>
+                    <?php endif; 
+                    */ ?>
+                </div>
+                
+                <div class="product-info">
+                    <h3 class="product-name"><?php echo $p['name']; ?></h3>
+                    
+                    <div class="product-meta">
+                        <span class="product-stars">★★★★★</span>
+                        <span class="product-sold">| Đã bán <?php echo $p['sold_count']; ?></span>
                     </div>
-                    <div class="product-info">
-                        <h3 class="product-name"><?php echo $p['name']; ?></h3>
-                        <p class="price"><?php echo number_format($p['original_price'], 0, ',', '.'); ?>đ</p>
+
+                    <div class="price-container">
+                        <?php if ($p['sale_price'] < $p['original_price']): ?>
+                            <span class="current-price"><?php echo number_format($p['sale_price'], 0, ',', '.'); ?>đ</span>
+                            <span class="old-price-strike"><?php echo number_format($p['original_price'], 0, ',', '.'); ?>đ</span>
+                        <?php else: ?>
+                            <span class="current-price"><?php echo number_format($p['original_price'], 0, ',', '.'); ?>đ</span>
+                        <?php endif; ?>
                     </div>
-                </a>
-            </div>
-        <?php endforeach; ?>
-    </div>
+                </div>
+            </a>
+        </div>
+    <?php endforeach; ?>
+</div>
 </main>
 
 <?php include 'includes/footer.php'; ?>
