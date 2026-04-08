@@ -17,15 +17,16 @@
                 </ul>
             </div>
 
-            <div class="footer-col">
-                <h3>DANH MỤC NỔI BẬT</h3>
-                <ul>
-                    <li><a href="product.php?category=ao-thun">Áo thun</a></li>
-                    <li><a href="product.php?category=ao-khoac">Áo khoác, áo choàng & vest</a></li>
-                    <li><a href="product.php?category=hoodie">Hoodie và áo nỉ</a></li>
-                    <li><a href="product.php?category=quan">Quần</a></li>
-                </ul>
-            </div>
+           <div class="footer-col">
+    <h3>DANH MỤC NỔI BẬT</h3>
+    <ul class="footer-links">
+        <li><a href="product.php?cat=CAT01">Áo thun</a></li>
+        <li><a href="product.php?cat=CAT02">Áo khoác</a></li>
+        <li><a href="product.php?cat=CAT03">Hoodie&Sweater</a></li>
+        <li><a href="product.php?cat=CAT04">Quần</a></li>
+        <li><a href="product.php?cat=CAT05">Áo sơ mi</a></li>
+    </ul>
+</div>
 
             <div class="footer-col">
                 <h3>KẾT NỐI VỚI CHÚNG TÔI</h3>

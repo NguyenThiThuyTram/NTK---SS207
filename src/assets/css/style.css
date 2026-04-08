@@ -1091,6 +1091,25 @@ ul {
     font-size: 13px;
 }
 
+.related-products {
+    margin-top: 50px;
+    border-top: 1px solid #eee;
+    padding-top: 40px;
+}
 
+.related-products .section-title {
+    font-size: 24px;
+    color: #211c00; /* Màu nâu đậm theo design system của Bee */
+    margin-bottom: 30px;
+    font-family: 'Helvetica Neue', sans-serif;
+    text-align: left;
+}
+
+/* Tái sử dụng lại product-grid của Bee */
+.related-products .product-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
 
         footer { text-align: center; padding: 40px; background: #222; color: #777; }
