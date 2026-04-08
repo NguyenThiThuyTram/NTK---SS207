@@ -1112,4 +1112,52 @@ ul {
     gap: 20px;
 }
 
+.product-feedback {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f1f1;
+}
+
+.feedback-title {
+    font-size: 18px;
+    color: #a6825c; /* Màu nâu thương hiệu của Bee */
+    margin-bottom: 20px;
+}
+
+.review-item {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #eee;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.review-stars {
+    color: #ffc107; /* Màu vàng cho sao */
+}
+
+.review-comment {
+    font-size: 14px;
+    color: #555;
+    margin: 5px 0;
+}
+
+.review-date {
+    color: #999;
+    font-size: 12px;
+}
+
+.admin-reply {
+    background: #f9f5f0; /* Màu beige nhẹ cho phần phản hồi */
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    font-size: 13px;
+    border-left: 3px solid #a6825c;
+}
+
         footer { text-align: center; padding: 40px; background: #222; color: #777; }
