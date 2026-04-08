@@ -576,3 +576,133 @@ UPDATE Users SET bank_name = 'OCB', bank_account_number = '41000123', bank_accou
 UPDATE Users SET bank_name = 'LienVietPostBank', bank_account_number = '223344556', bank_account_name = 'CHU PHUONG THAO' WHERE user_id = 'U18';
 UPDATE Users SET bank_name = 'Nam A Bank', bank_account_number = '3010223344', bank_account_name = 'LE HUYNH ANH' WHERE user_id = 'U19';
 UPDATE Users SET bank_name = 'Eximbank', bank_account_number = '20001484123', bank_account_name = 'LAM KHAI MINH' WHERE user_id = 'U20';
+
+-- 1. Thêm cột số dư ví nội bộ vào bảng Người dùng, mặc định ban đầu là 0
+ALTER TABLE Users ADD wallet_balance DECIMAL(15,2) DEFAULT 0;
+GO
+
+-- 2. Tạo bảng Lịch sử giao dịch ví nội bộ (Đã dùng IDENTITY thay cho AUTO_INCREMENT)
+CREATE TABLE Wallet_Transactions (
+    transaction_id INT IDENTITY(1,1) PRIMARY KEY, -- ID tự tăng cho dễ quản lý
+    user_id CHAR(5),                               -- Liên kết với người dùng
+    amount DECIMAL(15,2) NOT NULL,                 -- Số tiền biến động (Ví dụ: 150000 hoặc 50000)
+    transaction_type INT NOT NULL,                 -- 1: Cộng tiền (Hoàn trả, thưởng), 2: Trừ tiền (Mua hàng)
+    description VARCHAR(255),                      -- Nội dung: "Hoàn tiền đơn DH002", "Hoàn tiền đánh giá..."
+    related_order_id CHAR(5) NULL,                 -- Liên kết với đơn hàng liên quan (nếu có)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Thời gian giao dịch
+    
+    -- Ràng buộc khóa ngoại
+    CONSTRAINT fk_wt_user FOREIGN KEY (user_id) REFERENCES Users(user_id),
+    CONSTRAINT fk_wt_order FOREIGN KEY (related_order_id) REFERENCES Orders(order_id)
+);
+GO
+
+-- 3. Thêm cột ghi nhận số tiền từ ví nội bộ đã dùng để thanh toán cho đơn hàng này
+ALTER TABLE Orders ADD wallet_used_amount DECIMAL(15,2) DEFAULT 0;
+GO
+--Cập nhật số dư ví cho 20 user
+UPDATE Users SET wallet_balance = 150000 WHERE user_id = 'U01';
+UPDATE Users SET wallet_balance = 50000 WHERE user_id = 'U02';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U03';
+UPDATE Users SET wallet_balance = 250000 WHERE user_id = 'U04';
+UPDATE Users SET wallet_balance = 1000000 WHERE user_id = 'U05';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U06';
+UPDATE Users SET wallet_balance = 120000 WHERE user_id = 'U07';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U08';
+UPDATE Users SET wallet_balance = 30000 WHERE user_id = 'U09';
+UPDATE Users SET wallet_balance = 500000 WHERE user_id = 'U10';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U11';
+UPDATE Users SET wallet_balance = 85000 WHERE user_id = 'U12';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U13';
+UPDATE Users SET wallet_balance = 200000 WHERE user_id = 'U14';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U15';
+UPDATE Users SET wallet_balance = 450000 WHERE user_id = 'U16';
+UPDATE Users SET wallet_balance = 15000 WHERE user_id = 'U17';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U18';
+UPDATE Users SET wallet_balance = 75000 WHERE user_id = 'U19';
+UPDATE Users SET wallet_balance = 0 WHERE user_id = 'U20';
+
+
+
+-- THÊM DỮ LIỆU LỊCH SỬ GIAO DỊCH VÍ CHO TOÀN BỘ 20 USER
+INSERT INTO Wallet_Transactions (user_id, amount, transaction_type, description, related_order_id, created_at)
+VALUES 
+-- User 01 (Quản trị viên / Test)
+('U01', 150000, 1, N'Hoàn tiền đơn DH002', 'ORD02', '2026-02-26 14:30:00'),
+('U01', 50000, 2, N'Sử dụng ví thanh toán đơn DH005', 'ORD05', '2026-03-01 09:15:00'),
+('U01', 50000, 1, N'Thưởng hạng thành viên Vàng', NULL, '2026-03-10 20:00:00'),
+
+-- User 02
+('U02', 50000, 1, N'Hoàn tiền do lỗi vận chuyển', 'ORD01', '2026-03-15 10:20:00'),
+
+-- User 03 (Có cộng vào và trừ ra hết sạch)
+('U03', 100000, 1, N'Tặng tiền đăng ký tài khoản mới', NULL, '2026-01-05 08:00:00'),
+('U03', 100000, 2, N'Sử dụng ví thanh toán đơn ORD02', 'ORD02', '2026-01-15 09:00:00'),
+
+-- User 04
+('U04', 250000, 1, N'Hoàn tiền đơn hàng khách trả lại', NULL, '2026-03-10 14:00:00'),
+
+-- User 05 (VIP)
+('U05', 1000000, 1, N'Thưởng khách hàng mua sỉ tháng 3', NULL, '2026-04-01 08:00:00'),
+
+-- User 06
+('U06', 50000, 1, N'Hoàn tiền đánh giá sản phẩm', NULL, '2026-02-10 11:00:00'),
+('U06', 50000, 2, N'Thanh toán một phần đơn ORD04', 'ORD04', '2026-02-15 15:30:00'),
+
+-- User 07
+('U07', 120000, 1, N'Hoàn tiền chênh lệch phí ship', NULL, '2026-03-20 16:45:00'),
+
+-- User 08
+('U08', 30000, 1, N'Quà tặng sinh nhật tháng 2', NULL, '2026-02-05 07:00:00'),
+('U08', 30000, 2, N'Thanh toán phí ship đơn ORD05', 'ORD05', '2026-02-10 09:30:00'),
+
+-- User 09
+('U09', 30000, 1, N'Hoàn tiền đánh giá 5 sao có tâm', NULL, '2026-03-01 19:20:00'),
+
+-- User 10
+('U10', 500000, 1, N'Hoàn tiền bồi thường sản phẩm lỗi', NULL, '2026-03-25 10:15:00'),
+
+-- User 11
+('U11', 20000, 1, N'Thưởng tham gia Minigame Facebook', NULL, '2026-02-10 21:00:00'),
+('U11', 20000, 2, N'Sử dụng ví thanh toán đơn ORD07', 'ORD07', '2026-02-14 10:00:00'),
+
+-- User 12
+('U12', 85000, 1, N'Hoàn tiền do khách hủy đơn hàng', NULL, '2026-04-05 13:40:00'),
+
+-- User 13
+('U13', 100000, 1, N'Quà tặng khách hàng mới', NULL, '2026-01-20 09:00:00'),
+('U13', 100000, 2, N'Sử dụng ví thanh toán đơn ORD08', 'ORD08', '2026-02-18 14:20:00'),
+
+-- User 14
+('U14', 200000, 1, N'Hoàn tiền chương trình Flash Sale', NULL, '2026-03-30 22:00:00'),
+
+-- User 15
+('U15', 50000, 1, N'Hoàn tiền phí vận chuyển', NULL, '2026-02-15 16:10:00'),
+('U15', 50000, 2, N'Sử dụng ví thanh toán đơn ORD09', 'ORD09', '2026-02-20 11:45:00'),
+
+-- User 16
+('U16', 450000, 1, N'Hoàn tiền đổi trả do nhầm size', NULL, '2026-04-02 08:30:00'),
+
+-- User 17
+('U17', 15000, 1, N'Hoàn tiền đánh giá có kèm hình ảnh', NULL, '2026-03-12 20:15:00'),
+
+-- User 18
+('U18', 40000, 1, N'Quy đổi voucher thành tiền mặt', NULL, '2026-02-20 09:00:00'),
+('U18', 40000, 2, N'Sử dụng ví thanh toán đơn ORD10', 'ORD10', '2026-02-25 15:00:00'),
+
+-- User 19
+('U19', 75000, 1, N'Hoàn tiền xin lỗi do giao hàng trễ', NULL, '2026-03-28 17:30:00'),
+
+-- User 20
+('U20', 25000, 1, N'Thưởng hoa hồng giới thiệu bạn bè', NULL, '2026-04-01 10:00:00'),
+('U20', 25000, 2, N'Rút tiền về thẻ ngân hàng', NULL, '2026-04-05 18:00:00');
+
+
+-- 2. Cập nhật số tiền ví đã dùng cho các đơn có sử dụng ví (Khớp với bảng Wallet_Transactions vừa nạp)
+UPDATE Orders SET wallet_used_amount = 100000 WHERE order_id = 'ORD02'; -- Của user U03
+UPDATE Orders SET wallet_used_amount = 50000  WHERE order_id = 'ORD04'; -- Của user U06
+UPDATE Orders SET wallet_used_amount = 30000  WHERE order_id = 'ORD05'; -- Của user U08
+UPDATE Orders SET wallet_used_amount = 20000  WHERE order_id = 'ORD07'; -- Của user U11
+UPDATE Orders SET wallet_used_amount = 100000 WHERE order_id = 'ORD08'; -- Của user U13
+UPDATE Orders SET wallet_used_amount = 50000  WHERE order_id = 'ORD09'; -- Của user U15
+UPDATE Orders SET wallet_used_amount = 40000  WHERE order_id = 'ORD10'; -- Của user U18
