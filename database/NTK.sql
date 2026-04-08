@@ -706,3 +706,22 @@ UPDATE Orders SET wallet_used_amount = 20000  WHERE order_id = 'ORD07'; -- Của
 UPDATE Orders SET wallet_used_amount = 100000 WHERE order_id = 'ORD08'; -- Của user U13
 UPDATE Orders SET wallet_used_amount = 50000  WHERE order_id = 'ORD09'; -- Của user U15
 UPDATE Orders SET wallet_used_amount = 40000  WHERE order_id = 'ORD10'; -- Của user U18
+-- ========================================================
+-- 12. Bảng UserCoupons (Khách hàng lưu mã giảm giá)
+-- ========================================================
+CREATE TABLE UserCoupons (
+    user_id CHAR(5) NOT NULL,
+    coupon_id CHAR(5) NOT NULL,
+    saved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_used INT DEFAULT 0, -- 0: Chưa dùng, 1: Đã dùng
+    PRIMARY KEY (user_id, coupon_id),
+    CONSTRAINT fk_usercoupon_user FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    CONSTRAINT fk_usercoupon_coupon FOREIGN KEY (coupon_id) REFERENCES Coupons(coupon_id) ON DELETE CASCADE
+);
+
+-- Thêm dữ liệu giả cho bảng UserCoupons (Lấy data có sẵn từ bảng Users và Coupons)
+INSERT INTO UserCoupons (user_id, coupon_id, is_used) VALUES 
+('U01', 'CP01', 0), -- Admin (U01) đã lưu mã WELCOME (CP01) chưa xài
+('U01', 'CP02', 0), -- Admin (U01) đã lưu mã FREESHIP (CP02) chưa xài
+('U02', 'CP05', 1), -- Nguyễn Văn A (U02) đã lưu và đã xài mã NTK (CP05)
+('U05', 'CP01', 0); -- Hoàng Long (U05) đã lưu mã WELCOME (CP01)
