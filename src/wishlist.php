@@ -7,7 +7,7 @@ $user_id = $_SESSION['user_id'] ?? null;
 
 if (!$user_id) {
     echo "<div class='container' style='text-align:center; padding: 100px 0;'>
-            <h2>Bee ơi, đăng nhập để xem danh sách yêu thích nhé!</h2>
+            <h2>Đăng nhập để xem danh sách yêu thích!</h2>
             <a href='login.php' class='btn-buy-now' style='display:inline-block; width:200px; margin-top:20px;'>Đăng nhập ngay</a>
           </div>";
     include 'includes/footer.php';
