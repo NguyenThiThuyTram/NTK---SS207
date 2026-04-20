@@ -69,8 +69,8 @@ try {
 function getOrderStatus($status_code) {
     switch ($status_code) {
         case 0: return ['text' => 'CHỜ THANH TOÁN', 'color' => '#ee4d2d'];
-        case 1: return ['text' => 'VẬN CHUYỂN', 'color' => '#26aa99'];
-        case 2: return ['text' => 'CHỜ GIAO HÀNG', 'color' => '#26aa99'];
+        case 1: return ['text' => 'ĐANG XỬ LÝ', 'color' => '#26aa99'];
+        case 2: return ['text' => 'VẬN CHUYỂN', 'color' => '#26aa99'];
         case 3: return ['text' => 'HOÀN THÀNH', 'color' => '#26aa99'];
         case 4: return ['text' => 'ĐÃ HỦY', 'color' => '#888888'];
         case 5: return ['text' => 'TRẢ HÀNG/HOÀN TIỀN', 'color' => '#ee4d2d'];
@@ -100,8 +100,8 @@ function getOrderStatus($status_code) {
     .order-footer { padding: 15px; text-align: right; background: #fffcfb; }
     .order-total { font-size: 14px; color: #333; margin-bottom: 15px; }
     .total-price { font-size: 20px; color: #ee4d2d; font-weight: bold; margin-left: 10px; }
-    .order-actions { display: flex; justify-content: flex-end; gap: 10px; }
-    .btn { padding: 8px 15px; border-radius: 2px; font-size: 14px; cursor: pointer; text-decoration: none; }
+    .order-actions { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0 15px; border-radius: 2px; font-size: 14px; cursor: pointer; text-decoration: none; min-width: 90px; height: 36px; box-sizing: border-box; margin: 0; outline: none; border-width: 1px; border-style: solid; font-family: inherit; line-height: 1; }
     .btn-primary { background: #ee4d2d; color: #fff; border: 1px solid #ee4d2d; }
     .btn-outline { background: #fff; color: #555; border: 1px solid #ccc; }
     .empty-order { text-align: center; padding: 50px 20px; background: #fff; color: #888; }
@@ -112,8 +112,8 @@ function getOrderStatus($status_code) {
     <div class="order-tabs">
         <a href="?view=donmua&tab=all" class="<?= $current_tab === 'all' ? 'active' : '' ?>">Tất cả</a>
         <a href="?view=donmua&tab=0" class="<?= $current_tab === '0' ? 'active' : '' ?>">Chờ thanh toán</a>
-        <a href="?view=donmua&tab=1" class="<?= $current_tab === '1' ? 'active' : '' ?>">Vận chuyển</a>
-        <a href="?view=donmua&tab=2" class="<?= $current_tab === '2' ? 'active' : '' ?>">Chờ giao hàng</a>
+        <a href="?view=donmua&tab=1" class="<?= $current_tab === '1' ? 'active' : '' ?>">Đang xử lý</a>
+        <a href="?view=donmua&tab=2" class="<?= $current_tab === '2' ? 'active' : '' ?>">Vận chuyển</a>
         <a href="?view=donmua&tab=3" class="<?= $current_tab === '3' ? 'active' : '' ?>">Hoàn thành</a>
         <a href="?view=donmua&tab=4" class="<?= $current_tab === '4' ? 'active' : '' ?>">Đã hủy</a>
         <a href="?view=donmua&tab=5" class="<?= $current_tab === '5' ? 'active' : '' ?>">Trả hàng/Hoàn tiền</a>
@@ -165,16 +165,15 @@ function getOrderStatus($status_code) {
                         Thành tiền: <span class="total-price">₫<?= number_format($order['total_amount'], 0, ',', '.') ?></span>
                     </div>
                     <div class="order-actions">
+                        <a href="?view=chitietdonhang&id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-outline">Xem chi tiết</a>
                         <?php if ($order['status'] == 3): ?>
+                            <a href="../../controllers/return_order.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-outline" onclick="return confirm('Bạn có chắc chắn muốn trả hàng và nhận lại tiền trong ví?')">Trả hàng</a>
                             <button class="btn btn-primary">Mua lại</button>
-                            <button class="btn btn-outline">Đánh giá</button>
                         <?php elseif ($order['status'] == 0): ?>
-                            <button class="btn btn-primary">Thanh toán ngay</button>
-                            <button class="btn btn-outline">Hủy đơn</button>
+                            <a href="../../order_success.php?id=<?= htmlspecialchars($order['order_id']) ?>&method=online" class="btn btn-primary">Thanh toán ngay</a>
+                            <a href="../../controllers/cancel_order.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-outline" onclick="return confirm('Bạn chắc chắn muốn hủy đơn hàng này không?')">Hủy đơn</a>
                         <?php elseif ($order['status'] == 1 || $order['status'] == 2): ?>
-                            <button class="btn btn-primary" style="background:#26aa99; border-color:#26aa99;">Đã nhận được hàng</button>
-                        <?php else: ?>
-                            <button class="btn btn-outline">Xem chi tiết đơn</button>
+                            <a href="../../controllers/mark_received.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-primary" style="background:#26aa99; border-color:#26aa99;" onclick="return confirm('Bạn xác nhận đã nhận được hàng và hàng hóa không có vấn đề gì chứ?')">Đã nhận được hàng</a>
                         <?php endif; ?>
                     </div>
                 </div>

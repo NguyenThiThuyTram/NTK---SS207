@@ -50,6 +50,16 @@ $user_data = $stmt_wallet->fetch(PDO::FETCH_ASSOC);
 // Gán số dư ví thật (nếu không có thì mặc định là 0)
 $wallet_balance = $user_data['wallet_balance'] ?? 0;
 
+// Lấy danh sách địa chỉ đã lưu của user
+$saved_addresses = [];
+try {
+    $st_addr = $conn->prepare("SELECT * FROM user_addresses WHERE user_id = :uid ORDER BY is_default DESC, created_at DESC");
+    $st_addr->execute(['uid' => $user_id]);
+    $saved_addresses = $st_addr->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $saved_addresses = [];
+}
+
 include 'includes/header.php';
 ?>
 
@@ -70,7 +80,7 @@ include 'includes/header.php';
     .checkout-right { width: 420px; background-color: #faf9f5; padding: 25px; border-radius: 8px; position: sticky; top: 20px; border: 1px solid #f0eee9; }
 
     /* Tiêu đề & Form */
-    .step-title { font-size: 16px; color: #333; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
+    .step-title { font-size: 16px; font-weight: bold; color: #333; text-transform: uppercase; letter-spacing: 1px;  margin-bottom: 25px; }
     .form-row { display: flex; gap: 20px; margin-bottom: 20px; }
     .form-col { flex: 1; }
     .form-group { margin-bottom: 20px; }
@@ -136,6 +146,17 @@ include 'includes/header.php';
     .sum-item-variant { font-size: 12px; color: #777; margin-bottom: 3px; }
     .sum-item-price { font-size: 14px; color: #333; font-weight: bold; text-align: right; }
 
+    .summary-items {
+        max-height: 300px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    /* Tùy chỉnh thanh cuộn cho Tóm tắt đơn hàng */
+    .summary-items::-webkit-scrollbar { width: 6px; }
+    .summary-items::-webkit-scrollbar-track { background: transparent; }
+    .summary-items::-webkit-scrollbar-thumb { background: #bbb; border-radius: 10px; }
+    .summary-items::-webkit-scrollbar-thumb:hover { background: #999; }
+
     .sum-wallet-box { padding: 15px 0; border-top: 1px dashed #ddd; border-bottom: 1px dashed #ddd; margin: 20px 0; }
     .wallet-title { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 10px; }
     .wallet-balance { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 10px; }
@@ -187,7 +208,7 @@ include 'includes/header.php';
     <div class="checkout-layout">
         
         <div class="checkout-left">
-            <form id="checkoutForm" action="process_checkout.php" method="POST">
+            <form id="checkoutForm" action="controllers/process_checkout.php" method="POST">
                 
                 <div class="checkout-step active" id="step-1">
                     <h2 class="step-title">Thông tin giao hàng</h2>
@@ -195,42 +216,122 @@ include 'includes/header.php';
                         <label>Quốc gia</label>
                         <select name="country"><option value="VN">Vietnam</option></select>
                     </div>
-                    
-                    <?php 
-                        // Tách họ và tên từ fullname (giả lập đơn giản)
+
+                    <?php if (!empty($saved_addresses)): ?>
+
+                    <!-- ► CHỌN ĐỊ CHỈ ĐÃ LƯU -->
+                    <div id="saved-addr-section">
+                        <div style="font-size:13px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;">Giao tới</div>
+
+                        <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;" id="addr-radio-list">
+                        <?php foreach ($saved_addresses as $idx => $sa):
+                            $full_addr = implode(', ', array_filter([
+                                $sa['street'], $sa['ward'], $sa['district'], $sa['province']
+                            ]));
+                        ?>
+                        <label id="addr-label-<?= $sa['address_id'] ?>" style="
+                            display:flex;align-items:flex-start;gap:12px;
+                            border:1.5px solid <?= $sa['is_default'] ? '#2f1c00' : '#e0e0e0' ?>;
+                            border-radius:8px;padding:14px 16px;cursor:pointer;
+                            background:<?= $sa['is_default'] ? '#fdfaf6' : '#fff' ?>;
+                            transition:all .2s;
+                        " onclick="selectSavedAddr(<?= $sa['address_id'] ?>)">
+                            <input type="radio" name="addr_choice" value="<?= $sa['address_id'] ?>"
+                                   id="radAddr<?= $sa['address_id'] ?>"
+                                   <?= $sa['is_default'] ? 'checked' : '' ?>
+                                   style="margin-top:3px;accent-color:#2f1c00;">
+                            <div>
+                                <div style="font-weight:700;font-size:14px;margin-bottom:3px;">
+                                    <?= htmlspecialchars($sa['recipient_name']) ?>
+                                    <span style="font-weight:400;color:#777;margin-left:8px;"><?= htmlspecialchars($sa['phone']) ?></span>
+                                    <?php if ($sa['is_default']): ?>
+                                    <span style="font-size:10.5px;background:#2f1c00;color:#fff;padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle;">Mặc định</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div style="font-size:13px;color:#555;"><?= htmlspecialchars($full_addr) ?></div>
+                                <?php if (!empty($sa['note'])): ?>
+                                <div style="font-size:12px;color:#aaa;margin-top:3px;"><?= htmlspecialchars($sa['note']) ?></div>
+                                <?php endif; ?>
+                            </div>
+                        </label>
+                        <?php endforeach; ?>
+
+                        <!-- Tuỳ chọn: nhập tay -->
+                        <label id="addr-label-manual" style="
+                            display:flex;align-items:center;gap:12px;
+                            border:1.5px solid #e0e0e0;border-radius:8px;
+                            padding:12px 16px;cursor:pointer;background:#fff;transition:all .2s;
+                        " onclick="selectSavedAddr('manual')">
+                            <input type="radio" name="addr_choice" value="manual" id="radAddrManual" style="accent-color:#2f1c00;">
+                            <span style="font-size:14px;color:#555;"><i class="fa-solid fa-pen" style="margin-right:6px;color:#bbb;"></i>Nhập địa chỉ khác</span>
+                        </label>
+                        </div>
+
+                        <!-- Hidden inputs gửi lên server khi dùng địa chỉ đã lưu -->
+                        <input type="hidden" id="co_recipient" name="recipient_name" value="<?= htmlspecialchars($saved_addresses[0]['recipient_name'] ?? '') ?>">
+                        <input type="hidden" id="co_phone_addr" name="addr_phone"    value="<?= htmlspecialchars($saved_addresses[0]['phone']          ?? '') ?>">
+                        <input type="hidden" id="co_street"     name="address"       value="<?= htmlspecialchars(implode(', ', array_filter([$saved_addresses[0]['street']??'', $saved_addresses[0]['ward']??'', $saved_addresses[0]['district']??'']))) ?>">
+                        <input type="hidden" id="co_city"        name="city"          value="<?= htmlspecialchars($saved_addresses[0]['province'] ?? '') ?>">
+
+                        <!-- form nhập tay - ẩn theo mặc định nếu có địa chỉ lưu -->
+                        <div id="manual-addr-form" style="display:none;padding:16px;background:#fafafa;border:1.5px solid #e0e0e0;border-radius:8px;">
+
+                    <?php else: ?>
+                    <!-- Không có địa chỉ lưu — hiện form thủ công -->
+                    <div id="manual-addr-form">
+                    <?php endif; ?>
+
+                    <?php
                         $name_parts = explode(' ', $user_info['fullname'] ?? '');
                         $first_name = array_shift($name_parts);
-                        $last_name = implode(' ', $name_parts);
+                        $last_name  = implode(' ', $name_parts);
                     ?>
                     <div class="form-row">
-                        <div class="form-col">
-                            <label>Họ *</label>
-                            <input type="text" name="first_name" value="<?php echo htmlspecialchars($first_name); ?>" required>
+                        <div class="form-col"><label>Họ *</label>
+                            <input type="text" name="first_name" value="<?= htmlspecialchars($first_name) ?>" required>
                         </div>
-                        <div class="form-col">
-                            <label>Tên *</label>
-                            <input type="text" name="last_name" value="<?php echo htmlspecialchars($last_name); ?>" required>
+                        <div class="form-col"><label>Tên *</label>
+                            <input type="text" name="last_name"  value="<?= htmlspecialchars($last_name) ?>" required>
                         </div>
+                    </div>
+                    <div class="form-group"><label>Email *</label>
+                        <input type="email" name="email" value="<?= htmlspecialchars($user_info['email'] ?? '') ?>" required>
+                    </div>
+                    <div class="form-group"><label>Số điện thoại *</label>
+                        <input type="tel" name="phone" value="<?= htmlspecialchars($user_info['phonenumber'] ?? '') ?>" required>
+                    </div>
+                    <div class="form-group"><label>Địa chỉ cụ thể * (Số nhà, tên đường...)</label>
+                        <input type="text" name="address" value="<?= htmlspecialchars($user_info['address'] ?? '') ?>" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col"><label>Tỉnh/Thành phố *</label>
+                            <select name="province" id="api_province" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" required>
+                                <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                            </select>
+                        </div>
+                        <div class="form-col"><label>Quận/Huyện *</label>
+                            <select name="district" id="api_district" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" disabled required>
+                                <option value="">-- Chọn Quận/Huyện --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group"><label>Phường/Xã</label>
+                        <select name="ward" id="api_ward" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" disabled>
+                            <option value="">-- Chọn Phường/Xã --</option>
+                        </select>
                     </div>
 
-                    <div class="form-group">
-                        <label>Email *</label>
-                        <input type="email" name="email" value="<?php echo htmlspecialchars($user_info['email'] ?? ''); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Số điện thoại *</label>
-                        <input type="tel" name="phone" value="<?php echo htmlspecialchars($user_info['phonenumber'] ?? ''); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Địa chỉ *</label>
-                        <input type="text" name="address" value="<?php echo htmlspecialchars($user_info['address'] ?? ''); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Tỉnh/Thành phố *</label>
-                        <input type="text" name="city" placeholder="VD: Tp. Hồ Chí Minh" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Ghi chú thêm (Không bắt buộc)</label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:#333;margin-top:14px;">
+                        <input type="checkbox" name="save_as_default" value="1" style="accent-color:#2f1c00;width:16px;height:16px;">
+                        <span style="font-weight:600;">Lưu thủ công và đặt làm địa chỉ mặc định</span>
+                    </label>
+
+                    <?php if (!empty($saved_addresses)): ?>
+                        </div> <!-- đóng manual-addr-form -->
+                    </div> <!-- đóng saved-addr-section -->
+                    <?php endif; ?>
+
+                    <div class="form-group"><label>Ghi chú thêm (Không bắt buộc)</label>
                         <input type="text" name="notes" placeholder="Ghi chú thêm...">
                     </div>
                     <div class="step-actions" style="justify-content: flex-end;">
@@ -281,17 +382,13 @@ include 'includes/header.php';
                     </label>
 
                     <div class="qr-payment-info" id="qr-section">
-                        <div class="bank-details">
-                            <div style="font-size: 12px; color: #666; margin-bottom: 15px; text-transform: uppercase;">Thông tin chuyển khoản</div>
-                            <div class="bank-row"><span>Tên tài khoản:</span> <strong>NGUYEN VAN A</strong></div>
-                            <div class="bank-row"><span>Số tài khoản:</span> <strong>0963258746</strong></div>
-                            <div class="bank-row"><span>Ngân hàng:</span> <strong>MB Bank</strong></div>
-                            <div class="bank-row"><span>Nội dung chuyển khoản:</span> <strong style="color: #d32f2f;">DH_<?php echo $user_id; ?>_<?php echo time(); ?></strong></div>
-                        </div>
-                        <div class="qr-img-box">
-                            <img src="https://img.vietqr.io/image/MB-0963258746-compact.png?amount=<?php echo $subtotal + $shipping_fee; ?>&addInfo=DH_<?php echo $user_id; ?>_<?php echo time(); ?>" alt="QR Code">
-                            <p style="font-size: 13px; color: #666; margin-top: 10px;">Quét mã để thanh toán</p>
-                            <p style="font-size: 14px; font-weight: bold; margin-top: 5px;">Số tiền: <span id="qr-total-amount"><?php echo number_format($subtotal + $shipping_fee, 0, ',', '.'); ?></span> VNĐ</p>
+                        <div style="text-align:center; padding: 25px 15px;">
+                            <i class="fa-solid fa-shield-halved" style="font-size:40px; color:#4CAF50; margin-bottom:15px;"></i>
+                            <h4 style="margin-bottom:10px; color:#333; font-size:16px;">Thanh toán An Toàn qua PayOS</h4>
+                            <p style="font-size:14px; color:#666; line-height:1.6;">
+                                Hệ thống tự động tạo mã QR chính xác với số tiền và nội dung chuyển khoản.<br>
+                                Bạn sẽ được chuyển hướng tới cổng thanh toán an toàn ngay sau khi xác nhận đặt hàng.
+                            </p>
                         </div>
                     </div>
 
@@ -363,21 +460,76 @@ include 'includes/header.php';
 </div>
 
 <script>
+    // ── CHỌN ĐỊA CHỈ ĐÃ LƯU ────────────────────────────────
+    // Map address_id → data (từ PHP)
+    const savedAddrMap = <?php
+        $map = [];
+        foreach ($saved_addresses as $sa) {
+            $full = implode(', ', array_filter([$sa['street'], $sa['ward'], $sa['district']]));
+            $map[$sa['address_id']] = [
+                'recipient' => $sa['recipient_name'],
+                'phone'     => $sa['phone'],
+                'address'   => $full,
+                'city'      => $sa['province'],
+            ];
+        }
+        echo json_encode($map, JSON_UNESCAPED_UNICODE);
+    ?>;
+
+    function selectSavedAddr(id) {
+        // Cập nhật radio checked
+        const radios = document.querySelectorAll('[name="addr_choice"]');
+        radios.forEach(r => r.checked = (r.value == id));
+
+        // Style các label
+        document.querySelectorAll('#addr-radio-list label, #addr-label-manual').forEach(lbl => {
+            lbl.style.borderColor = '#e0e0e0';
+            lbl.style.background  = '#fff';
+        });
+        const activeLabel = document.getElementById('addr-label-' + id);
+        if (activeLabel) {
+            activeLabel.style.borderColor = '#2f1c00';
+            activeLabel.style.background  = '#fdfaf6';
+        }
+
+        const manualForm = document.getElementById('manual-addr-form');
+        const manualInputs = manualForm ? manualForm.querySelectorAll('input:not([type="checkbox"]), select') : [];
+
+        if (id === 'manual') {
+            // Hiện form nhập tay, bật required cho tất cả các field nhập tay, tắt required cho biến ẩn (nếu có)
+            if (manualForm) manualForm.style.display = 'block';
+            manualInputs.forEach(el => el.setAttribute('required', 'required'));
+            ['co_recipient','co_phone_addr','co_street','co_city'].forEach(fid => {
+                const el = document.getElementById(fid);
+                if (el) el.removeAttribute('required');
+            });
+        } else {
+            // Ẩn form nhập tay, xóa toàn bộ required trên DOM ẩn
+            if (manualForm) manualForm.style.display = 'none';
+            manualInputs.forEach(el => el.removeAttribute('required'));
+            // Điền hidden inputs
+            const d = savedAddrMap[id];
+            if (d) {
+                document.getElementById('co_recipient').value  = d.recipient;
+                document.getElementById('co_phone_addr').value = d.phone;
+                document.getElementById('co_street').value     = d.address;
+                document.getElementById('co_city').value       = d.city;
+            }
+        }
+    }
+
+    // Init: apply style cho địa chỉ mặc định đang được chọn
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkedRadio = document.querySelector('[name="addr_choice"]:checked');
+        if (checkedRadio) selectSavedAddr(checkedRadio.value === 'manual' ? 'manual' : parseInt(checkedRadio.value));
+    });
+
     // JS CHUYỂN BƯỚC VÀ CẬP NHẬT THANH TIẾN TRÌNH
     function goToStep(step) {
-        // 1. Chuyển form
-        document.querySelectorAll('.checkout-step').forEach(el => {
-            el.classList.remove('active');
-        });
+        document.querySelectorAll('.checkout-step').forEach(el => el.classList.remove('active'));
         document.getElementById('step-' + step).classList.add('active');
-
-        // 2. Chuyển màu thanh tiến trình
-        document.querySelectorAll('.step-indicator').forEach(el => {
-            el.classList.remove('active');
-        });
+        document.querySelectorAll('.step-indicator').forEach(el => el.classList.remove('active'));
         document.getElementById('indicator-' + step).classList.add('active');
-
-        // 3. Cuộn lên đầu
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -385,21 +537,13 @@ include 'includes/header.php';
     function toggleQR(show) {
         const qrSection = document.getElementById('qr-section');
         const boxes = document.querySelectorAll('#step-3 .method-box');
-        
         boxes.forEach(box => box.classList.remove('active'));
-        
-        if(show) {
-            qrSection.classList.add('show');
-            boxes[1].classList.add('active'); // Đánh dấu box online
-        } else {
-            qrSection.classList.remove('show');
-            boxes[0].classList.add('active'); // Đánh dấu box cod
-        }
+        if(show) { qrSection.classList.add('show'); boxes[1].classList.add('active'); }
+        else      { qrSection.classList.remove('show'); boxes[0].classList.add('active'); }
     }
 
     // JS TÍNH TOÁN VÍ HOÀN TIỀN
     const walletBalance = <?php echo $wallet_balance; ?>;
-    
     function calculateTotal() {
         const subtotal = parseInt(document.getElementById('ui_subtotal').getAttribute('data-val'));
         const shipping = parseInt(document.getElementById('ui_shipping').getAttribute('data-val'));
@@ -407,31 +551,95 @@ include 'includes/header.php';
         const walletRow = document.getElementById('wallet_discount_row');
         const uiWalletUsed = document.getElementById('ui_wallet_used');
         const uiTotal = document.getElementById('ui_total');
-        const qrTotal = document.getElementById('qr-total-amount'); // Cập nhật số tiền trên mã QR
+        const qrTotal = document.getElementById('qr-total-amount');
         const inputWalletUsed = document.getElementById('input_wallet_used');
-
         let totalBeforeWallet = subtotal + shipping;
         let walletUsedAmount = 0;
-
         if (useWallet) {
-            // Dùng tối đa số tiền trong ví, nhưng không vượt quá tổng đơn
             walletUsedAmount = Math.min(walletBalance, totalBeforeWallet);
-            
             walletRow.style.display = 'flex';
             uiWalletUsed.innerText = '-' + walletUsedAmount.toLocaleString('vi-VN') + ' VNĐ';
-        } else {
-            walletRow.style.display = 'none';
-        }
-
+        } else { walletRow.style.display = 'none'; }
         let finalTotal = totalBeforeWallet - walletUsedAmount;
-        
-        // Cập nhật hiển thị
         uiTotal.innerText = finalTotal.toLocaleString('vi-VN') + ' VNĐ';
         if(qrTotal) qrTotal.innerText = finalTotal.toLocaleString('vi-VN');
-        
-        // Lưu giá trị vào input ẩn để đẩy lên server
         inputWalletUsed.value = walletUsedAmount;
     }
+
+    // ── GỌI API ĐỊA CHỈ (esgoo.net) ────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        const selPr = document.getElementById('api_province');
+        const selDi = document.getElementById('api_district');
+        const selWa = document.getElementById('api_ward');
+
+        if (!selPr) return;
+
+        // Bỏ qua giá trị ID trên server, ta lưu value là NAME
+        fetch('https://esgoo.net/api-tinhthanh/1/0.htm')
+            .then(res => res.json())
+            .then(data => {
+                if(data.error === 0) {
+                    data.data.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.name;
+                        opt.dataset.id = p.id;
+                        opt.textContent = p.name;
+                        selPr.appendChild(opt);
+                    });
+                }
+            });
+
+        selPr.addEventListener('change', function() {
+            selDi.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+            selWa.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+            selWa.disabled = true;
+            selDi.disabled = true;
+
+            const selectedOpt = selPr.options[selPr.selectedIndex];
+            const pid = selectedOpt?.dataset?.id;
+            
+            if(pid) {
+                fetch(`https://esgoo.net/api-tinhthanh/2/${pid}.htm`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.error === 0) {
+                            data.data.forEach(d => {
+                                const opt = document.createElement('option');
+                                opt.value = d.name;
+                                opt.dataset.id = d.id;
+                                opt.textContent = d.name;
+                                selDi.appendChild(opt);
+                            });
+                            selDi.disabled = false;
+                        }
+                    });
+            }
+        });
+
+        selDi.addEventListener('change', function() {
+            selWa.innerHTML = '<option value="">-- Chọn Phường/Xã --</option>';
+            selWa.disabled = true;
+
+            const selectedOpt = selDi.options[selDi.selectedIndex];
+            const did = selectedOpt?.dataset?.id;
+
+            if(did) {
+                fetch(`https://esgoo.net/api-tinhthanh/3/${did}.htm`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.error === 0) {
+                            data.data.forEach(w => {
+                                const opt = document.createElement('option');
+                                opt.value = w.name;
+                                opt.textContent = w.name;
+                                selWa.appendChild(opt);
+                            });
+                            selWa.disabled = false;
+                        }
+                    });
+            }
+        });
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>
