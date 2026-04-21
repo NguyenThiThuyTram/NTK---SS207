@@ -8,7 +8,7 @@ $user_id = $_SESSION['user_id'] ?? null;
 if (!$user_id) {
     echo "<div class='container' style='text-align:center; padding: 100px 0;'>
             <h2>Đăng nhập để xem danh sách yêu thích!</h2>
-            <a href='login.php' class='btn-buy-now' style='display:inline-block; width:200px; margin-top:20px;'>Đăng nhập ngay</a>
+            <a href='views/login.php' class='btn-buy-now' style='display:inline-block; width:200px; margin-top:20px;'>Đăng nhập ngay</a>
           </div>";
     include 'includes/footer.php';
     exit;
@@ -53,10 +53,27 @@ $wishlist_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <?php endforeach; ?>
         </div>
     <?php else: ?>
-        <div style="text-align: center; padding: 50px;">
-            <p>Chưa có món nào được chọn</p>
-            <a href="product.php" style="color: #a6825c; text-decoration: underline;">Đi shopping ngay!</a>
-        </div>
+        <div style="text-align: center; padding: 0; background: transparent; margin-top: -20px;">
+    <p style="color: #666; font-size: 20px; font-weight: 500; margin-bottom: 25px; letter-spacing: 0.5px;">
+        Danh sách yêu thích của bạn đang trống
+    </p>
+    
+    <a href="product.php" style="
+        display: inline-block;
+        background: #a6825c;
+        color: #fff;
+        padding: 12px 45px;
+        text-decoration: none;
+        font-weight: 600;
+        border-radius: 2px;
+        text-transform: uppercase;
+        font-size: 14px;
+        letter-spacing: 2px;
+        transition: all 0.3s ease;
+    ">
+        Shopping ngay!
+    </a>
+</div>
     <?php endif; ?>
 </main>
 
