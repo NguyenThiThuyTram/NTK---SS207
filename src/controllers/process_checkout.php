@@ -199,8 +199,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $PAYOS_API_KEY = "610ff3aa-21e6-4713-ba23-d9b74e545129";
             $PAYOS_CHECKSUM_KEY = "b7b836b8064139b2906a3431c5bad44ad104ade4777d83cf7059eb316623ebfe";
 
-            // 🔥 Thay thế ngrok bằng IP/domain gốc hoặc http://localhost tùy môi trường
-            $base_url = "http://" . $_SERVER['HTTP_HOST'] . "/NTK-new4/NTK---SS207/src";
+            // 🔥 Tự động lấy base URL động để chạy tốt trên mọi thư mục/máy tính
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+            $src_path = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
+            $base_url = rtrim($protocol . $_SERVER['HTTP_HOST'] . $src_path, '/');
 
             $return_url = $base_url . "/order_success.php?id=" . $order_id . "&method=online";
             $cancel_url = $base_url . "/checkout.php";
