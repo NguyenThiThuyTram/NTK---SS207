@@ -30,7 +30,7 @@ $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
 // Xác định trạng thái để hiển thị Progress
 // 0: Chờ thanh toán (nếu online chưa pass / COD: pending_payment nếu có), 1: Đang xử lý, 2: Đang giao, 3: Hoàn thành, 4: Đã hủy
 $status = (int)$order['order_status']; 
-$date_placed = date('Y-m-d', strtotime($order['created_at']));
+$date_placed = date('Y-m-d', strtotime($order['order_date']));
 ?>
 
 <style>
@@ -230,11 +230,14 @@ $date_placed = date('Y-m-d', strtotime($order['created_at']));
             $is_cod = ($order['payment_method'] == 1);
             $is_paid = ($order['payment_status'] == 1);
             
+            $is_shipping = ($status >= 2);
+            $is_completed = ($status == 3);
+
             // Nếu COD -> Lúc nào cũng "Đã đặt". Nếu PayOS -> "Đã đặt" chỉ sáng nếu đã trả tiền
             $is_placed = $is_cod || $is_paid;
             
-            $is_shipping = ($status >= 2);
-            $is_completed = ($status == 3);
+            // Visual for "Đã xác nhận thanh toán" - COD sẽ sáng lên khi hoàn thành (nhận hàng)
+            $is_paid_visual = $is_paid || $is_completed;
         ?>
         <div class="od-step <?= $is_placed ? 'active' : '' ?>">
             <div class="od-step-icon"><i class="fa-solid fa-receipt"></i></div>
@@ -242,10 +245,10 @@ $date_placed = date('Y-m-d', strtotime($order['created_at']));
             <div class="od-step-date"><?= $is_placed ? $date_placed : 'Chờ chuyển khoản' ?></div>
         </div>
 
-        <div class="od-step <?= $is_paid ? 'active' : '' ?>">
+        <div class="od-step <?= $is_paid_visual ? 'active' : '' ?>">
             <div class="od-step-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
             <div class="od-step-label">Đã xác nhận thanh toán</div>
-            <div class="od-step-date"><?= $is_paid ? $date_placed : '-' ?></div>
+            <div class="od-step-date"><?= $is_paid_visual ? $date_placed : '-' ?></div>
         </div>
 
         <div class="od-step <?= $is_shipping ? 'active' : '' ?>">

@@ -463,7 +463,7 @@ function renderAddressForm(string $mode, ?array $a, string $loc_json): string {
             <div class="am-field">
                 <label>Tỉnh / Thành phố <span class="req">*</span></label>
                 <div class="am-input-wrap"><i class="fa-solid fa-city"></i>
-                    <select id="<?= $fid ?>_pr" name="province" onchange="amCascade('<?= $fid ?>')">
+                    <select id="<?= $fid ?>_pr" name="province">
                         <option value="">-- Chọn Tỉnh/TP --</option>
                     </select>
                 </div>
@@ -473,7 +473,7 @@ function renderAddressForm(string $mode, ?array $a, string $loc_json): string {
             <div class="am-field">
                 <label>Quận / Huyện <span class="req">*</span></label>
                 <div class="am-input-wrap"><i class="fa-solid fa-map-pin"></i>
-                    <select id="<?= $fid ?>_di" name="district" disabled onchange="amCascadeWard('<?= $fid ?>')">
+                    <select id="<?= $fid ?>_di" name="district" disabled>
                         <option value="">-- Chọn Quận/Huyện --</option>
                     </select>
                 </div>
@@ -585,8 +585,7 @@ function renderAddressForm(string $mode, ?array $a, string $loc_json): string {
                     });
             }
 
-            window.amCascade = function(f){
-                if(f!==fid) return;
+            selPr.addEventListener('change', function(){
                 selWa.innerHTML='<option value="">-- Chọn Phường/Xã --</option>'; selWa.disabled=true;
                 const opt = selPr.options[selPr.selectedIndex];
                 if(opt && opt.dataset.id) {
@@ -594,17 +593,16 @@ function renderAddressForm(string $mode, ?array $a, string $loc_json): string {
                 } else {
                     selDi.innerHTML='<option value="">-- Chọn Quận/Huyện --</option>'; selDi.disabled=true;
                 }
-            };
+            });
 
-            window.amCascadeWard = function(f){
-                if(f!==fid) return;
+            selDi.addEventListener('change', function(){
                 const opt = selDi.options[selDi.selectedIndex];
                 if(opt && opt.dataset.id) {
                     initWa(opt.dataset.id, '');
                 } else {
                     selWa.innerHTML='<option value="">-- Chọn Phường/Xã --</option>'; selWa.disabled=true;
                 }
-            };
+            });
 
             document.addEventListener('DOMContentLoaded', initPr);
             if(document.readyState!=='loading') initPr();

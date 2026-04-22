@@ -9,10 +9,16 @@ $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'all';
 $params = [':user_id' => $user_id];
 $status_condition = "";
 
+$order_by = "ORDER BY o.order_date DESC";
+
 if ($current_tab !== 'all') {
     // Đã sửa thành order_status theo đúng DB
     $status_condition = "AND o.order_status = :status";
     $params[':status'] = $current_tab;
+} else {
+    // Khi ở mục "Tất cả", không lấy "Đã hủy" (4) và sắp xếp đúng thứ tự các mục
+    $status_condition = "AND o.order_status IN (0, 1, 2, 3, 5)";
+    $order_by = "ORDER BY FIELD(o.order_status, 0, 1, 2, 3, 5), o.order_date DESC";
 }
 
 /* * 3. TRUY VẤN JOIN CHUẨN THEO NTK.SQL:
@@ -29,7 +35,7 @@ $sql = "
     JOIN Product_Variants v ON od.variant_id = v.variant_id
     JOIN Products p ON v.product_id = p.product_id
     WHERE o.user_id = :user_id $status_condition
-    ORDER BY o.order_date DESC
+    $order_by
 ";
 
 try {

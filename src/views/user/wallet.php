@@ -21,11 +21,11 @@ if (isset($conn) && $conn !== null && $user_id) {
 
         // 2. Lấy lịch sử giao dịch (JOIN 2 bảng Users và Wallet_Transactions theo đúng lệnh đại ca)
         $stmt_tx = $conn->prepare("
-            SELECT wt.amount, wt.transaction_type, wt.description, wt.transaction_date 
+            SELECT wt.amount, wt.transaction_type, wt.description, wt.created_at 
             FROM Wallet_Transactions wt
             JOIN Users u ON wt.user_id = u.user_id
             WHERE u.user_id = :user_id
-            ORDER BY wt.transaction_date DESC
+            ORDER BY wt.created_at DESC
         ");
         $stmt_tx->execute(['user_id' => $user_id]);
         $transactions = $stmt_tx->fetchAll(PDO::FETCH_ASSOC);
@@ -170,7 +170,7 @@ if (!function_exists('formatVND')) {
                 <div class="tx-item">
                     <div class="tx-info-left">
                         <span class="tx-title"><?= htmlspecialchars($tx['description'] ?? 'Giao dịch') ?></span>
-                        <span class="tx-date"><?= date('d/m/Y - H:i', strtotime($tx['transaction_date'])) ?></span>
+                        <span class="tx-date"><?= date('d/m/Y - H:i', strtotime($tx['created_at'])) ?></span>
                     </div>
                     
                     <?php if ($tx['transaction_type'] == 1): ?>

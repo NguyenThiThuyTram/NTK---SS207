@@ -1,4 +1,5 @@
 <?php
+ob_start(); // Fix lỗi headers already sent
 // ────────────────────────────────────────────────
 // dashboard.php – User Dashboard
 // ────────────────────────────────────────────────

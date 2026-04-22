@@ -205,6 +205,7 @@ $count = count($products);
             <?php if ($count > 0): ?>
                 <?php foreach ($products as $p): ?>
                     <div class="product-card">
+                        <a href="product_detail.php?id=<?php echo $p['product_id']; ?>" style="text-decoration: none; color: inherit; display: block; height: 100%;">
                         <?php 
                             $gia_goc = isset($p['original_price']) ? $p['original_price'] : 0; 
                             $gia_sale = isset($p['sale_price']) ? $p['sale_price'] : 0;
@@ -232,6 +233,7 @@ $count = count($products);
                                 <?php endif; ?>
                             </div>
                         </div>
+                        </a>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
