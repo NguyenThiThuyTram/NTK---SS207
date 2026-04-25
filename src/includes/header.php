@@ -94,8 +94,19 @@ try {
                 <a href="wishlist.php"><i class="fa-regular fa-heart"></i></a>
 
 
+
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="views/user/dashboard.php" title="Tài khoản của tôi"><i class="fa-solid fa-user"></i></a>
+                    <?php if (($_SESSION['role'] ?? 0) == 1): ?>
+                        <!-- Admin → vào Admin Dashboard -->
+                        <a href="admin/dashboard.php" title="Quản trị Admin">
+                            <i class="fa-solid fa-user-gear"></i>
+                        </a>
+                    <?php else: ?>
+                        <!-- User thường → vào User Dashboard -->
+                        <a href="views/user/dashboard.php" title="Tài khoản của tôi">
+                            <i class="fa-solid fa-user"></i>
+                        </a>
+                    <?php endif; ?>
                 <?php else: ?>
                     <a href="views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>

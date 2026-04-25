@@ -3,10 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 22, 2026 at 03:10 PM
+-- Generation Time: Apr 25, 2026 at 10:26 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
-SET FOREIGN_KEY_CHECKS = 0;
 
 SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -32,13 +31,16 @@ USE `ntk`;
 --
 
 DROP TABLE IF EXISTS `cart`;
-CREATE TABLE `cart` (
+CREATE TABLE IF NOT EXISTS `cart` (
   `cart_id` char(5) NOT NULL,
   `user_id` char(5) DEFAULT NULL,
   `variant_id` char(5) DEFAULT NULL,
   `quantity` int(11) DEFAULT NULL,
   `session_id` varchar(255) DEFAULT NULL,
-  `is_selected` int(11) DEFAULT 1
+  `is_selected` int(11) DEFAULT 1,
+  PRIMARY KEY (`cart_id`),
+  KEY `fk_cart_user` (`user_id`),
+  KEY `fk_cart_variant` (`variant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -53,7 +55,8 @@ INSERT INTO `cart` (`cart_id`, `user_id`, `variant_id`, `quantity`, `session_id`
 ('C0005', NULL, 'V015', 3, 'sess_998877abc', 0),
 ('C0006', NULL, 'V041', 1, 'sess_998877abc', 0),
 ('C0007', 'U14', 'V011', 1, NULL, 0),
-('C0008', 'U17', 'V003', 2, NULL, 1);
+('C0008', 'U17', 'V003', 2, NULL, 1),
+('C0009', 'U3237', 'V165', 1, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -62,14 +65,15 @@ INSERT INTO `cart` (`cart_id`, `user_id`, `variant_id`, `quantity`, `session_id`
 --
 
 DROP TABLE IF EXISTS `categories`;
-CREATE TABLE `categories` (
+CREATE TABLE IF NOT EXISTS `categories` (
   `category_id` char(5) NOT NULL,
   `name` varchar(100) NOT NULL,
   `slug` varchar(255) DEFAULT NULL,
   `image_url` varchar(255) DEFAULT NULL,
   `is_show_home` int(11) DEFAULT 1,
   `priority` int(11) DEFAULT 0,
-  `description` varchar(500) DEFAULT NULL
+  `description` varchar(500) DEFAULT NULL,
+  PRIMARY KEY (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -77,16 +81,16 @@ CREATE TABLE `categories` (
 --
 
 INSERT INTO `categories` (`category_id`, `name`, `slug`, `image_url`, `is_show_home`, `priority`, `description`) VALUES
-('CAT01', 'Áo thun', 'ao-thun', 'https://down-vn.img.susercontent.com/file/vn-', 1, 1, 'Áo thun basic dễ mặc, phù hợp mọi phong cách'),
-('CAT02', 'Áo khoác', 'ao-khoac', 'https://down-vn.img.susercontent.com/file/vn-', 0, 2, 'Áo khoác thời trang, giữ ấm và chống nắng'),
-('CAT03', 'Hoodie&Sweater', 'hoodie-sweater', 'https://down-vn.img.susercontent.com/file/vn-', 1, 3, 'Hoodie và sweater trẻ trung, năng động'),
-('CAT04', 'Quần', 'quan', 'https://down-vn.img.susercontent.com/file/vn-', 0, 4, 'Quần thời trang, sành điệu'),
-('CAT05', 'Áo sơ mi', 'ao-so-mi', 'https://down-vn.img.susercontent.com/file/vn-11', 0, 5, 'Áo sơ mi lịch sự, phù hợp đi làm và đi chơi'),
-('CAT06', 'Quần đùi', 'quan-dui', 'https://down-vn.img.susercontent.com/file/vn-11', 0, 6, 'Quần đùi thoải mái cho hoạt động hàng ngày'),
-('CAT07', 'Áo polo', 'ao-polo', 'https://down-vn.img.susercontent.com/file/vn-11', 0, 7, 'Áo polo thanh lịch, dễ phối đồ'),
-('CAT08', 'Quần jeans', 'quan-jeans', 'https://down-vn.img.susercontent.com/file/vn-11', 1, 8, 'Quần jeans bền đẹp, phong cách cá tính'),
-('CAT09', 'Chân váy', 'chan-vay', 'https://down-vn.img.susercontent.com/file/vn-11', 0, 9, 'Chân váy nữ tính, đa dạng kiểu dáng'),
-('CAT10', 'Áo len & cardigan', 'ao-len-cardigan', 'https://down-vn.img.susercontent.com/file/vn-11', 0, 10, 'Áo len và cardigan giữ ấm, thời trang');
+('CAT01', 'Áo thun', 'ao-thun', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ra0g-m7ne96vcjmiu46.webp', 1, 1, 'Áo thun basic dễ mặc, phù hợp mọi phong cách'),
+('CAT02', 'Áo khoác', 'ao-khoac', 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mg7d8s7jrvnvb7.webp', 0, 2, 'Áo khoác thời trang, giữ ấm và chống nắng'),
+('CAT03', 'Hoodie&Sweater', 'hoodie-sweater', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m1djz3jqsva0d1.webp', 1, 3, 'Hoodie và sweater trẻ trung, năng động'),
+('CAT04', 'Quần', 'quan', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mc8wdg5whi6qb8.webp', 0, 4, 'Quần thời trang, sành điệu'),
+('CAT05', 'Áo sơ mi', 'ao-so-mi', 'https://down-vn.img.susercontent.com/file/vn-11134207-7r98o-llqdtiaj374v5c.webp', 0, 5, 'Áo sơ mi lịch sự, phù hợp đi làm và đi chơi'),
+('CAT06', 'Quần đùi', 'quan-dui', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mcg2d2ixd4fw7b@resize_w900_nl.webp', 0, 6, 'Quần đùi thoải mái cho hoạt động hàng ngày'),
+('CAT07', 'Áo polo', 'ao-polo', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mcrbsixysl9pbc@resize_w900_nl.webp', 0, 7, 'Áo polo thanh lịch, dễ phối đồ'),
+('CAT08', 'Quần jeans', 'quan-jeans', 'https://down-vn.img.susercontent.com/file/vn-11134207-820l4-mfcb1buk8sumb0@resize_w900_nl.webp', 1, 8, 'Quần jeans bền đẹp, phong cách cá tính'),
+('CAT09', 'Chân váy', 'chan-vay', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-mczvn82i30rx20@resize_w900_nl.webp', 0, 9, 'Chân váy nữ tính, đa dạng kiểu dáng'),
+('CAT10', 'Áo len & cardigan', 'ao-len-cardigan', 'https://down-vn.img.susercontent.com/file/vn-11134207-7ras8-m4hdzd36m4q8c9@resize_w900_nl.webp', 0, 10, 'Áo len và cardigan giữ ấm, thời trang');
 
 -- --------------------------------------------------------
 
@@ -95,7 +99,7 @@ INSERT INTO `categories` (`category_id`, `name`, `slug`, `image_url`, `is_show_h
 --
 
 DROP TABLE IF EXISTS `coupons`;
-CREATE TABLE `coupons` (
+CREATE TABLE IF NOT EXISTS `coupons` (
   `coupon_id` char(5) NOT NULL,
   `code` varchar(50) DEFAULT NULL,
   `discount_type` int(11) DEFAULT NULL,
@@ -106,7 +110,9 @@ CREATE TABLE `coupons` (
   `max_discount_amount` decimal(15,2) DEFAULT NULL,
   `quantity` int(11) DEFAULT NULL,
   `used_count` int(11) DEFAULT 0,
-  `status` int(11) DEFAULT 1
+  `status` int(11) DEFAULT 1,
+  PRIMARY KEY (`coupon_id`),
+  UNIQUE KEY `code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -127,7 +133,7 @@ INSERT INTO `coupons` (`coupon_id`, `code`, `discount_type`, `discount_value`, `
 --
 
 DROP TABLE IF EXISTS `orders`;
-CREATE TABLE `orders` (
+CREATE TABLE IF NOT EXISTS `orders` (
   `order_id` char(5) NOT NULL,
   `payos_order_code` bigint(20) DEFAULT NULL,
   `payos_qr_code` text DEFAULT NULL,
@@ -148,7 +154,11 @@ CREATE TABLE `orders` (
   `tracking_number` varchar(50) DEFAULT NULL,
   `wallet_used_amount` decimal(15,2) DEFAULT 0.00,
   `note` varchar(500) DEFAULT NULL,
-  `payos_checkout_url` varchar(1000) DEFAULT NULL
+  `payos_checkout_url` varchar(1000) DEFAULT NULL,
+  PRIMARY KEY (`order_id`),
+  KEY `fk_order_user` (`user_id`),
+  KEY `fk_order_coupon` (`coupon_id`),
+  KEY `fk_order_ship` (`shipping_method_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -165,13 +175,14 @@ INSERT INTO `orders` (`order_id`, `payos_order_code`, `payos_qr_code`, `user_id`
 ('O0009', 2604201275, NULL, 'U3237', '2026-04-20 21:21:19', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 290000.00, 35000.00, NULL, NULL, 1, 290000.00, 1, 1, NULL, NULL, 0.00, '', NULL),
 ('O0010', 2604207687, NULL, 'U3237', '2026-04-20 21:47:35', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 375000.00, 35000.00, NULL, NULL, 1, 375000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('O0011', 2604205924, NULL, 'U3237', '2026-04-20 21:47:53', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 5, 205000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
-('O0013', 2604201477, NULL, 'U3237', '2026-04-20 21:49:21', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 5, 205000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
+('O0013', 2604201477, NULL, 'U3237', '2026-04-20 21:49:21', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 4, 205000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('O0015', 2604204885, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CS8TZRFQK86 NTK O00156304F2EA', 'U3237', '2026-04-20 21:50:09', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 5, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/6a3d5ff0f80e48f58b4aea3293b9d897'),
 ('O0016', 2604204002, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CSUO0FD6OD1 NTK O00166304DFA1', 'U3237', '2026-04-20 21:56:42', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 4, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/70757ae94f3b4662aaff59c5886414ed'),
 ('O0017', 2604206761, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CS4XA6E4IC7 NTK O00176304A22A', 'U3237', '2026-04-20 23:16:22', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 1, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/f6e1212dfce64199b0a3857c29e6ca6d'),
-('O0019', 2604204756, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA53037045405350005802VN62250821CSOXH6HVWS2 NTK O001963042306', 'U3237', '2026-04-20 23:18:38', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 35000.00, 35000.00, NULL, NULL, 1, 35000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/8a09a86005bf40f7a77d0dd1119d0be3'),
+('O0019', 2604204756, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA53037045405350005802VN62250821CSOXH6HVWS2 NTK O001963042306', 'U3237', '2026-04-20 23:18:38', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 35000.00, 35000.00, NULL, NULL, 4, 35000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/8a09a86005bf40f7a77d0dd1119d0be3'),
 ('O0020', 2604212219, NULL, 'U3237', '2026-04-21 12:25:30', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 375000.00, 35000.00, NULL, NULL, 3, 375000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('O0022', 2604225406, NULL, 'U3237', '2026-04-22 08:36:00', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 290000.00, 35000.00, NULL, NULL, 4, 0.00, 1, 2, NULL, NULL, 290000.00, '', NULL),
+('O0023', 2604225255, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454063750005802VN62250821CSXVN4FNFO0 NTK O00236304D767', 'U3237', '2026-04-22 20:29:46', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 375000.00, 35000.00, NULL, NULL, 3, 375000.00, 0, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/e4ea152ddcb04eb3aee7702c7921ebeb'),
 ('ORD01', NULL, NULL, 'U02', '2025-01-10 00:00:00', 'Nguyễn Văn A', '0375788987', '123 Lê Lợi, Q1, HCM', 450000.00, 30000.00, 'S01', 30000.00, 0, 450000.00, 0, 0, 'CP01', 'ORD01-U02-TN', 0.00, NULL, NULL),
 ('ORD02', NULL, NULL, 'U03', '2025-01-15 00:00:00', 'Trần Thị B', '0964326512', '45 Cầu Giấy, Hà Nội', 300000.00, 30000.00, 'S02', 30000.00, 1, 300000.00, 0, 0, 'CP02', 'ORD02-U03-TN', 100000.00, NULL, NULL),
 ('ORD03', NULL, NULL, 'U05', '2025-02-01 00:00:00', 'Hoàng Long', '0987654321', '15 Lê Duẩn, Đà Nẵng', 800000.00, 30000.00, 'S03', 30000.00, 2, 800000.00, 0, 1, 'CP03', 'ORD03-U05-TN', 0.00, NULL, NULL),
@@ -190,7 +201,7 @@ INSERT INTO `orders` (`order_id`, `payos_order_code`, `payos_qr_code`, `user_id`
 --
 
 DROP TABLE IF EXISTS `order_details`;
-CREATE TABLE `order_details` (
+CREATE TABLE IF NOT EXISTS `order_details` (
   `detail_id` char(5) NOT NULL,
   `order_id` char(5) DEFAULT NULL,
   `variant_id` char(5) DEFAULT NULL,
@@ -199,7 +210,10 @@ CREATE TABLE `order_details` (
   `feedback` varchar(500) DEFAULT NULL,
   `is_reviewed` int(11) DEFAULT 0,
   `product_name` varchar(200) DEFAULT NULL,
-  `unit_price` decimal(15,2) DEFAULT NULL
+  `unit_price` decimal(15,2) DEFAULT NULL,
+  PRIMARY KEY (`detail_id`),
+  KEY `fk_detail_order` (`order_id`),
+  KEY `fk_detail_variant` (`variant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -222,6 +236,7 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `variant_id`, `quantity`, 
 ('D0021', 'O0017', 'V165', 1, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
 ('D0023', 'O0020', 'V165', 2, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
 ('D0025', 'O0022', 'V167', 1, 255000.00, NULL, 0, 'Áo Len Kẻ Sọc Thu Đông', NULL),
+('D0026', 'O0023', 'V165', 2, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
 ('DT001', 'ORD01', 'V001', 1, 159000.00, 'Áo rất đẹp, chất vải co giãn tốt!', 0, NULL, NULL),
 ('DT002', 'ORD01', 'V051', 1, 289000.00, 'Vải dày dặn, ấm áp.', 0, NULL, NULL),
 ('DT003', 'ORD02', 'V072', 1, 189000.00, 'Mặc rất tôn dáng.', 0, NULL, NULL),
@@ -238,11 +253,31 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `variant_id`, `quantity`, 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `order_returns`
+--
+
+DROP TABLE IF EXISTS `order_returns`;
+CREATE TABLE IF NOT EXISTS `order_returns` (
+  `return_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` char(5) NOT NULL,
+  `detail_id` char(5) DEFAULT NULL,
+  `reason` varchar(500) NOT NULL,
+  `image_proof` varchar(255) DEFAULT NULL,
+  `status` int(11) DEFAULT 0 COMMENT '0:Pending, 1:Approved, 2:Rejected',
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`return_id`),
+  KEY `order_id` (`order_id`),
+  KEY `detail_id` (`detail_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `products`
 --
 
 DROP TABLE IF EXISTS `products`;
-CREATE TABLE `products` (
+CREATE TABLE IF NOT EXISTS `products` (
   `product_id` char(5) NOT NULL,
   `category_id` char(5) DEFAULT NULL,
   `name` varchar(200) NOT NULL,
@@ -254,7 +289,9 @@ CREATE TABLE `products` (
   `avg_rating` decimal(2,1) DEFAULT NULL,
   `total_reviews` int(11) DEFAULT 0,
   `seo_title` varchar(150) DEFAULT NULL,
-  `seo_description` varchar(300) DEFAULT NULL
+  `seo_description` varchar(300) DEFAULT NULL,
+  PRIMARY KEY (`product_id`),
+  KEY `fk_prod_cat` (`category_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -338,7 +375,7 @@ INSERT INTO `products` (`product_id`, `category_id`, `name`, `description`, `ima
 --
 
 DROP TABLE IF EXISTS `product_variants`;
-CREATE TABLE `product_variants` (
+CREATE TABLE IF NOT EXISTS `product_variants` (
   `variant_id` char(5) NOT NULL,
   `product_id` char(5) DEFAULT NULL,
   `sku` varchar(50) DEFAULT NULL,
@@ -353,7 +390,9 @@ CREATE TABLE `product_variants` (
   `weight` int(11) DEFAULT NULL,
   `length` int(11) DEFAULT NULL,
   `width` int(11) DEFAULT NULL,
-  `height` int(11) DEFAULT NULL
+  `height` int(11) DEFAULT NULL,
+  PRIMARY KEY (`variant_id`),
+  KEY `fk_variant_prod` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -505,7 +544,7 @@ INSERT INTO `product_variants` (`variant_id`, `product_id`, `sku`, `color`, `siz
 --
 
 DROP TABLE IF EXISTS `reviews`;
-CREATE TABLE `reviews` (
+CREATE TABLE IF NOT EXISTS `reviews` (
   `review_id` char(5) NOT NULL,
   `user_id` char(5) DEFAULT NULL,
   `product_id` char(5) DEFAULT NULL,
@@ -514,7 +553,10 @@ CREATE TABLE `reviews` (
   `image` varchar(255) DEFAULT NULL,
   `reply` varchar(500) DEFAULT NULL,
   `status` int(11) DEFAULT 1,
-  `created_at` datetime DEFAULT current_timestamp()
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`review_id`),
+  KEY `fk_rev_user` (`user_id`),
+  KEY `fk_rev_prod` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -540,11 +582,12 @@ INSERT INTO `reviews` (`review_id`, `user_id`, `product_id`, `rating`, `comment`
 --
 
 DROP TABLE IF EXISTS `shipping_methods`;
-CREATE TABLE `shipping_methods` (
+CREATE TABLE IF NOT EXISTS `shipping_methods` (
   `shipping_method_id` char(5) NOT NULL,
   `name` varchar(100) DEFAULT NULL,
   `cost` decimal(15,2) DEFAULT NULL,
-  `estimated_delivery` varchar(50) DEFAULT NULL
+  `estimated_delivery` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`shipping_method_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -564,7 +607,7 @@ INSERT INTO `shipping_methods` (`shipping_method_id`, `name`, `cost`, `estimated
 --
 
 DROP TABLE IF EXISTS `users`;
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
   `user_id` char(5) NOT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(50) NOT NULL,
@@ -583,7 +626,9 @@ CREATE TABLE `users` (
   `bank_name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
   `bank_account_number` varchar(20) DEFAULT NULL,
   `bank_account_name` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL,
-  `wallet_balance` decimal(15,2) DEFAULT 0.00
+  `wallet_balance` decimal(15,2) DEFAULT 0.00,
+  PRIMARY KEY (`user_id`),
+  UNIQUE KEY `username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -591,7 +636,7 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `password`, `fullname`, `email`, `phonenumber`, `address`, `verification_code`, `verification_code_expires_at`, `is_verified`, `role`, `status`, `created_at`, `total_orders`, `total_spend`, `bank_name`, `bank_account_number`, `bank_account_name`, `wallet_balance`) VALUES
-('U01', 'admin', 'admin123', 'Quản Trị Viên', 'admin@ntk.vn', '334275834', 'Kho tổng HCM', NULL, NULL, 1, 1, 1, '2024-01-01 00:00:00', 0, 0.00, 'Vietcombank', '1012233445', 'QUAN TRI VIEN', 150000.00),
+('U01', 'admin', '0192023a7bbd73250516f069df18b500', 'Quản Trị Viên', 'admin@ntk.vn', '334275834', 'Kho tổng HCM', NULL, NULL, 1, 1, 1, '2024-01-01 00:00:00', 0, 0.00, 'Vietcombank', '1012233445', 'QUAN TRI VIEN', 150000.00),
 ('U02', 'nguyenvana', 'pass123', 'Nguyễn Văn A', 'ana@gmail.com', '375788987', '123 Lê Lợi, Q1, HCM', NULL, NULL, 0, 1, 1, '2024-01-15 00:00:00', 5, 2500000.00, 'MB Bank', '987654321', 'NGUYEN VAN A', 50000.00),
 ('U03', 'tranthib', 'pass123', 'Trần Thị B', 'bib@gmail.com', '964326512', '45 Cầu Giấy, Hà Nội', NULL, NULL, 0, 0, 1, '2024-02-10 00:00:00', 2, 850000.00, 'Techcombank', '19033445566', 'TRAN THI B', 0.00),
 ('U04', 'lethic', 'pass123', 'Lê Thị C', 'cic@gmail.com', '901239876', '10 Nguyễn Trãi, Q5', NULL, NULL, 0, 1, 0, '2024-03-05 00:00:00', 0, 0.00, 'VietinBank', '1028877665', 'LE THI C', 250000.00),
@@ -622,8 +667,8 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `fullname`, `email`, `ph
 --
 
 DROP TABLE IF EXISTS `user_addresses`;
-CREATE TABLE `user_addresses` (
-  `address_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `user_addresses` (
+  `address_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` char(5) NOT NULL,
   `recipient_name` varchar(100) NOT NULL DEFAULT '',
   `phone` varchar(20) NOT NULL DEFAULT '',
@@ -633,8 +678,10 @@ CREATE TABLE `user_addresses` (
   `province` varchar(100) NOT NULL DEFAULT '',
   `note` text DEFAULT NULL,
   `is_default` tinyint(1) NOT NULL DEFAULT 0,
-  `created_at` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`address_id`),
+  KEY `user_id` (`user_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user_addresses`
@@ -670,15 +717,18 @@ INSERT INTO `user_addresses` (`address_id`, `user_id`, `recipient_name`, `phone`
 --
 
 DROP TABLE IF EXISTS `wallet_transactions`;
-CREATE TABLE `wallet_transactions` (
-  `transaction_id` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `wallet_transactions` (
+  `transaction_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` char(5) DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL,
   `transaction_type` int(11) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
   `related_order_id` char(5) DEFAULT NULL,
-  `created_at` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  `created_at` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`transaction_id`),
+  KEY `fk_wt_user` (`user_id`),
+  KEY `fk_wt_order` (`related_order_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `wallet_transactions`
@@ -729,11 +779,14 @@ INSERT INTO `wallet_transactions` (`transaction_id`, `user_id`, `amount`, `trans
 --
 
 DROP TABLE IF EXISTS `wishlist`;
-CREATE TABLE `wishlist` (
+CREATE TABLE IF NOT EXISTS `wishlist` (
   `wishlist_id` char(5) NOT NULL,
   `user_id` char(5) DEFAULT NULL,
   `product_id` char(5) DEFAULT NULL,
-  `added_date` datetime DEFAULT current_timestamp()
+  `added_date` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`wishlist_id`),
+  KEY `fk_wish_user` (`user_id`),
+  KEY `fk_wish_prod` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -751,122 +804,6 @@ INSERT INTO `wishlist` (`wishlist_id`, `user_id`, `product_id`, `added_date`) VA
 ('W478', 'U3237', 'T09', '2026-04-19 19:49:50'),
 ('W684', 'U3237', 'T08', '2026-04-19 19:50:51'),
 ('W897', 'U3237', 'C03', '2026-04-19 19:49:44');
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `cart`
---
-ALTER TABLE `cart`
-  ADD PRIMARY KEY (`cart_id`),
-  ADD KEY `fk_cart_user` (`user_id`),
-  ADD KEY `fk_cart_variant` (`variant_id`);
-
---
--- Indexes for table `categories`
---
-ALTER TABLE `categories`
-  ADD PRIMARY KEY (`category_id`);
-
---
--- Indexes for table `coupons`
---
-ALTER TABLE `coupons`
-  ADD PRIMARY KEY (`coupon_id`),
-  ADD UNIQUE KEY `code` (`code`);
-
---
--- Indexes for table `orders`
---
-ALTER TABLE `orders`
-  ADD PRIMARY KEY (`order_id`),
-  ADD KEY `fk_order_user` (`user_id`),
-  ADD KEY `fk_order_coupon` (`coupon_id`),
-  ADD KEY `fk_order_ship` (`shipping_method_id`);
-
---
--- Indexes for table `order_details`
---
-ALTER TABLE `order_details`
-  ADD PRIMARY KEY (`detail_id`),
-  ADD KEY `fk_detail_order` (`order_id`),
-  ADD KEY `fk_detail_variant` (`variant_id`);
-
---
--- Indexes for table `products`
---
-ALTER TABLE `products`
-  ADD PRIMARY KEY (`product_id`),
-  ADD KEY `fk_prod_cat` (`category_id`);
-
---
--- Indexes for table `product_variants`
---
-ALTER TABLE `product_variants`
-  ADD PRIMARY KEY (`variant_id`),
-  ADD KEY `fk_variant_prod` (`product_id`);
-
---
--- Indexes for table `reviews`
---
-ALTER TABLE `reviews`
-  ADD PRIMARY KEY (`review_id`),
-  ADD KEY `fk_rev_user` (`user_id`),
-  ADD KEY `fk_rev_prod` (`product_id`);
-
---
--- Indexes for table `shipping_methods`
---
-ALTER TABLE `shipping_methods`
-  ADD PRIMARY KEY (`shipping_method_id`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`user_id`),
-  ADD UNIQUE KEY `username` (`username`);
-
---
--- Indexes for table `user_addresses`
---
-ALTER TABLE `user_addresses`
-  ADD PRIMARY KEY (`address_id`),
-  ADD KEY `user_id` (`user_id`);
-
---
--- Indexes for table `wallet_transactions`
---
-ALTER TABLE `wallet_transactions`
-  ADD PRIMARY KEY (`transaction_id`),
-  ADD KEY `fk_wt_user` (`user_id`),
-  ADD KEY `fk_wt_order` (`related_order_id`);
-
---
--- Indexes for table `wishlist`
---
-ALTER TABLE `wishlist`
-  ADD PRIMARY KEY (`wishlist_id`),
-  ADD KEY `fk_wish_user` (`user_id`),
-  ADD KEY `fk_wish_prod` (`product_id`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `user_addresses`
---
-ALTER TABLE `user_addresses`
-  MODIFY `address_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
-
---
--- AUTO_INCREMENT for table `wallet_transactions`
---
-ALTER TABLE `wallet_transactions`
-  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 --
 -- Constraints for dumped tables
@@ -893,10 +830,16 @@ ALTER TABLE `orders`
 ALTER TABLE `order_details`
   ADD CONSTRAINT `fk_detail_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
   ADD CONSTRAINT `fk_detail_variant` FOREIGN KEY (`variant_id`) REFERENCES `product_variants` (`variant_id`);
+
+--
+-- Constraints for table `order_returns`
+--
+ALTER TABLE `order_returns`
+  ADD CONSTRAINT `order_returns_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`),
+  ADD CONSTRAINT `order_returns_ibfk_2` FOREIGN KEY (`detail_id`) REFERENCES `order_details` (`detail_id`);
 SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-SET FOREIGN_KEY_CHECKS=1;
