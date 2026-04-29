@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 25, 2026 at 10:26 AM
+-- Generation Time: Apr 29, 2026 at 10:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -55,8 +55,7 @@ INSERT INTO `cart` (`cart_id`, `user_id`, `variant_id`, `quantity`, `session_id`
 ('C0005', NULL, 'V015', 3, 'sess_998877abc', 0),
 ('C0006', NULL, 'V041', 1, 'sess_998877abc', 0),
 ('C0007', 'U14', 'V011', 1, NULL, 0),
-('C0008', 'U17', 'V003', 2, NULL, 1),
-('C0009', 'U3237', 'V165', 1, NULL, 1);
+('C0008', 'U17', 'V003', 2, NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -120,11 +119,12 @@ CREATE TABLE IF NOT EXISTS `coupons` (
 --
 
 INSERT INTO `coupons` (`coupon_id`, `code`, `discount_type`, `discount_value`, `min_order_value`, `start_date`, `end_date`, `max_discount_amount`, `quantity`, `used_count`, `status`) VALUES
-('CP01', 'WELCOME', 0, 10.00, 250000.00, '2024-01-01 00:00:00', '2025-01-01 00:00:00', 30000.00, 1000, 25, 1),
-('CP02', 'FREESHIP', 1, 20000.00, 200000.00, '2024-01-01 00:00:00', '2024-06-30 00:00:00', NULL, 500, 33, 1),
-('CP03', 'SALE', 0, 10.00, 500000.00, '2024-06-01 00:00:00', '2024-06-07 00:00:00', 50000.00, 100, 56, 0),
-('CP04', 'TET', 1, 50000.00, 1000000.00, '2025-01-01 00:00:00', '2025-02-01 00:00:00', NULL, 50, 78, 0),
-('CP05', 'NTK', 0, 10.00, 2000000.00, '2024-11-11 00:00:00', '2024-12-11 00:00:00', 200000.00, 20, 23, 1);
+('CP01', 'WELCOME', 0, 10.00, 250000.00, '2026-01-01 00:00:00', '2027-01-01 00:00:00', 30000.00, 1000, 25, 1),
+('CP02', 'FREESHIP', 1, 20000.00, 200000.00, '2024-01-01 00:00:00', '2027-06-30 00:00:00', NULL, 500, 33, 1),
+('CP03', 'SALE', 0, 10.00, 500000.00, '2024-06-01 00:00:00', '2027-06-07 00:00:00', 50000.00, 100, 56, 0),
+('CP04', 'TET', 1, 50000.00, 1000000.00, '2025-01-01 00:00:00', '2027-02-01 00:00:00', NULL, 50, 78, 0),
+('CP05', 'NTK', 0, 10.00, 2000000.00, '2024-11-11 00:00:00', '2024-12-11 00:00:00', 200000.00, 20, 23, 1),
+('CP111', '30/4', 0, 20.00, 200000.00, NULL, '2026-05-30 00:00:00', NULL, 100, 0, 1);
 
 -- --------------------------------------------------------
 
@@ -176,13 +176,18 @@ INSERT INTO `orders` (`order_id`, `payos_order_code`, `payos_qr_code`, `user_id`
 ('O0010', 2604207687, NULL, 'U3237', '2026-04-20 21:47:35', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 375000.00, 35000.00, NULL, NULL, 1, 375000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('O0011', 2604205924, NULL, 'U3237', '2026-04-20 21:47:53', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 5, 205000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('O0013', 2604201477, NULL, 'U3237', '2026-04-20 21:49:21', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 4, 205000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
-('O0015', 2604204885, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CS8TZRFQK86 NTK O00156304F2EA', 'U3237', '2026-04-20 21:50:09', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 5, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/6a3d5ff0f80e48f58b4aea3293b9d897'),
+('O0015', 2604204885, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CS8TZRFQK86 NTK O00156304F2EA', 'U3237', '2026-04-20 21:50:09', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 4, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/6a3d5ff0f80e48f58b4aea3293b9d897'),
 ('O0016', 2604204002, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CSUO0FD6OD1 NTK O00166304DFA1', 'U3237', '2026-04-20 21:56:42', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 4, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/70757ae94f3b4662aaff59c5886414ed'),
 ('O0017', 2604206761, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454062050005802VN62250821CS4XA6E4IC7 NTK O00176304A22A', 'U3237', '2026-04-20 23:16:22', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 205000.00, 35000.00, NULL, NULL, 1, 205000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/f6e1212dfce64199b0a3857c29e6ca6d'),
 ('O0019', 2604204756, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA53037045405350005802VN62250821CSOXH6HVWS2 NTK O001963042306', 'U3237', '2026-04-20 23:18:38', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 35000.00, 35000.00, NULL, NULL, 4, 35000.00, 1, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/8a09a86005bf40f7a77d0dd1119d0be3'),
 ('O0020', 2604212219, NULL, 'U3237', '2026-04-21 12:25:30', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 375000.00, 35000.00, NULL, NULL, 3, 375000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('O0022', 2604225406, NULL, 'U3237', '2026-04-22 08:36:00', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 290000.00, 35000.00, NULL, NULL, 4, 0.00, 1, 2, NULL, NULL, 290000.00, '', NULL),
 ('O0023', 2604225255, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454063750005802VN62250821CSXVN4FNFO0 NTK O00236304D767', 'U3237', '2026-04-22 20:29:46', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 375000.00, 35000.00, NULL, NULL, 3, 375000.00, 0, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/e4ea152ddcb04eb3aee7702c7921ebeb'),
+('O0024', 2604282610, NULL, 'U3237', '2026-04-28 16:05:13', 'Tram Nguyen', '0373546431', 'Hồ Chí Minh', 392000.00, 35000.00, NULL, NULL, 1, 392000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
+('O0025', 2604287810, '00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA5303704540712250005802VN62250821CSJ0L4NY9L5 NTK O002563041D5E', 'U5872', '2026-04-28 22:00:19', 'lau', '0329848845', 'xóm vườn ươm, Ia Yok, Ia Grai, Gia Lai', 1225000.00, 35000.00, NULL, NULL, 0, 1225000.00, 0, 2, NULL, NULL, 0.00, '', 'https://pay.payos.vn/web/32362adfd3b44854b059af3d8da3990e'),
+('O0026', 2604286571, NULL, 'U5872', '2026-04-28 22:05:00', 'lau', '0329848845', 'Gia Lai', 375000.00, 35000.00, NULL, NULL, 1, 375000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
+('O0027', 2604281774, NULL, 'U5872', '2026-04-28 22:42:25', 'lau', '0329848845', 'Gia Lai', 460000.00, 35000.00, NULL, NULL, 1, 460000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
+('O0028', 2604295758, NULL, 'U5872', '2026-04-29 15:10:48', 'lau', '0329848845', 'Gia Lai', 749000.00, 35000.00, NULL, 0.00, 1, 749000.00, 0, 1, NULL, NULL, 0.00, '', NULL),
 ('ORD01', NULL, NULL, 'U02', '2025-01-10 00:00:00', 'Nguyễn Văn A', '0375788987', '123 Lê Lợi, Q1, HCM', 450000.00, 30000.00, 'S01', 30000.00, 0, 450000.00, 0, 0, 'CP01', 'ORD01-U02-TN', 0.00, NULL, NULL),
 ('ORD02', NULL, NULL, 'U03', '2025-01-15 00:00:00', 'Trần Thị B', '0964326512', '45 Cầu Giấy, Hà Nội', 300000.00, 30000.00, 'S02', 30000.00, 1, 300000.00, 0, 0, 'CP02', 'ORD02-U03-TN', 100000.00, NULL, NULL),
 ('ORD03', NULL, NULL, 'U05', '2025-02-01 00:00:00', 'Hoàng Long', '0987654321', '15 Lê Duẩn, Đà Nẵng', 800000.00, 30000.00, 'S03', 30000.00, 2, 800000.00, 0, 1, 'CP03', 'ORD03-U05-TN', 0.00, NULL, NULL),
@@ -237,6 +242,15 @@ INSERT INTO `order_details` (`detail_id`, `order_id`, `variant_id`, `quantity`, 
 ('D0023', 'O0020', 'V165', 2, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
 ('D0025', 'O0022', 'V167', 1, 255000.00, NULL, 0, 'Áo Len Kẻ Sọc Thu Đông', NULL),
 ('D0026', 'O0023', 'V165', 2, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
+('D0027', 'O0024', 'V165', 1, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
+('D0028', 'O0024', 'V034', 1, 187000.00, NULL, 0, 'Áo babytee đứng form', NULL),
+('D0029', 'O0025', 'V025', 3, 340000.00, NULL, 0, 'Áo babytee chấm bi', NULL),
+('D0030', 'O0025', 'V165', 1, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
+('D0031', 'O0026', 'V165', 2, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
+('D0032', 'O0027', 'V165', 1, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
+('D0033', 'O0027', 'V167', 1, 255000.00, NULL, 0, 'Áo Len Kẻ Sọc Thu Đông', NULL),
+('D0034', 'O0028', 'V165', 2, 170000.00, NULL, 0, 'Áo Len Cổ Tròn Lông Thỏ', NULL),
+('D0035', 'O0028', 'V033', 1, 374000.00, NULL, 0, 'Áo babytee đứng form', NULL),
 ('DT001', 'ORD01', 'V001', 1, 159000.00, 'Áo rất đẹp, chất vải co giãn tốt!', 0, NULL, NULL),
 ('DT002', 'ORD01', 'V051', 1, 289000.00, 'Vải dày dặn, ấm áp.', 0, NULL, NULL),
 ('DT003', 'ORD02', 'V072', 1, 189000.00, 'Mặc rất tôn dáng.', 0, NULL, NULL),
@@ -639,7 +653,7 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `fullname`, `email`, `ph
 ('U01', 'admin', '0192023a7bbd73250516f069df18b500', 'Quản Trị Viên', 'admin@ntk.vn', '334275834', 'Kho tổng HCM', NULL, NULL, 1, 1, 1, '2024-01-01 00:00:00', 0, 0.00, 'Vietcombank', '1012233445', 'QUAN TRI VIEN', 150000.00),
 ('U02', 'nguyenvana', 'pass123', 'Nguyễn Văn A', 'ana@gmail.com', '375788987', '123 Lê Lợi, Q1, HCM', NULL, NULL, 0, 1, 1, '2024-01-15 00:00:00', 5, 2500000.00, 'MB Bank', '987654321', 'NGUYEN VAN A', 50000.00),
 ('U03', 'tranthib', 'pass123', 'Trần Thị B', 'bib@gmail.com', '964326512', '45 Cầu Giấy, Hà Nội', NULL, NULL, 0, 0, 1, '2024-02-10 00:00:00', 2, 850000.00, 'Techcombank', '19033445566', 'TRAN THI B', 0.00),
-('U04', 'lethic', 'pass123', 'Lê Thị C', 'cic@gmail.com', '901239876', '10 Nguyễn Trãi, Q5', NULL, NULL, 0, 1, 0, '2024-03-05 00:00:00', 0, 0.00, 'VietinBank', '1028877665', 'LE THI C', 250000.00),
+('U04', 'lethic', 'pass123', 'Lê Thị C', 'cic@gmail.com', '901239876', '10 Nguyễn Trãi, Q5', NULL, NULL, 0, 1, 1, '2024-03-05 00:00:00', 0, 0.00, 'VietinBank', '1028877665', 'LE THI C', 250000.00),
 ('U05', 'hoanglong', 'pass123', 'Hoàng Long', 'longh@gmail.com', '987654321', '15 Lê Duẩn, Đà Nẵng', NULL, NULL, 0, 1, 1, '2024-03-20 00:00:00', 12, 15000000.00, 'BIDV', '21510001234', 'HOANG LONG', 1000000.00),
 ('U06', 'thanhthuy', 'pass123', 'Nguyễn Thanh Thúy', 'thuynt@gmail.com', '912345678', '88 Nguyễn Huệ, Q1, HCM', NULL, NULL, 0, 0, 1, '2024-04-12 00:00:00', 1, 450000.00, 'ACB', '77889955', 'NGUYEN THANH THUY', 0.00),
 ('U07', 'minhquan', 'pass123', 'Phạm Minh Quân', 'quanpm@gmail.com', '905112233', '12 Trần Phú, Hải Phòng', NULL, NULL, 0, 1, 1, '2024-05-01 00:00:00', 8, 6200000.00, 'TPBank', '4455667701', 'PHAM MINH QUAN', 120000.00),
@@ -654,11 +668,12 @@ INSERT INTO `users` (`user_id`, `username`, `password`, `fullname`, `email`, `ph
 ('U16', 'camtu', 'pass123', 'Lý Cẩm Tú', 'tulc@gmail.com', '933445566', '09 Lê Lợi, TP Vinh', NULL, NULL, 0, 1, 1, '2024-10-08 00:00:00', 6, 4200000.00, 'SeABank', '123456', 'LY CAM TU', 450000.00),
 ('U17', 'nhatminh', 'pass123', 'Vũ Nhật Minh', 'minhvn@gmail.com', '955667788', '22 Điện Biên Phủ, Đà Nẵng', NULL, NULL, 0, 1, 1, '2024-10-25 00:00:00', 10, 8900000.00, 'OCB', '41000123', 'VU NHAT MINH', 15000.00),
 ('U18', 'phuongthao', 'pass123', 'Chu Phương Thảo', 'thaocp@gmail.com', '977112233', '412 Trường Chinh, Tân Bình, HCM', NULL, NULL, 0, 1, 1, '2024-11-12 00:00:00', 3, 1150000.00, 'LienVietPostBank', '223344556', 'CHU PHUONG THAO', 0.00),
-('U19', 'huynhanh', 'pass123', 'Lê Huỳnh Anh', 'anhlh@gmail.com', '900223344', '89 Nguyễn Trãi, Thanh Xuân, HN', NULL, NULL, 0, 1, 1, '2024-11-30 00:00:00', 5, 2750000.00, 'Nam A Bank', '3010223344', 'LE HUYNH ANH', 75000.00),
+('U19', 'huynhanh', 'pass123', 'Lê Huỳnh Anh', 'anhlh@gmail.com', '900223344', '89 Nguyễn Trãi, Thanh Xuân, HN', NULL, NULL, 0, 1, 0, '2024-11-30 00:00:00', 5, 2750000.00, 'Nam A Bank', '3010223344', 'LE HUYNH ANH', 75000.00),
 ('U20', 'lamminh', 'pass123', 'Lâm Khải Minh', 'lminh@gmail.com', '335378609', 'Trần Đại Nghĩa, Dĩ An, Bình Dương', NULL, NULL, 1, 0, 0, '2024-11-30 00:00:00', 3, 400000.00, 'Eximbank', '20001484123', 'LAM KHAI MINH', 0.00),
 ('U3237', 'nguyenthithuytram03062006gl@gmail.com', '8de7d4ce14a6925213c332d32906b880', 'Tram Nguyen', 'nguyenthithuytram03062006gl@gmail.com', '0373546431', NULL, NULL, NULL, 1, 0, 1, '2026-04-08 16:11:12', 0, 0.00, NULL, NULL, NULL, 820000.00),
 ('U3768', 'test@gmail.com', '482c811da5d5b4bc6d497ffa98491e38', 'Test User', 'test@gmail.com', '0900000001', NULL, '3192', NULL, 0, 0, 1, '2026-04-19 20:20:34', 0, 0.00, NULL, NULL, NULL, 0.00),
-('U5655', 'test@test.com', '25d55ad283aa400af464c76d713c07ad', 'Tester', 'test@test.com', '0123456789', NULL, '2663', NULL, 0, 0, 1, '2026-04-19 20:27:01', 0, 0.00, NULL, NULL, NULL, 0.00);
+('U5655', 'test@test.com', '25d55ad283aa400af464c76d713c07ad', 'Tester', 'test@test.com', '0123456789', NULL, '2663', NULL, 0, 0, 1, '2026-04-19 20:27:01', 0, 0.00, NULL, NULL, NULL, 0.00),
+('U5872', 'phamlau488@gmail.com', '827ccb0eea8a706c4c34a16891f84e7b', 'lau', 'phamlau488@gmail.com', '0329848845', NULL, NULL, NULL, 1, 0, 1, '2026-04-28 21:34:09', 0, 0.00, NULL, NULL, NULL, 0.00);
 
 -- --------------------------------------------------------
 
@@ -681,7 +696,7 @@ CREATE TABLE IF NOT EXISTS `user_addresses` (
   `created_at` datetime DEFAULT current_timestamp(),
   PRIMARY KEY (`address_id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user_addresses`
@@ -708,7 +723,8 @@ INSERT INTO `user_addresses` (`address_id`, `user_id`, `recipient_name`, `phone`
 (18, 'U18', 'Chu Phương Thảo', '977112233', '412 Trường Chinh, Tân Bình, HCM', '', '', '', NULL, 1, '2026-04-19 20:51:06'),
 (19, 'U19', 'Lê Huỳnh Anh', '900223344', '89 Nguyễn Trãi, Thanh Xuân, HN', '', '', '', NULL, 1, '2026-04-19 20:51:06'),
 (20, 'U20', 'Lâm Khải Minh', '335378609', 'Trần Đại Nghĩa, Dĩ An, Bình Dương', '', '', '', NULL, 1, '2026-04-19 20:51:06'),
-(32, 'U3237', 'Tram Nguyen', '0373546431', 'Phường Dĩ An Thành phố Hồ Chí Minh', 'Linh Đông', 'Thủ Đức', 'Hồ Chí Minh', NULL, 0, '2026-04-19 20:57:19');
+(32, 'U3237', 'Tram Nguyen', '0373546431', 'Phường Dĩ An Thành phố Hồ Chí Minh', 'Linh Đông', 'Thủ Đức', 'Hồ Chí Minh', NULL, 0, '2026-04-19 20:57:19'),
+(33, 'U5872', 'lau', '0329848845', 'xóm vườn ươm', 'Ia Yok', 'Ia Grai', 'Gia Lai', NULL, 1, '2026-04-28 22:00:19');
 
 -- --------------------------------------------------------
 
