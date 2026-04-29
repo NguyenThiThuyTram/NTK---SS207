@@ -4,28 +4,26 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// 2. Gọi file kết nối Database (dùng __DIR__ để đường dẫn luôn đúng dù đứng ở trang nào)
+// 2. Gọi file kết nối Database
 require_once __DIR__ . '/../config/database.php';
 
-// 3. Đếm số lượng sản phẩm trong giỏ hàng (Cộng dồn số lượng 'quantity')
+// 3. Đếm số lượng sản phẩm trong giỏ hàng
 $cart_count = 0;
 try {
     if (isset($_SESSION['user_id'])) {
-        // Đếm cho khách ĐÃ đăng nhập (dựa vào user_id)
         $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM Cart WHERE user_id = :user_id");
         $stmt->execute(['user_id' => $_SESSION['user_id']]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $cart_count = $row['total_items'] ? $row['total_items'] : 0;
+        $cart_count = $row['total_items'] ?: 0;
     } else {
-        // Đếm cho khách CHƯA đăng nhập (dựa vào session_id)
         $session_id = session_id();
         $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM Cart WHERE session_id = :session_id AND user_id IS NULL");
         $stmt->execute(['session_id' => $session_id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $cart_count = $row['total_items'] ? $row['total_items'] : 0;
+        $cart_count = $row['total_items'] ?: 0;
     }
 } catch (PDOException $e) {
-    $cart_count = 0; // Nếu có lỗi thì cho về 0
+    $cart_count = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -37,143 +35,83 @@ try {
     <title>NTK Fashion</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <style>
         /* ============================================================
-           USER DARK MODE
+           USER DARK MODE - PHIÊN BẢN NỔI BẬT CHỮ
         ============================================================ */
         body.dark-mode {
-            background-color: #111 !important;
-            color: #ddd !important;
-        }
-        body.dark-mode .main-header {
-            background: #1a1a1a !important;
-            border-bottom-color: #2a2a2a !important;
-        }
-        body.dark-mode .main-header a,
-        body.dark-mode .navbar a,
-        body.dark-mode .header-icons a {
-            color: #ccc !important;
-        }
-        body.dark-mode .navbar a:hover,
-        body.dark-mode .navbar a.active {
-            color: #fff !important;
-        }
-        body.dark-mode .main-content,
-        body.dark-mode main {
-            background-color: #111 !important;
-        }
-        body.dark-mode footer,
-        body.dark-mode .footer {
-            background: #1a1a1a !important;
-            color: #aaa !important;
-        }
-        body.dark-mode footer a,
-        body.dark-mode .footer a {
-            color: #888 !important;
-        }
-        body.dark-mode footer a:hover {
-            color: #ddd !important;
-        }
-        /* Product cards */
-        body.dark-mode .product-card,
-        body.dark-mode .card {
-            background: #1e1e1e !important;
-            border-color: #2a2a2a !important;
-        }
-        body.dark-mode .product-card h3,
-        body.dark-mode .product-card .name,
-        body.dark-mode .product-card p {
-            color: #ccc !important;
-        }
-        /* Inputs & Forms */
-        body.dark-mode input,
-        body.dark-mode select,
-        body.dark-mode textarea {
-            background: #1e1e1e !important;
-            border-color: #333 !important;
-            color: #ddd !important;
-        }
-        body.dark-mode input::placeholder,
-        body.dark-mode textarea::placeholder {
-            color: #666 !important;
-        }
-        /* Search bar */
-        body.dark-mode .search-bar-container {
-            background: #1a1a1a !important;
-            border-color: #2a2a2a !important;
-        }
-        /* Cart, checkout */
-        body.dark-mode .cart-table,
-        body.dark-mode .checkout-right {
-            background: #1e1e1e !important;
-            border-color: #2a2a2a !important;
-        }
-        body.dark-mode .checkout-right {
-            background-color: #1a1a1a !important;
-            border-color: #2a2a2a !important;
-        }
-        body.dark-mode .sum-total-row,
-        body.dark-mode .sum-row {
-            color: #ccc !important;
-        }
-        body.dark-mode .sum-total-row { border-top-color: #2a2a2a !important; }
-        body.dark-mode .sum-wallet-box {
-            border-color: #2a2a2a !important;
-        }
-        body.dark-mode .method-box {
-            border-color: #2a2a2a !important;
-            background: #1e1e1e !important;
-            color: #ddd !important;
-        }
-        body.dark-mode .method-name { color: #eee !important; }
-        body.dark-mode .method-desc,
-        body.dark-mode .sum-note { color: #888 !important; }
-        body.dark-mode .checkout-stepper {
-            border-bottom-color: #2a2a2a !important;
-        }
-        body.dark-mode .step-indicator.active { color: #eee !important; }
-        body.dark-mode .step-line { background-color: #333 !important; }
-        body.dark-mode .btn-back {
-            background: #1e1e1e !important;
-            border-color: #333 !important;
-            color: #ccc !important;
+            background-color: #121212 !important; /* Nền tối sâu */
+            color: #f5f5f5 !important; /* Chữ trắng sữa dễ đọc */
         }
 
-        /* Dark mode toggle button in header */
-        .dm-user-toggle {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 17px;
-            color: inherit;
-            display: inline-flex;
-            align-items: center;
-            padding: 0 4px;
-            transition: color 0.2s;
+        /* Làm nổi bật toàn bộ văn bản */
+        body.dark-mode p, body.dark-mode span, body.dark-mode li, 
+        body.dark-mode td, body.dark-mode th, body.dark-mode label {
+            color: #e0e0e0 !important;
         }
-        .dm-user-toggle:hover { opacity: 0.75; }
+
+        /* Tiêu đề trắng tinh khôi */
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+        body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
+        body.dark-mode strong, body.dark-mode b {
+            color: #ffffff !important;
+            text-shadow: 0 0 1px rgba(255,255,255,0.1);
+        }
+
+        /* Header & Navbar */
+        body.dark-mode .main-header {
+            background: #1a1a1a !important;
+            border-bottom: 1px solid #333 !important;
+        }
+        body.dark-mode .navbar a, body.dark-mode .header-icons a {
+            color: #f5f5f5 !important;
+        }
+        body.dark-mode .navbar a:hover, body.dark-mode .navbar a.active {
+            color: #f1c40f !important; /* Màu vàng Gold đặc trưng */
+        }
+
+        /* Thẻ sản phẩm & Voucher */
+        body.dark-mode .product-card, body.dark-mode .card, 
+        body.dark-mode .voucher-item, body.dark-mode .coupon-suggest-item {
+            background: #1e1e1e !important;
+            border-color: #444 !important;
+        }
+
+        /* Input & Form */
+        body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+            background: #252525 !important;
+            border-color: #444 !important;
+            color: #fff !important;
+        }
+
+        /* Icon Dark mode khi bật */
+        body.dark-mode #dmUserIcon {
+            color: #f1c40f !important; /* Màu vàng cho mặt trời */
+        }
+
+        .dm-user-toggle {
+            background: none; border: none; cursor: pointer;
+            font-size: 18px; color: inherit; display: inline-flex;
+            align-items: center; padding: 0 8px; transition: 0.3s;
+        }
+        .dm-user-toggle:hover { transform: scale(1.1); }
     </style>
 
     <script>
-        /* Áp dụng dark mode NGAY trước khi render để tránh flash */
-        (function(){
-            if (localStorage.getItem('ntk_dark') === '1') {
-                document.documentElement.classList.add('dm-pre');
-            }
-        })();
+        // Kiểm tra dark mode ngay lập tức
+        if (localStorage.getItem('ntk_dark') === '1') {
+            document.documentElement.classList.add('dark-mode-init');
+        }
     </script>
-
 </head>
 
 <body>
 <script>
-    /* Chuyển class từ <html> sang <body> sau khi body tồn tại */
-    if (document.documentElement.classList.contains('dm-pre')) {
+    if (document.documentElement.classList.contains('dark-mode-init')) {
         document.body.classList.add('dark-mode');
-        document.documentElement.classList.remove('dm-pre');
+        document.documentElement.classList.remove('dark-mode-init');
     }
 </script>
 
@@ -181,78 +119,38 @@ try {
         <div class="header-container">
             <div class="logo">
                 <a href="index.php">
-                    <img src="assets/images/logo-ntk.png" alt="NTK Logo">
+                    <img src="assets/images/logo-ntk.png" alt="NTK Logo" id="mainLogo">
                 </a>
             </div>
 
-            <?php
-            // Lấy tên file hiện tại (ví dụ: product.php)
-            $current_page = basename($_SERVER['PHP_SELF']);
-            ?>
+            <?php $current_page = basename($_SERVER['PHP_SELF']); ?>
 
             <nav class="navbar">
                 <ul>
-                    <li>
-                        <a href="index.php" class="<?php echo ($current_page == 'index.php') ? 'active' : ''; ?>">Trang
-                            chủ</a>
-                    </li>
-                    <li>
-                        <a href="product.php"
-                            class="<?php echo ($current_page == 'product.php') ? 'active' : ''; ?>">Shop</a>
-                    </li>
-                    <li>
-                        <a href="wishlist.php"
-                            class="<?php echo ($current_page == 'wishlist.php') ? 'active' : ''; ?>">Yêu thích</a>
-                    </li>
-                    <li>
-                        <a href="promotion.php"
-                            class="<?php echo ($current_page == 'promotion.php') ? 'active' : ''; ?>">Promotion</a>
-                    </li>
+                    <li><a href="index.php" class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">Trang chủ</a></li>
+                    <li><a href="product.php" class="<?= ($current_page == 'product.php') ? 'active' : ''; ?>">Cửa hàng</a></li>
+                    <li><a href="wishlist.php" class="<?= ($current_page == 'wishlist.php') ? 'active' : ''; ?>">Yêu thích</a></li>
+                    <li><a href="promotion.php" class="<?= ($current_page == 'promotion.php') ? 'active' : ''; ?>">Khuyến mãi</a></li>
                 </ul>
             </nav>
 
-            <div class="search-bar-container" id="searchBar" style="display: none;">
-                <form action="search.php" method="GET" class="search-form">
-                    <button type="submit" class="submit-search"><i class="fa-solid fa-magnifying-glass"></i></button>
-
-                    <input type="text" name="q" placeholder="Bạn đang tìm kiếm gì?..." required>
-
-                    <button type="button" class="close-search" onclick="toggleSearch()"><i
-                            class="fa-solid fa-xmark"></i></button>
-                </form>
-            </div>
-
             <div class="header-icons">
                 <a href="javascript:void(0)" onclick="toggleSearch()"><i class="fa-solid fa-magnifying-glass"></i></a>
-                <a href="wishlist.php"><i class="fa-regular fa-heart"></i></a>
-
-
-
+                
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <?php if (($_SESSION['role'] ?? 0) == 1): ?>
-                        <!-- Admin → vào Admin Dashboard -->
-                        <a href="admin/dashboard.php" title="Quản trị Admin">
-                            <i class="fa-solid fa-user-gear"></i>
-                        </a>
-                    <?php else: ?>
-                        <!-- User thường → vào User Dashboard -->
-                        <a href="views/user/dashboard.php" title="Tài khoản của tôi">
-                            <i class="fa-solid fa-user"></i>
-                        </a>
-                    <?php endif; ?>
+                    <a href="<?= ($_SESSION['role'] == 1) ? 'admin/dashboard.php' : 'views/user/dashboard.php'; ?>" title="Tài khoản">
+                        <i class="<?= ($_SESSION['role'] == 1) ? 'fa-solid fa-user-gear' : 'fa-solid fa-user'; ?>"></i>
+                    </a>
                 <?php else: ?>
                     <a href="views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>
 
                 <a href="cart.php" class="cart-icon">
                     <i class="fa-solid fa-bag-shopping"></i>
-                    <?php if ($cart_count > 0): ?>
-                        <span class="cart-count"><?php echo $cart_count; ?></span>
-                    <?php endif; ?>
+                    <?php if ($cart_count > 0): ?><span class="cart-count"><?= $cart_count; ?></span><?php endif; ?>
                 </a>
 
-                <!-- Dark mode toggle -->
-                <button class="dm-user-toggle" id="dmUserToggle" onclick="toggleUserDark()" title="Bật/tắt chế độ tối">
+                <button class="dm-user-toggle" id="dmUserToggle" onclick="toggleUserDark()">
                     <i class="fa-regular fa-moon" id="dmUserIcon"></i>
                 </button>
             </div>
@@ -261,32 +159,35 @@ try {
 
     <main class="main-content">
 
-        <script>
-            function toggleSearch() {
-                var searchBar = document.getElementById("searchBar");
-                if (searchBar.style.display === "none") {
-                    searchBar.style.display = "block";
-                    searchBar.querySelector("input").focus();
-                } else {
-                    searchBar.style.display = "none";
-                }
-            }
+    <script>
+        function toggleUserDark() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('ntk_dark', isDark ? '1' : '0');
+            updateDmUserIcon(isDark);
+        }
 
-            // ── USER DARK MODE ──────────────────────────────────────
-            function toggleUserDark() {
-                const isDark = document.body.classList.toggle('dark-mode');
-                localStorage.setItem('ntk_dark', isDark ? '1' : '0');
-                updateDmUserIcon(isDark);
+        function updateDmUserIcon(isDark) {
+            const icon = document.getElementById('dmUserIcon');
+            const logo = document.getElementById('mainLogo');
+            if (!icon) return;
+
+            if (isDark) {
+                icon.className = 'fa-solid fa-sun'; // Mặt trời vàng
+                if(logo) logo.style.filter = 'brightness(0) invert(1)'; // Đổi logo sang trắng nếu cần
+            } else {
+                icon.className = 'fa-regular fa-moon'; // Mặt trăng tối
+                if(logo) logo.style.filter = 'none';
             }
-            function updateDmUserIcon(isDark) {
-                const icon = document.getElementById('dmUserIcon');
-                const btn  = document.getElementById('dmUserToggle');
-                if (!icon) return;
-                icon.className = isDark ? 'fa-solid fa-sun' : 'fa-regular fa-moon';
-                btn.title = isDark ? 'Tắt chế độ tối' : 'Bật chế độ tối';
-            }
-            // Sync icon on load
-            document.addEventListener('DOMContentLoaded', function(){
-                updateDmUserIcon(document.body.classList.contains('dark-mode'));
-            });
-        </script>
+        }
+
+        // Chạy ngay khi load trang để đồng bộ icon
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDmUserIcon(document.body.classList.contains('dark-mode'));
+        });
+
+        function toggleSearch() {
+            // Giữ nguyên logic search của Bee
+            const sb = document.getElementById("searchBar");
+            if(sb) sb.style.display = (sb.style.display === "none") ? "block" : "none";
+        }
+    </script>

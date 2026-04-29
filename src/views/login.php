@@ -108,6 +108,8 @@
                             strpos($referer, 'verify_otp.php') === false &&
                             strpos($referer, 'login.php') === false) {
                             $redirect_url = $referer;
+
+                            
                         }
                     }
                 ?>

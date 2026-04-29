@@ -289,7 +289,7 @@ try {
         <div class="menu-section-title">Tài khoản</div>
         <ul class="sidebar-menu">
             <li><a href="dashboard.php?view=hoso"       class="<?= $view=='hoso'      ?'active':'' ?>"><i class="fa-regular fa-user"></i>Hồ sơ</a></li>
-            <li><a href="dashboard.php?view=nganhang"   class="<?= $view=='nganhang'  ?'active':'' ?>"><i class="fa-solid fa-building-columns"></i>Ngân hàng</a></li>
+            
             <li><a href="dashboard.php?view=diachi"     class="<?= $view=='diachi'    ?'active':'' ?>"><i class="fa-solid fa-location-dot"></i>Địa chỉ</a></li>
             <li><a href="dashboard.php?view=doimatkhau" class="<?= $view=='doimatkhau'?'active':'' ?>"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a></li>
             <li><a href="dashboard.php?view=caidat"     class="<?= $view=='caidat'    ?'active':'' ?>"><i class="fa-solid fa-gear"></i>Cài đặt thông báo</a></li>

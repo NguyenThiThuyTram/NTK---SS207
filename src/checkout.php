@@ -33,6 +33,25 @@ $stmt_user = $conn->prepare("SELECT * FROM Users WHERE user_id = :uid");
 $stmt_user->execute(['uid' => $user_id]);
 $user_info = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
+// Lấy danh sách Voucher còn hạn và còn số lượng
+$today = date('Y-m-d H:i:s');
+$sql_coupons = "SELECT * FROM coupons 
+                WHERE status = 1 
+                AND end_date >= :today 
+                AND quantity > used_count 
+                ORDER BY discount_value DESC";
+$stmt_cp = $conn->prepare($sql_coupons);
+$stmt_cp->execute(['today' => $today]);
+$coupons = $stmt_cp->fetchAll(PDO::FETCH_ASSOC);
+
+// Tính toán tiền tạm tính ban đầu để JS xử lý
+$subtotal = 0;
+foreach ($checkout_items as $item) {
+    $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
+    $subtotal += $price * $item['quantity'];
+}
+$shipping_fee = 30000; // Phí ship mặc định của Bee
+
 // 2. Tính toán cơ bản
 $subtotal = 0;
 foreach ($checkout_items as $item) {
@@ -65,7 +84,8 @@ try {
         WHERE status = 1
           AND (start_date IS NULL OR start_date <= NOW())
           AND (end_date IS NULL OR end_date >= NOW())
-          AND (quantity IS NULL OR used_count < quantity)
+          -- ĐÃ SỬA: Thay usage_limit thành quantity cho khớp Database
+          AND (quantity IS NULL OR used_count < quantity) 
         ORDER BY discount_value DESC
     ");
     $stmt_coupons->execute();
@@ -1040,4 +1060,23 @@ include 'includes/header.php';
     });
 </script>
 
+<script>
+function selectSuggestedCoupon(code) {
+    // 1. Điền mã vào ô nhập thủ công
+    const input = document.getElementById('coupon_code_input');
+    if (input) {
+        input.value = code;
+        
+        // 2. Tự động gọi hàm applyCoupon() để kiểm tra và trừ tiền qua AJAX
+        applyCoupon();
+        
+        // 3. Hiệu ứng Visual: Highlight voucher đang chọn
+        document.querySelectorAll('.coupon-suggest-item').forEach(item => {
+            item.classList.remove('best-pick');
+        });
+        const activeItem = document.querySelector(`.coupon-suggest-item[data-code="${code}"]`);
+        if (activeItem) activeItem.classList.add('best-pick');
+    }
+}
+</script>
 <?php include 'includes/footer.php'; ?>

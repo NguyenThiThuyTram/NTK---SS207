@@ -1,0 +1,22 @@
+Array
+(
+    [code] => 00
+    [desc] => success
+    [data] => Array
+        (
+            [bin] => 970418
+            [accountNumber] => V3CAS6262723924
+            [accountName] => NGUYEN THI THUY TRAM
+            [amount] => 400500
+            [description] => CS5UDHFC2A6 NTK O0024
+            [orderCode] => 2604298227
+            [currency] => VND
+            [paymentLinkId] => f9d9c84e59414158a972678542ab3c6c
+            [status] => PENDING
+            [expiredAt] => 
+            [checkoutUrl] => https://pay.payos.vn/web/f9d9c84e59414158a972678542ab3c6c
+            [qrCode] => 00020101021238590010A000000727012900069704180115V3CAS62627239240208QRIBFTTA530370454064005005802VN62250821CS5UDHFC2A6 NTK O0024630458D6
+        )
+
+    [signature] => 34ff5b00bfed2ead1d6460ae821aaf222ccef1284c23cbc8ce74b88fe726c3a3
+)

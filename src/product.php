@@ -27,7 +27,7 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <main class="container">
-    <nav class="breadcrumb">Trang chủ > <b>Shop</b></nav>
+ 
 
     <div class="category-filter">
         <a href="product.php" class="btn-cat <?php echo !$cat_id ? 'active' : ''; ?>">All</a>
@@ -62,13 +62,30 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <div class="price-container">
-                        <?php if ($p['sale_price'] < $p['original_price']): ?>
-                            <span class="current-price"><?php echo number_format($p['sale_price'], 0, ',', '.'); ?>đ</span>
-                            <span class="old-price-strike"><?php echo number_format($p['original_price'], 0, ',', '.'); ?>đ</span>
-                        <?php else: ?>
-                            <span class="current-price"><?php echo number_format($p['original_price'], 0, ',', '.'); ?>đ</span>
-                        <?php endif; ?>
-                    </div>
+    <?php 
+        // 1. Lấy giá từ Database
+        $db_price = (float)$p['original_price'];
+        $db_sale = (float)$p['sale_price'];
+
+        // 2. Nếu Database ko có giá (>0), tạo giá ngẫu nhiên > 199.000
+        if ($db_price <= 0) {
+            // Tạo số ngẫu nhiên từ 200 đến 500 rồi nhân với 1000 để ra giá tròn
+            $display_price = rand(200, 500) * 1000; 
+            $display_sale = 0; // Coi như không sale nếu là giá ngẫu nhiên
+        } else {
+            $display_price = $db_price;
+            $display_sale = $db_sale;
+        }
+
+        // 3. Hiển thị ra giao diện
+        if ($display_sale > 0 && $display_sale < $display_price): 
+    ?>
+        <span class="current-price"><?php echo number_format($display_sale, 0, ',', '.'); ?>đ</span>
+        <span class="old-price-strike"><?php echo number_format($display_price, 0, ',', '.'); ?>đ</span>
+    <?php else: ?>
+        <span class="current-price"><?php echo number_format($display_price, 0, ',', '.'); ?>đ</span>
+    <?php endif; ?>
+</div>
                 </div>
             </a>
         </div>
