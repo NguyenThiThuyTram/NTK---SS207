@@ -62,120 +62,364 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
 
 <style>
-    .inventory-wrapper { padding: 25px; background: #fdfdfb; min-height: 100vh; }
-    .filter-bar { display: flex; gap: 15px; margin-bottom: 25px; align-items: flex-end; flex-wrap: wrap; background:#fff; padding: 20px; border-radius:12px; border:1px solid #eee; }
-    
-    .table-container { background: #fff; border: 1px solid #eee; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-    .inv-table { width: 100%; border-collapse: collapse; }
-    .inv-table th { background: #fafafa; padding: 15px; text-align: left; font-size: 11px; text-transform: uppercase; color: #999; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
-    .inv-table td { padding: 15px; border-bottom: 1px solid #f9f9f9; vertical-align: middle; }
-    
-    /* Hiệu ứng link sản phẩm */
-    .prod-link { color: #111; text-decoration: none; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
-    .prod-link:hover { color: #2f1c00; }
-    .prod-link:hover span { text-decoration: underline; }
-    
-    .img-preview { width: 50px; height: 65px; object-fit: cover; border-radius: 6px; background: #f5f5f5; border: 1px solid #eee; }
-    
-    .stock-badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-    .badge-ok { background: #e6f7ed; color: #2ecc71; }
-    .badge-warn { background: #fff7e6; color: #f39c12; }
-    .badge-danger { background: #fef0f0; color: #e74c3c; }
+    /* ── Page header ──────────────────────────────── */
+    .page-title { font-size: 21px; font-weight: 700; color: #111111; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .page-subtitle { font-size: 13px; color: #999; margin-top: 4px; }
 
-    .input-edit { width: 75px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; text-align: center; outline: none; }
+    /* ── Toolbar ──────────────────────────────────── */
+    .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .search-wrap {
+        position: relative;
+        flex: 1;
+    }
+    .search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #aaa;
+        font-size: 13px;
+        pointer-events: none;
+    }
+    .search-input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 13.5px;
+        outline: none;
+        color: #111;
+        background: #fff;
+        transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: #2f1c00; }
+
+    .filter-select {
+        padding: 10px 36px 10px 14px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 13.5px;
+        color: #333;
+        background: #fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'><polyline points='6 9 12 15 18 9'/></svg>") no-repeat right 12px center;
+        -webkit-appearance: none;
+        appearance: none;
+        outline: none;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        min-width: 180px;
+    }
+    .filter-select:focus { border-color: #2f1c00; }
+
+    .btn-reset {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 16px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #c0392b;
+        background: #fff;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-reset:hover { background: #fdf0ef; border-color: #e74c3c; }
+
+    /* ── Table ────────────────────────────────────── */
+    .section-card {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #e5e5e5;
+        overflow: hidden;
+        margin-bottom: 26px;
+    }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table thead th {
+        padding: 14px 24px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #999;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        text-align: left;
+        background: #fafaf8;
+        border-bottom: 1px solid #e5e5e5;
+        white-space: nowrap;
+    }
+    .data-table tbody td {
+        padding: 14px 24px;
+        font-size: 14px;
+        color: #111111;
+        border-bottom: 1px solid #f5f1eb;
+        vertical-align: middle;
+    }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover { background: #fafaf8; }
+
+    /* Product cell */
+    .prod-info { display: flex; align-items: center; gap: 12px; }
+    .prod-image {
+        width: 44px; height: 44px;
+        border-radius: 6px;
+        object-fit: cover;
+        background: #f5f1eb;
+        border: 1px solid #e5e5e5;
+        flex-shrink: 0;
+    }
+    .prod-name {
+        font-weight: 400;
+        color: #111111;
+        font-size: 13.5px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.4;
+        text-decoration: none;
+    }
+    .prod-name:hover { color: #2f1c00; text-decoration: underline; }
+    .prod-id {
+        font-weight: 500;
+        font-size: 13px;
+        color: #555;
+    }
+    .sku-badge {
+        font-family: 'Courier New', monospace;
+        font-size: 12.5px;
+        color: #555;
+        background: #f5f1eb;
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+    .variant-info { font-size: 13px; color: #444; white-space: nowrap; }
+    .variant-info .color { color: #888; }
+
+    /* Stock cell */
+    .stock-cell { display: flex; align-items: center; gap: 10px; }
+    .stock-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 11px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .stock-badge::before {
+        content: '';
+        width: 6px; height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        margin-right: 5px;
+        opacity: 0.75;
+    }
+    .badge-ok     { background: #eafaf1; color: #27ae60; }
+    .badge-warn   { background: #fff8e6; color: #d48806; }
+    .badge-danger { background: #fdf0ef; color: #e74c3c; }
+
+    /* Inline stock edit */
+    .stock-edit-form { display: flex; align-items: center; gap: 6px; }
+    .input-edit {
+        width: 72px;
+        padding: 7px 10px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 13.5px;
+        outline: none;
+        transition: border-color 0.2s;
+    }
     .input-edit:focus { border-color: #2f1c00; }
-    .btn-update-stock { background: #2f1c00; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-    .btn-update-stock:hover { background: #1a0f00; }
+    .btn-save {
+        width: 32px; height: 32px;
+        background: #2f1c00;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        transition: background 0.2s;
+        flex-shrink: 0;
+    }
+    .btn-save:hover { background: #1a0f00; }
+
+    /* Action */
+    .btn-icon {
+        width: 32px; height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        text-decoration: none;
+        transition: all 0.2s;
+        background: #f5f1eb;
+        color: #555;
+    }
+    .btn-icon.edit:hover { background: #2f1c00; color: #fff; }
+
+    /* Success message */
+    .alert-success {
+        background: #eafaf1;
+        color: #1e8449;
+        padding: 14px 18px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid #27ae60;
+        font-size: 13.5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 </style>
 
-<div class="inventory-wrapper">
-    <div class="page-header" style="margin-bottom: 30px;">
-        <h1 class="page-title" style="margin:0; font-size: 24px;">Quản lý tồn kho</h1> <br>
-        <p style="color: #666; font-size: 14px;">Theo dõi chi tiết biến thể và cập nhật số lượng hàng hóa.</p>
-    </div>
-
-    <form method="GET" class="filter-bar">
-        <div style="flex: 1; min-width: 250px;">
-            <label style="font-size: 12px; font-weight: 600; display:block; margin-bottom: 5px;">Tìm kiếm sản phẩm</label>
-            <input type="text" name="search" value="<?= htmlspecialchars($search) ?>" placeholder="Tên SP hoặc mã SKU..." class="form-control" style="width: 100%;">
-        </div>
-        <div>
-            <label style="font-size: 12px; font-weight: 600; display:block; margin-bottom: 5px;">Trạng thái kho</label>
-            <select name="status" class="form-control" style="width: 160px;">
-                <option value="all">Tất cả sản phẩm</option>
-                <option value="low" <?= $filter_status == 'low' ? 'selected' : '' ?>>Sắp hết hàng (≤10)</option>
-                <option value="out" <?= $filter_status == 'out' ? 'selected' : '' ?>>Đã hết hàng (0)</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary" style="height: 42px; background: #ffffff; border: none;"><i class="fa-solid fa-filter"></i> Lọc dữ liệu</button>
-        <?php if(!empty($search) || $filter_status != 'all'): ?>
-            <a href="inventory.php" style="margin-left: 10px; font-size: 13px; color: #c0392b; text-decoration: none;">Xóa lọc</a>
-        <?php endif; ?>
-    </form>
-
-    <?php if ($message): ?>
-        <div style="background: #e6f7ed; color: #1e8449; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #2ecc71;">
-            <i class="fa-solid fa-check-circle"></i> <?= $message ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="table-container">
-        <table class="inv-table">
-            <thead>
-                <tr>
-                    <th>Sản phẩm & Hình ảnh</th>
-                    <th>Mã SKU</th>
-                    <th>Phân loại (Màu/Size)</th>
-                    <th style="text-align: center;">Tồn thực tế</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($inventory_list)): ?>
-                    <tr><td colspan="6" style="text-align:center; padding: 50px; color: #aaa;">Không tìm thấy dữ liệu tồn kho nào phù hợp.</td></tr>
-                <?php else: ?>
-                    <?php foreach ($inventory_list as $item): 
-                        $stk = (int)$item['stock'];
-                        // Ưu tiên lấy ảnh biến thể, nếu không có mới lấy ảnh sản phẩm chính
-                        $img = !empty($item['variant_img']) ? $item['variant_img'] : $item['product_img'];
-                        $img_path = (strpos($img, 'http') === 0) ? $img : '../' . $img;
-                    ?>
-                    <tr>
-                        <td>
-                            <a href="product_detail.php?id=<?= urlencode($item['product_id']) ?>" class="prod-link">
-                                <img src="<?= $img_path ?>" class="img-preview" onerror="this.src='../assets/images/no-image.png'">
-                                <span><?= htmlspecialchars($item['product_name']) ?></span>
-                            </a>
-                        </td>
-                        <td style="font-family: monospace; font-size: 13px; color: #666;"><?= $item['sku'] ?></td>
-                        <td>
-                            <span style="color:#888;"><?= $item['color'] ?></span> / <strong><?= $item['size'] ?></strong>
-                        </td>
-                        <td style="text-align: center;">
-                            <form method="POST" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <input type="hidden" name="variant_id" value="<?= $item['variant_id'] ?>">
-                                <input type="hidden" name="sku" value="<?= $item['sku'] ?>">
-                                <input type="number" name="stock" value="<?= $stk ?>" class="input-edit" min="0">
-                                <button type="submit" name="update_stock" class="btn-update-stock" title="Lưu số lượng"><i class="fa-solid fa-floppy-disk"></i></button>
-                            </form>
-                        </td>
-                        <td>
-                            <?php if($stk <= 0): ?>
-                                <span class="stock-badge badge-danger">Hết hàng</span>
-                            <?php elseif($stk <= 10): ?>
-                                <span class="stock-badge badge-warn">Sắp hết (<?= $stk ?>)</span>
-                            <?php else: ?>
-                                <span class="stock-badge badge-ok">Còn hàng</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <a href="add_product.php?id=<?= urlencode($item['product_id']) ?>" class="btn-icon edit" title="Chỉnh sửa sản phẩm"><i class="fa-solid fa-pen"></i></a>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+<!-- Page Header -->
+<div class="page-header" style="margin-bottom: 26px;">
+    <div class="page-title">Quản lý tồn kho</div>
+    <p class="page-subtitle">Theo dõi chi tiết biến thể và cập nhật số lượng hàng hóa.</p>
 </div>
+
+<!-- Toolbar: Search + Filter (auto-submit) -->
+<form method="GET" id="filterForm">
+    <div class="toolbar">
+        <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+                type="text"
+                name="search"
+                class="search-input"
+                placeholder="Tìm theo tên sản phẩm hoặc mã SKU..."
+                value="<?= htmlspecialchars($search) ?>"
+                oninput="clearTimeout(window._st); window._st = setTimeout(() => document.getElementById('filterForm').submit(), 500)"
+            >
+        </div>
+
+        <select name="status" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+            <option value="all" <?= $filter_status === 'all' ? 'selected' : '' ?>>Tất cả trạng thái</option>
+            <option value="low"  <?= $filter_status === 'low'  ? 'selected' : '' ?>>Sắp hết hàng (≤ 10)</option>
+            <option value="out"  <?= $filter_status === 'out'  ? 'selected' : '' ?>>Đã hết hàng</option>
+        </select>
+
+        <?php if (!empty($search) || $filter_status !== 'all'): ?>
+        <a href="inventory.php" class="btn-reset">
+            <i class="fa-solid fa-xmark"></i> Xóa lọc
+        </a>
+        <?php endif; ?>
+    </div>
+</form>
+
+<!-- Success message -->
+<?php if ($message): ?>
+<div class="alert-success">
+    <i class="fa-solid fa-circle-check"></i> <?= $message ?>
+</div>
+<?php endif; ?>
+
+<!-- Table -->
+<div class="section-card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Sản phẩm</th>
+                <th>Mã SKU</th>
+                <th>Màu / Size</th>
+                <th>Tồn kho</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($inventory_list)): ?>
+            <tr>
+                <td colspan="7" style="text-align:center; padding: 50px; color: #aaa;">
+                    Không tìm thấy dữ liệu tồn kho phù hợp.
+                </td>
+            </tr>
+            <?php else: ?>
+            <?php foreach ($inventory_list as $item):
+                $stk = (int)$item['stock'];
+                $img = !empty($item['variant_img']) ? $item['variant_img'] : $item['product_img'];
+                $img_path = !empty($img) ? ((strpos($img, 'http') === 0) ? $img : '../' . $img) : '';
+
+                if ($stk <= 0)  { $badge_class = 'badge-danger'; $badge_text = 'Hết hàng'; }
+                elseif ($stk <= 10) { $badge_class = 'badge-warn';   $badge_text = 'Sắp hết'; }
+                else                { $badge_class = 'badge-ok';     $badge_text = 'Còn hàng'; }
+            ?>
+            <tr>
+                <!-- ID -->
+                <td><span class="prod-id"><?= htmlspecialchars($item['product_id']) ?></span></td>
+
+                <!-- Sản phẩm -->
+                <td>
+                    <div class="prod-info">
+                        <?php if ($img_path): ?>
+                            <img src="<?= htmlspecialchars($img_path) ?>" class="prod-image"
+                                 onerror="this.outerHTML='<div class=\'prod-image\' style=\'display:flex;align-items:center;justify-content:center;color:#aaa;\'><i class=\'fa-solid fa-image\'></i></div>'">
+                        <?php else: ?>
+                            <div class="prod-image" style="display:flex;align-items:center;justify-content:center;color:#aaa;">
+                                <i class="fa-solid fa-image"></i>
+                            </div>
+                        <?php endif; ?>
+                        <a href="product_detail.php?id=<?= urlencode($item['product_id']) ?>" class="prod-name">
+                            <?= htmlspecialchars($item['product_name']) ?>
+                        </a>
+                    </div>
+                </td>
+
+                <!-- SKU -->
+                <td><span class="sku-badge"><?= htmlspecialchars($item['sku']) ?></span></td>
+
+                <!-- Màu / Size -->
+                <td>
+                    <span class="variant-info">
+                        <span class="color"><?= htmlspecialchars($item['color']) ?></span>
+                        &nbsp;/&nbsp;
+                        <strong><?= htmlspecialchars($item['size']) ?></strong>
+                    </span>
+                </td>
+
+                <!-- Tồn kho (inline edit) -->
+                <td>
+                    <form method="POST" class="stock-edit-form">
+                        <input type="hidden" name="variant_id" value="<?= $item['variant_id'] ?>">
+                        <input type="hidden" name="sku" value="<?= htmlspecialchars($item['sku']) ?>">
+                        <input type="number" name="stock" value="<?= $stk ?>" class="input-edit" min="0">
+                        <button type="submit" name="update_stock" class="btn-save" title="Lưu">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                        </button>
+                    </form>
+                </td>
+
+                <!-- Trạng thái -->
+                <td>
+                    <span class="stock-badge <?= $badge_class ?>"><?= $badge_text ?></span>
+                </td>
+
+                <!-- Hành động -->
+                <td>
+                    <a href="add_product.php?id=<?= urlencode($item['product_id']) ?>" class="btn-icon edit" title="Chỉnh sửa sản phẩm">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+</div><!-- /.admin-content -->
+</main>
+</body>
+</html>

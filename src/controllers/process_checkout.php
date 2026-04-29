@@ -54,6 +54,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $payment_method = $_POST['payment_method'] ?? 'cod';
     $wallet_used = isset($_POST['wallet_used']) ? floatval($_POST['wallet_used']) : 0;
 
+    // Nhận thông tin mã giảm giá từ form
+    $coupon_id       = !empty($_POST['coupon_id'])       ? trim($_POST['coupon_id'])       : null;
+    $coupon_discount = isset($_POST['coupon_discount'])  ? floatval($_POST['coupon_discount']) : 0;
+    $coupon_code     = !empty($_POST['coupon_code'])     ? strtoupper(trim($_POST['coupon_code'])) : null;
+
 
     try {
         // BẮT ĐẦU GIAO DỊCH (Transaction) - Khóa an toàn
@@ -89,7 +94,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         $shipping_fee = 35000;
         $total_price  = $subtotal + $shipping_fee;
-        $final_price  = max(0, $total_price - $wallet_used);
+
+        // ── Xác nhận lại coupon phía server (bảo mật) ──────────────────
+        $verified_coupon_discount = 0;
+        $verified_coupon_id = null;
+        if ($coupon_id && $coupon_discount > 0) {
+            $stmt_cp = $conn->prepare("
+                SELECT * FROM Coupons
+                WHERE coupon_id = :cid
+                  AND status = 1
+                  AND start_date <= NOW()
+                  AND end_date   >= NOW()
+            ");
+            $stmt_cp->execute(['cid' => $coupon_id]);
+            $cp = $stmt_cp->fetch(PDO::FETCH_ASSOC);
+
+            if ($cp) {
+                // Kiểm tra số lượng
+                $qty_ok = ($cp['quantity'] === null || $cp['used_count'] < $cp['quantity']);
+                // Kiểm tra đơn tối thiểu
+                $min_ok = ($subtotal >= floatval($cp['min_order_value']));
+
+                if ($qty_ok && $min_ok) {
+                    // Tính lại chính xác
+                    if ($cp['discount_type'] == 0) {
+                        $calc = $total_price * (floatval($cp['discount_value']) / 100);
+                        if (!empty($cp['max_discount_amount']) && $cp['max_discount_amount'] > 0) {
+                            $calc = min($calc, floatval($cp['max_discount_amount']));
+                        }
+                    } else {
+                        $calc = floatval($cp['discount_value']);
+                    }
+                    $verified_coupon_discount = min(round($calc), $total_price);
+                    $verified_coupon_id = $cp['coupon_id'];
+                }
+            }
+        }
+
+        $final_price = max(0, $total_price - $verified_coupon_discount - $wallet_used);
 
         // Sinh mã payos_order_code (INT)
         $payos_order_code = intval(date('ymd') . rand(1000, 9999));
@@ -102,8 +144,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $initial_order_status   = ($payment_method === 'cod')    ? 1 : 0; // 0=pending, 1=processing
 
         // Lưu đơn hàng
-        $sql_order = "INSERT INTO Orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status) 
-                      VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os)";
+        $sql_order = "INSERT INTO Orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value) 
+                      VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv)";
         $stmt_order = $conn->prepare($sql_order);
         $stmt_order->execute([
             'oid'         => $order_id,
@@ -119,7 +161,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'sf'          => $shipping_fee,
             'poc'         => $payos_order_code,
             'ps'          => $initial_payment_status,
-            'os'          => $initial_order_status
+            'os'          => $initial_order_status,
+            'cpid'        => $verified_coupon_id,
+            'dv'          => $verified_coupon_discount
         ]);
 
         // -------------------------------------------------------------
@@ -186,6 +230,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // -------------------------------------------------------------
         $stmt_clear_cart = $conn->prepare("DELETE FROM Cart WHERE user_id = :uid AND is_selected = 1");
         $stmt_clear_cart->execute(['uid' => $user_id]);
+
+        // -------------------------------------------------------------
+        // BƯỚC 5: CẬP NHẬT SỐ LẦN SỬ DỤNG COUPON
+        // -------------------------------------------------------------
+        if ($verified_coupon_id) {
+            $conn->prepare("UPDATE Coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")
+                 ->execute(['cid' => $verified_coupon_id]);
+        }
 
         // CHỐT GIAO DỊCH
         $conn->commit();

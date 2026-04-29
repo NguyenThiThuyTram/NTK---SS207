@@ -408,11 +408,19 @@ $total_items = count($cart_items);
                     msg.textContent = '✓ Áp dụng thành công! Giảm ' + formatVND(res.discount);
                     msg.className = 'coupon-msg success';
                     updateSummary();
+                    // Lưu coupon vào session để checkout tự điền
+                    $.ajax({
+                        url: 'api/save_coupon_session.php',
+                        method: 'POST',
+                        data: { code: code.toUpperCase(), discount_amount: res.discount, coupon_id: res.coupon_id || '' }
+                    });
                 } else {
                     discountAmount = 0;
                     msg.textContent = '✗ ' + res.message;
                     msg.className = 'coupon-msg error';
                     updateSummary();
+                    // Xóa coupon session
+                    $.ajax({ url: 'api/save_coupon_session.php?clear=1', method: 'GET' });
                 }
             },
             error: function () {
@@ -432,9 +440,9 @@ $total_items = count($cart_items);
             showToast('Vui lòng chọn ít nhất một sản phẩm!', 'warning');
             return;
         }
-        // Chuyển hướng sang trang thanh toán (sẽ tạo sau)
-        var couponCode = document.getElementById('coupon-code').value.trim();
-        window.location.href = 'checkout.php?coupon=' + encodeURIComponent(couponCode);
+        // Chuyển hướng sang trang thanh toán
+        // Coupon đã được lưu vào session qua applyCoupon() → checkout tự đọc
+        window.location.href = 'checkout.php';
     }
 
     // ===================== TOAST NOTIFICATION =====================

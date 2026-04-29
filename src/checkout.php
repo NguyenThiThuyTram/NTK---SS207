@@ -50,7 +50,52 @@ $user_data = $stmt_wallet->fetch(PDO::FETCH_ASSOC);
 // Gán số dư ví thật (nếu không có thì mặc định là 0)
 $wallet_balance = $user_data['wallet_balance'] ?? 0;
 
-// Lấy danh sách địa chỉ đã lưu của user
+// 4. Đọc coupon đã áp dụng từ giỏ hàng (nếu có)
+$cart_coupon = $_SESSION['cart_coupon'] ?? null;
+// Xóa session sau khi đọc (sẽ được lưu lại khi user xác nhận trong checkout)
+// Giữ session để user có thể navigate back và coupon vẫn còn
+
+// 5. Lấy danh sách voucher còn hiệu lực để đề xuất
+$available_coupons = [];
+try {
+    $stmt_coupons = $conn->prepare("
+        SELECT coupon_id, code, discount_type, discount_value,
+               min_order_value, max_discount_amount, end_date, quantity, used_count
+        FROM Coupons
+        WHERE status = 1
+          AND (start_date IS NULL OR start_date <= NOW())
+          AND (end_date IS NULL OR end_date >= NOW())
+          AND (quantity IS NULL OR used_count < quantity)
+        ORDER BY discount_value DESC
+    ");
+    $stmt_coupons->execute();
+    $raw_coupons = $stmt_coupons->fetchAll(PDO::FETCH_ASSOC);
+
+    // Tính toán discount thực tế cho từng coupon dựa trên subtotal hiện tại
+    foreach ($raw_coupons as $cp) {
+        // Kiểm tra điều kiện đơn tối thiểu
+        if ($subtotal < floatval($cp['min_order_value'])) continue;
+
+        if ($cp['discount_type'] == 0) {
+            $calc = $subtotal * (floatval($cp['discount_value']) / 100);
+            if (!empty($cp['max_discount_amount']) && $cp['max_discount_amount'] > 0) {
+                $calc = min($calc, floatval($cp['max_discount_amount']));
+            }
+        } else {
+            $calc = floatval($cp['discount_value']);
+        }
+        $cp['calc_discount'] = min(round($calc), $subtotal);
+        $available_coupons[] = $cp;
+    }
+
+    // Sắp xếp: voucher giảm nhiều tiền nhất đầu tiên
+    usort($available_coupons, fn($a, $b) => $b['calc_discount'] - $a['calc_discount']);
+
+} catch (PDOException $e) {
+    $available_coupons = [];
+}
+
+// 6. Lấy danh sách địa chỉ đã lưu của user
 $saved_addresses = [];
 try {
     $st_addr = $conn->prepare("SELECT * FROM user_addresses WHERE user_id = :uid ORDER BY is_default DESC, created_at DESC");
@@ -163,9 +208,116 @@ include 'includes/header.php';
     .wallet-checkbox { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #333; cursor: pointer; }
     .wallet-checkbox input { accent-color: #2f1c00; width: 16px; height: 16px; }
 
+    /* Coupon box */
+    .coupon-box { padding: 15px 0; border-bottom: 1px dashed #ddd; margin-bottom: 15px; }
+    .coupon-title { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px; }
+    .coupon-input-row { display: flex; gap: 8px; }
+    .coupon-input-row input { flex: 1; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 2px; font-size: 14px; outline: none; text-transform: uppercase; transition: border-color 0.3s; }
+    .coupon-input-row input:focus { border-color: #999; }
+    .coupon-input-row button { background: #2f1c00; color: #fff; border: none; padding: 10px 14px; border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; transition: opacity 0.2s; }
+    .coupon-input-row button:hover { opacity: 0.85; }
+    .coupon-msg { font-size: 12px; margin-top: 6px; }
+    .coupon-msg.success { color: #2e7d32; }
+    .coupon-msg.error { color: #c0392b; }
+    .coupon-applied-tag { display: flex; align-items: center; justify-content: space-between; background: #f1f8e9; border: 1px solid #c8e6c9; border-radius: 4px; padding: 6px 10px; margin-top: 8px; font-size: 13px; color: #2e7d32; }
+    .coupon-applied-tag span { font-weight: bold; }
+    .coupon-remove { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; }
+
     .sum-row { display: flex; justify-content: space-between; font-size: 14px; color: #555; margin-bottom: 12px; }
     .sum-total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #333; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; }
     .sum-note { font-size: 11px; color: #999; margin-top: 5px; }
+    /* Coupon Suggestions Panel */
+    .coupon-suggestions { margin-bottom: 14px; }
+    .coupon-suggest-title {
+        font-size: 11px; color: #888; text-transform: uppercase;
+        letter-spacing: 0.6px; margin-bottom: 8px;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .coupon-suggest-list { display: flex; flex-direction: column; gap: 7px; }
+    .coupon-suggest-item {
+        display: flex; align-items: center; justify-content: space-between;
+        border: 1px dashed #c8b89a; border-radius: 6px;
+        padding: 8px 10px; background: #fdfaf6; cursor: pointer;
+        transition: all 0.2s; gap: 8px;
+    }
+    .coupon-suggest-item:hover { background: #f5ede0; border-color: #2f1c00; }
+    .coupon-suggest-item.best-pick { border-color: #2f1c00; background: #f9f4ed; }
+    .csi-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .csi-badge {
+        background: #2f1c00; color: #fff; font-size: 10px; font-weight: 700;
+        padding: 2px 6px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+    }
+    .csi-badge.best { background: #b7860b; }
+    .csi-info { min-width: 0; }
+    .csi-code { font-size: 12px; font-weight: 700; color: #2f1c00; font-family: monospace; }
+    .csi-desc { font-size: 11px; color: #888; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .csi-discount { font-size: 12px; font-weight: 700; color: #2e7d32; white-space: nowrap; flex-shrink: 0; }
+    .csi-detail-btn {
+        font-size: 10px; color: #888; background: none; border: none;
+        cursor: pointer; padding: 2px 4px; text-decoration: underline; flex-shrink: 0;
+        transition: color 0.15s;
+    }
+    .csi-detail-btn:hover { color: #2f1c00; }
+    .coupon-suggest-more {
+        font-size: 11.5px; color: #888; text-align: center; margin-top: 6px;
+        cursor: pointer; transition: color 0.2s;
+    }
+    .coupon-suggest-more:hover { color: #2f1c00; }
+
+    /* Modal chi tiết voucher */
+    .voucher-modal-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+        z-index: 9999; display: flex; align-items: center; justify-content: center;
+        opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    }
+    .voucher-modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .voucher-modal {
+        background: #fff; border-radius: 12px; width: 380px; max-width: 95vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2); transform: scale(0.92);
+        transition: transform 0.25s; overflow: hidden;
+    }
+    .voucher-modal-overlay.open .voucher-modal { transform: scale(1); }
+    .vm-header {
+        background: #2f1c00; color: #fff; padding: 18px 20px;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .vm-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
+    .vm-close { background: none; border: none; color: rgba(255,255,255,0.7); font-size: 20px; cursor: pointer; line-height: 1; }
+    .vm-close:hover { color: #fff; }
+    .vm-body { padding: 20px; }
+    .vm-big-discount {
+        text-align: center; padding: 16px; background: #faf6f0;
+        border-radius: 8px; margin-bottom: 16px;
+    }
+    .vm-discount-val { font-size: 28px; font-weight: 800; color: #2f1c00; }
+    .vm-discount-type { font-size: 12px; color: #888; margin-top: 2px; }
+    .vm-code-box {
+        display: flex; align-items: center; justify-content: center; gap: 10px;
+        background: #f5f1eb; border: 1.5px dashed #c0a878;
+        border-radius: 6px; padding: 10px 14px; margin-bottom: 16px;
+    }
+    .vm-code { font-family: monospace; font-size: 18px; font-weight: 800; color: #2f1c00; letter-spacing: 2px; }
+    .vm-copy-btn {
+        background: #2f1c00; color: #fff; border: none; padding: 5px 12px;
+        border-radius: 4px; font-size: 12px; cursor: pointer; white-space: nowrap;
+        transition: opacity 0.2s;
+    }
+    .vm-copy-btn:hover { opacity: 0.85; }
+    .vm-detail-list { list-style: none; padding: 0; margin: 0; }
+    .vm-detail-list li {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        padding: 9px 0; border-bottom: 1px solid #f0ede8; font-size: 13.5px;
+    }
+    .vm-detail-list li:last-child { border-bottom: none; }
+    .vm-detail-list .vdl-label { color: #888; }
+    .vm-detail-list .vdl-val { font-weight: 600; color: #333; text-align: right; max-width: 55%; }
+    .vm-apply-btn {
+        width: 100%; background: #2f1c00; color: #fff; border: none;
+        padding: 13px; border-radius: 6px; font-size: 14px; font-weight: 700;
+        cursor: pointer; margin-top: 14px; transition: opacity 0.2s;
+    }
+    .vm-apply-btn:hover { opacity: 0.87; }
+
     /* Thanh Tiến Trình (Stepper) */
     .checkout-stepper { 
         display: flex; 
@@ -300,25 +452,28 @@ include 'includes/header.php';
                     <div class="form-group"><label>Số điện thoại *</label>
                         <input type="tel" name="phone" value="<?= htmlspecialchars($user_info['phonenumber'] ?? '') ?>" required>
                     </div>
-                    <div class="form-group"><label>Địa chỉ cụ thể * (Số nhà, tên đường...)</label>
-                        <input type="text" name="address" value="<?= htmlspecialchars($user_info['address'] ?? '') ?>" required>
+                    <div class="form-group"><label>Địa chỉ cụ thể (Số nhà, tên đường...)</label>
+                        <input type="text" name="address" value="<?= htmlspecialchars($user_info['address'] ?? '') ?>">
                     </div>
                     <div class="form-row">
                         <div class="form-col"><label>Tỉnh/Thành phố *</label>
-                            <select name="province" id="api_province" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" required>
+                            <select name="province" id="api_province" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;">
                                 <option value="">-- Chọn Tỉnh/Thành phố --</option>
                             </select>
+                            <div class="field-error" id="err_province" style="color:#c0392b;font-size:12px;margin-top:4px;display:none;">Vui lòng chọn Tỉnh/Thành phố</div>
                         </div>
                         <div class="form-col"><label>Quận/Huyện *</label>
-                            <select name="district" id="api_district" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" disabled required>
+                            <select name="district" id="api_district" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" disabled>
                                 <option value="">-- Chọn Quận/Huyện --</option>
                             </select>
+                            <div class="field-error" id="err_district" style="color:#c0392b;font-size:12px;margin-top:4px;display:none;">Vui lòng chọn Quận/Huyện</div>
                         </div>
                     </div>
-                    <div class="form-group"><label>Phường/Xã</label>
+                    <div class="form-group"><label>Phường/Xã *</label>
                         <select name="ward" id="api_ward" style="width:100%;padding:14px 15px;border:1px solid #e0e0e0;border-radius:2px;outline:none;" disabled>
                             <option value="">-- Chọn Phường/Xã --</option>
                         </select>
+                        <div class="field-error" id="err_ward" style="color:#c0392b;font-size:12px;margin-top:4px;display:none;">Vui lòng chọn Phường/Xã</div>
                     </div>
 
                     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:#333;margin-top:14px;">
@@ -329,13 +484,15 @@ include 'includes/header.php';
                     <?php if (!empty($saved_addresses)): ?>
                         </div> <!-- đóng manual-addr-form -->
                     </div> <!-- đóng saved-addr-section -->
+                    <?php else: ?>
+                        </div> <!-- đóng manual-addr-form (khi không có địa chỉ lưu) -->
                     <?php endif; ?>
 
                     <div class="form-group"><label>Ghi chú thêm (Không bắt buộc)</label>
-                        <input type="text" name="notes" placeholder="Ghi chú thêm...">
+                        <input type="text" name="notes" placeholder="Ghi chú thêm..." id="inp_notes">
                     </div>
                     <div class="step-actions" style="justify-content: flex-end;">
-                        <button type="button" class="btn-next" onclick="goToStep(2)" style="flex: none; width: 200px;">Tiếp tục</button>
+                        <button type="button" class="btn-next" onclick="validateStep1()" style="flex: none; width: 200px;">Tiếp tục</button>
                     </div>
                 </div>
 
@@ -396,7 +553,7 @@ include 'includes/header.php';
 
                     <div class="step-actions">
                         <button type="button" class="btn-back" onclick="goToStep(2)">< Quay lại</button>
-                        <button type="submit" class="btn-next">XÁC NHẬN ĐẶT HÀNG</button>
+                        <button type="submit" class="btn-next" onclick="return validateSubmit()">XÁC NHẬN ĐẶT HÀNG</button>
                     </div>
                 </div>
 
@@ -435,6 +592,79 @@ include 'includes/header.php';
                 </label>
             </div>
 
+            <!-- MÃ GIẢM GIÁ -->
+            <div class="coupon-box">
+                <!-- PANEL ĐỀ XUẤT VOUCHER -->
+                <?php if (!empty($available_coupons)): ?>
+                <div class="coupon-suggestions" id="coupon_suggestions">
+                    <div class="coupon-suggest-title">
+                        <i class="fa-solid fa-bolt" style="color:#b7860b;"></i>
+                        Voucher dành cho bạn
+                    </div>
+                    <div class="coupon-suggest-list" id="suggest_list">
+                    <?php foreach (array_slice($available_coupons, 0, 3) as $idx => $sc):
+                        $is_percent = ($sc['discount_type'] == 0);
+                        $desc = $is_percent
+                            ? 'Giảm ' . intval($sc['discount_value']) . '%' . (!empty($sc['max_discount_amount']) ? ' (tối đa ' . number_format($sc['max_discount_amount'],0,',','.') . 'đ)' : '')
+                            : 'Giảm cố định';
+                        $end_str = empty($sc['end_date']) ? 'Vô hạn' : 'HSD: ' . date('d/m/Y', strtotime($sc['end_date']));
+                    ?>
+                    <div class="coupon-suggest-item <?= $idx === 0 ? 'best-pick' : '' ?>"
+                         onclick="selectSuggestedCoupon('<?= htmlspecialchars($sc['code']) ?>')"
+                         data-code="<?= htmlspecialchars($sc['code']) ?>"
+                         data-id="<?= $sc['coupon_id'] ?>"
+                         data-discount="<?= $sc['calc_discount'] ?>"
+                         data-type="<?= $sc['discount_type'] ?>"
+                         data-value="<?= $sc['discount_value'] ?>"
+                         data-min="<?= $sc['min_order_value'] ?>"
+                         data-max="<?= $sc['max_discount_amount'] ?? 0 ?>"
+                         data-end="<?= $sc['end_date'] ?? '' ?>"
+                         data-qty="<?= $sc['quantity'] ?? '' ?>"
+                         data-used="<?= $sc['used_count'] ?? 0 ?>">
+                        <div class="csi-left">
+                            <?php if ($idx === 0): ?>
+                                <span class="csi-badge best">Tốt nhất</span>
+                            <?php else: ?>
+                                <span class="csi-badge"><i class="fa-solid fa-tag"></i></span>
+                            <?php endif; ?>
+                            <div class="csi-info">
+                                <div class="csi-code"><?= htmlspecialchars($sc['code']) ?></div>
+                                <div class="csi-desc"><?= $desc ?> &bull; <?= $end_str ?></div>
+                            </div>
+                        </div>
+                        <span class="csi-discount">-<?= number_format($sc['calc_discount'],0,',','.') ?>đ</span>
+                        <button class="csi-detail-btn" type="button"
+                                onclick="event.stopPropagation(); openVoucherModal(this.closest('.coupon-suggest-item'))">
+                            Chi tiết
+                        </button>
+                    </div>
+                    <?php endforeach; ?>
+                    </div>
+                    <?php if (count($available_coupons) > 3): ?>
+                    <div class="coupon-suggest-more" onclick="toggleMoreCoupons()">
+                        <i class="fa-solid fa-chevron-down" id="suggest_chevron"></i>
+                        Xem thêm <?= count($available_coupons) - 3 ?> voucher khác
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+
+                <div class="coupon-title">Nhập mã thủ công</div>
+                <div class="coupon-input-row">
+                    <input type="text" id="coupon_code_input" placeholder="Nhập mã..." maxlength="50">
+                    <button type="button" onclick="applyCoupon()">Áp dụng</button>
+                </div>
+                <div class="coupon-msg" id="coupon_msg"></div>
+                <div id="coupon_applied_tag" style="display:none;" class="coupon-applied-tag">
+                    <span id="coupon_tag_text"></span>
+                    <button class="coupon-remove" onclick="removeCoupon()" title="Xóa mã">✕</button>
+                </div>
+                <!-- Hidden inputs để submit form -->
+                <input type="hidden" name="coupon_code" id="input_coupon_code" value="">
+                <input type="hidden" name="coupon_discount" id="input_coupon_discount" value="0">
+                <input type="hidden" name="coupon_id" id="input_coupon_id" value="">
+            </div>
+
             <div class="sum-row">
                 <span>Giá tạm tính:</span>
                 <span id="ui_subtotal" data-val="<?php echo $subtotal; ?>"><?php echo number_format($subtotal, 0, ',', '.'); ?> VNĐ</span>
@@ -442,6 +672,11 @@ include 'includes/header.php';
             <div class="sum-row">
                 <span>Phí vận chuyển:</span>
                 <span id="ui_shipping" data-val="<?php echo $shipping_fee; ?>"><?php echo number_format($shipping_fee, 0, ',', '.'); ?> VNĐ</span>
+            </div>
+
+            <div class="sum-row" id="coupon_discount_row" style="display: none; color: #2e7d32;">
+                <span>Giảm giá (mã):</span>
+                <span id="ui_coupon_discount">-0 VNĐ</span>
             </div>
             
             <div class="sum-row" id="wallet_discount_row" style="display: none; color: #d32f2f;">
@@ -533,6 +768,83 @@ include 'includes/header.php';
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    // ── VALIDATION STEP 1 ───────────────────────────────────────
+    function showFieldError(inputEl, msgElId, msg) {
+        if (inputEl) {
+            inputEl.style.borderColor = '#c0392b';
+            inputEl.addEventListener('input', function() {
+                inputEl.style.borderColor = '#e0e0e0';
+                const e = document.getElementById(msgElId);
+                if (e) e.style.display = 'none';
+            }, { once: true });
+        }
+        const errEl = document.getElementById(msgElId);
+        if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+    }
+    function clearFieldError(inputEl, msgElId) {
+        if (inputEl) inputEl.style.borderColor = '#e0e0e0';
+        const e = document.getElementById(msgElId); if (e) e.style.display = 'none';
+    }
+
+    function validateStep1() {
+        const addrChoice = document.querySelector('[name="addr_choice"]:checked');
+        const usingManual = !addrChoice || addrChoice.value === 'manual';
+
+        if (!usingManual) { goToStep(2); return; }
+
+        let valid = true;
+
+        function checkSelect(id, errId) {
+            const el  = document.getElementById(id);
+            const err = document.getElementById(errId);
+            if (el && !el.value) {
+                el.style.borderColor = '#c0392b';
+                if (err) err.style.display = 'block';
+                el.addEventListener('change', () => {
+                    el.style.borderColor = '#e0e0e0';
+                    if (err) err.style.display = 'none';
+                }, { once: true });
+                return false;
+            }
+            if (el) el.style.borderColor = '#e0e0e0';
+            if (err) err.style.display = 'none';
+            return true;
+        }
+
+        // 1. Tinh/Thanh pho BAT BUOC
+        if (!checkSelect('api_province', 'err_province')) valid = false;
+
+        // 2. Quan/Huyen BAT BUOC (chi check khi da bat)
+        const distEl = document.getElementById('api_district');
+        if (distEl && !distEl.disabled) {
+            if (!checkSelect('api_district', 'err_district')) valid = false;
+        } else if (distEl && distEl.disabled) {
+            // Quan dang disabled vi chua chon Tinh -> bao loi Tinh la du
+        }
+
+        // 3. Phuong/Xa BAT BUOC (chi check khi da bat)
+        const wardEl = document.getElementById('api_ward');
+        if (wardEl && !wardEl.disabled) {
+            if (!checkSelect('api_ward', 'err_ward')) valid = false;
+        }
+
+        if (!valid) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        goToStep(2);
+    }
+
+    // ── VALIDATE TRƯỚC KHI SUBMIT ────────────────────────────────
+    function validateSubmit() {
+        // Xoá required khỏi tất cả field bị ẩn để browser validation không block
+        document.querySelectorAll('.checkout-step:not(.active) [required]').forEach(el => {
+            el.dataset.wasRequired = '1';
+            el.removeAttribute('required');
+        });
+        return true; // Cho phép form submit
+    }
+
     // JS HIỂN THỊ MÃ QR KHI CHỌN ONLINE
     function toggleQR(show) {
         const qrSection = document.getElementById('qr-section');
@@ -542,8 +854,80 @@ include 'includes/header.php';
         else      { qrSection.classList.remove('show'); boxes[0].classList.add('active'); }
     }
 
-    // JS TÍNH TOÁN VÍ HOÀN TIỀN
+    // JS TÍNH TOÁN VÍ HOÀN TIỀN & MÃ GIẢM GIÁ
     const walletBalance = <?php echo $wallet_balance; ?>;
+
+    // State mã giảm giá
+    let activeCoupon = null; // { coupon_id, code, discount_amount }
+
+    function applyCoupon() {
+        const code = document.getElementById('coupon_code_input').value.trim().toUpperCase();
+        const msgEl = document.getElementById('coupon_msg');
+        const tagEl = document.getElementById('coupon_applied_tag');
+        const tagText = document.getElementById('coupon_tag_text');
+
+        if (!code) {
+            msgEl.textContent = 'Vui lòng nhập mã giảm giá.';
+            msgEl.className = 'coupon-msg error';
+            return;
+        }
+
+        const subtotal = parseInt(document.getElementById('ui_subtotal').getAttribute('data-val'));
+        const shipping = parseInt(document.getElementById('ui_shipping').getAttribute('data-val'));
+        const orderTotal = subtotal; // Dùng subtotal (không cộng ship) cho nhất quán với giỏ hàng
+
+        // Gọi AJAX kiểm tra mã qua POST để tránh lỗi ký tự đặc biệt trong URL (vd: 30/4)
+        fetch('api/check_coupon.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'code=' + encodeURIComponent(code) + '&order_total=' + orderTotal
+        })
+            .then(r => r.json())
+            .then(res => {
+                if (res.valid) {
+                    activeCoupon = {
+                        coupon_id: res.coupon_id,
+                        code: res.code,
+                        discount_amount: res.discount_amount
+                    };
+                    document.getElementById('input_coupon_code').value = res.code;
+                    document.getElementById('input_coupon_discount').value = res.discount_amount;
+                    document.getElementById('input_coupon_id').value = res.coupon_id;
+
+                    tagText.textContent = res.code + ' – Giảm ' + res.discount_amount.toLocaleString('vi-VN') + ' VNĐ';
+                    tagEl.style.display = 'flex';
+                    msgEl.textContent = '';
+                    msgEl.className = 'coupon-msg';
+                    calculateTotal();
+                } else {
+                    activeCoupon = null;
+                    tagEl.style.display = 'none';
+                    document.getElementById('input_coupon_code').value = '';
+                    document.getElementById('input_coupon_discount').value = '0';
+                    document.getElementById('input_coupon_id').value = '';
+                    msgEl.textContent = res.message || 'Mã giảm giá không hợp lệ.';
+                    msgEl.className = 'coupon-msg error';
+                    calculateTotal();
+                }
+            })
+            .catch(() => {
+                msgEl.textContent = 'Lỗi kết nối, thử lại sau.';
+                msgEl.className = 'coupon-msg error';
+            });
+    }
+
+    function removeCoupon() {
+        activeCoupon = null;
+        document.getElementById('coupon_code_input').value = '';
+        document.getElementById('input_coupon_code').value = '';
+        document.getElementById('input_coupon_discount').value = '0';
+        document.getElementById('input_coupon_id').value = '';
+        document.getElementById('coupon_applied_tag').style.display = 'none';
+        document.getElementById('coupon_msg').textContent = '';
+        document.getElementById('coupon_msg').className = 'coupon-msg';
+        calculateTotal();
+    }
+
     function calculateTotal() {
         const subtotal = parseInt(document.getElementById('ui_subtotal').getAttribute('data-val'));
         const shipping = parseInt(document.getElementById('ui_shipping').getAttribute('data-val'));
@@ -553,14 +937,28 @@ include 'includes/header.php';
         const uiTotal = document.getElementById('ui_total');
         const qrTotal = document.getElementById('qr-total-amount');
         const inputWalletUsed = document.getElementById('input_wallet_used');
-        let totalBeforeWallet = subtotal + shipping;
+
+        // Giảm giá coupon
+        const couponDiscount = activeCoupon ? activeCoupon.discount_amount : 0;
+        const couponRow = document.getElementById('coupon_discount_row');
+        const uiCouponDiscount = document.getElementById('ui_coupon_discount');
+        if (couponDiscount > 0) {
+            couponRow.style.display = 'flex';
+            uiCouponDiscount.innerText = '-' + couponDiscount.toLocaleString('vi-VN') + ' VNĐ';
+        } else {
+            couponRow.style.display = 'none';
+        }
+
+        let totalAfterCoupon = Math.max(0, subtotal + shipping - couponDiscount);
+
         let walletUsedAmount = 0;
         if (useWallet) {
-            walletUsedAmount = Math.min(walletBalance, totalBeforeWallet);
+            walletUsedAmount = Math.min(walletBalance, totalAfterCoupon);
             walletRow.style.display = 'flex';
             uiWalletUsed.innerText = '-' + walletUsedAmount.toLocaleString('vi-VN') + ' VNĐ';
         } else { walletRow.style.display = 'none'; }
-        let finalTotal = totalBeforeWallet - walletUsedAmount;
+
+        let finalTotal = totalAfterCoupon - walletUsedAmount;
         uiTotal.innerText = finalTotal.toLocaleString('vi-VN') + ' VNĐ';
         if(qrTotal) qrTotal.innerText = finalTotal.toLocaleString('vi-VN');
         inputWalletUsed.value = walletUsedAmount;

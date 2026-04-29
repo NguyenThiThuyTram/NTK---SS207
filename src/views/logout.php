@@ -8,7 +8,7 @@ session_unset();
 // Hủy diệt hoàn toàn phiên làm việc
 session_destroy();
 
-// Đá văng về trang đăng nhập (hoặc trang chủ index.php tùy đại ca)
-header("Location: login.php");
+// Đưa về trang chủ dành cho khách
+header("Location: ../index.php");
 exit();
 ?>

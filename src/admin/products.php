@@ -30,6 +30,9 @@ $stmt = $conn->prepare("
 $stmt->execute();
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Tổng số sản phẩm
+$total_products = count($products);
+
 // Include sidebar
 include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
@@ -44,12 +47,18 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         align-items: center;
         margin-bottom: 26px;
     }
+    .page-header-left {}
     .page-title {
         font-size: 21px;
         font-weight: 700;
         color: #111111;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .page-subtitle {
+        font-size: 13px;
+        color: #999;
     }
     .btn-add {
         background: #2f1c00;
@@ -189,7 +198,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </style>
 
 <div class="page-header">
-    <div class="page-title">Quản lý sản phẩm</div>
+    <div class="page-header-left">
+        <div class="page-title">Quản lý sản phẩm</div>
+        <div class="page-subtitle"><?= $total_products ?> sản phẩm</div>
+    </div>
     <a href="add_product.php" class="btn-add"><i class="fa-solid fa-plus"></i> Thêm sản phẩm</a>
 </div>
 

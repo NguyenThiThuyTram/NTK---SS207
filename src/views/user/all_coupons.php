@@ -5,32 +5,16 @@ global $conn;
 
 $all_coupons = [];
 
-if (isset($conn) && $conn !== null && $user_id) {
-    // Xử lý khi người dùng bấm nút "Lưu mã"
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_coupon') {
-        $coupon_to_save = $_POST['coupon_id'];
-        try {
-            // Dùng INSERT IGNORE để nếu lỡ bấm 2 lần cũng không bị lỗi duplicate
-            $stmt_save = $conn->prepare("INSERT IGNORE INTO UserCoupons (user_id, coupon_id) VALUES (:user_id, :coupon_id)");
-            $stmt_save->execute(['user_id' => $user_id, 'coupon_id' => $coupon_to_save]);
-            
-            echo "<script>alert('Đã lưu voucher vào ví thành công!'); window.location.href='dashboard.php?view=all_coupons';</script>";
-            exit;
-        } catch (PDOException $e) {
-            echo "<script>alert('Lỗi khi lưu: " . addslashes($e->getMessage()) . "');</script>";
-        }
-    }
-
+if (isset($conn) && $conn !== null) {
     try {
-        // Lấy tất cả Coupons và LEFT JOIN với UserCoupons để biết user này đã lưu mã nào chưa
-        $sql = "SELECT c.*, uc.coupon_id as is_saved 
-                FROM Coupons c 
-                LEFT JOIN UserCoupons uc ON c.coupon_id = uc.coupon_id AND uc.user_id = :user_id 
-                WHERE c.status = 1 AND c.end_date >= CURDATE()
-                ORDER BY c.end_date ASC";
+        // Lấy tất cả Coupons đang hoạt động và còn hạn
+        $sql = "SELECT *
+                FROM Coupons
+                WHERE status = 1 AND end_date >= CURDATE()
+                ORDER BY end_date ASC";
         
         $stmt = $conn->prepare($sql);
-        $stmt->execute(['user_id' => $user_id]);
+        $stmt->execute();
         $all_coupons = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     } catch (PDOException $e) {
@@ -237,17 +221,11 @@ if (!function_exists('formatMoney')) {
                             <div class="c-desc">HSD: <?= date('d/m/Y', strtotime($cp['end_date'])) ?></div>
                         </div>
                         <div class="c-action">
-                            <span class="c-code"><?= htmlspecialchars($cp['code']) ?></span>
+                            <span class="c-code" id="code-<?= $cp['coupon_id'] ?>"><?= htmlspecialchars($cp['code']) ?></span>
                             
-                            <?php if (!empty($cp['is_saved'])): ?>
-                                <button class="c-btn-saved" disabled>Đã lưu</button>
-                            <?php else: ?>
-                                <form method="POST" style="margin: 0;">
-                                    <input type="hidden" name="action" value="save_coupon">
-                                    <input type="hidden" name="coupon_id" value="<?= $cp['coupon_id'] ?>">
-                                    <button type="submit" class="c-btn-save">Lưu mã</button>
-                                </form>
-                            <?php endif; ?>
+                            <button class="c-btn-save" onclick="copyCoupon('<?= htmlspecialchars($cp['code']) ?>', this)">
+                                Sao chép mã
+                            </button>
 
                         </div>
                     </div>
@@ -256,3 +234,28 @@ if (!function_exists('formatMoney')) {
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+function copyCoupon(code, btn) {
+    navigator.clipboard.writeText(code).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✓ Đã sao chép!';
+        btn.style.background = '#2e7d32';
+        setTimeout(() => {
+            btn.textContent = orig;
+            btn.style.background = '';
+        }, 2000);
+    }).catch(() => {
+        // Fallback cho trình duyệt cũ
+        const el = document.createElement('textarea');
+        el.value = code;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        const orig = btn.textContent;
+        btn.textContent = '✓ Đã sao chép!';
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+    });
+}
+</script>

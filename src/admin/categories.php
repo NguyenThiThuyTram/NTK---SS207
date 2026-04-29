@@ -16,6 +16,9 @@ $stmt = $conn->prepare("SELECT * FROM categories ORDER BY priority ASC, name ASC
 $stmt->execute();
 $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Tổng số danh mục
+$total_categories = count($categories);
+
 // Include sidebar
 include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
@@ -30,12 +33,18 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         align-items: center;
         margin-bottom: 26px;
     }
+    .page-header-left {}
     .page-title {
         font-size: 21px;
         font-weight: 700;
         color: #111111;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+    .page-subtitle {
+        font-size: 13px;
+        color: #999;
     }
     .btn-add {
         background: #2f1c00;
@@ -142,7 +151,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </style>
 
 <div class="page-header">
-    <div class="page-title">Quản lý danh mục</div>
+    <div class="page-header-left">
+        <div class="page-title">Quản lý danh mục</div>
+        <div class="page-subtitle"><?= $total_categories ?> danh mục</div>
+    </div>
     <a href="add_category.php" class="btn-add"><i class="fa-solid fa-plus"></i> Thêm danh mục</a>
 </div>
 

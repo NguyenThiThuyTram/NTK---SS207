@@ -150,11 +150,11 @@ if ($action === 'apply_coupon') {
     $code = strtoupper(trim($_POST['code'] ?? ''));
     $now = date('Y-m-d H:i:s');
 
-    $sql = "SELECT * FROM Coupons 
-            WHERE code = :code 
-              AND status = 1 
-              AND start_date <= :now1 
-              AND end_date >= :now2
+    $sql = "SELECT * FROM coupons
+            WHERE code = :code
+              AND status = 1
+              AND (start_date IS NULL OR start_date <= :now1)
+              AND (end_date IS NULL OR end_date >= :now2)
               AND (quantity IS NULL OR used_count < quantity)";
     $st = $conn->prepare($sql);
     $st->execute(['code' => $code, 'now1' => $now, 'now2' => $now]);
@@ -196,6 +196,7 @@ if ($action === 'apply_coupon') {
 
     echo json_encode([
         'status' => 'success',
+        'coupon_id' => $coupon['coupon_id'],
         'discount' => $discount,
         'message' => 'Áp dụng mã giảm giá thành công!'
     ]);

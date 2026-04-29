@@ -72,8 +72,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; box-sizing: border-box; }
     
     .page-header { margin-bottom: 24px; }
-    .page-title { font-size: 24px; font-weight: 600; color: #111; margin-bottom: 4px; }
-    .page-subtitle { font-size: 14px; color: #888; }
+    .page-title { font-size: 21px; font-weight: 700; color: #111111; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .page-subtitle { font-size: 13px; color: #999; }
 
     /* Tabs */
     .tabs-container {

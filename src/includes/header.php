@@ -40,9 +40,142 @@ try {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+    <style>
+        /* ============================================================
+           USER DARK MODE
+        ============================================================ */
+        body.dark-mode {
+            background-color: #111 !important;
+            color: #ddd !important;
+        }
+        body.dark-mode .main-header {
+            background: #1a1a1a !important;
+            border-bottom-color: #2a2a2a !important;
+        }
+        body.dark-mode .main-header a,
+        body.dark-mode .navbar a,
+        body.dark-mode .header-icons a {
+            color: #ccc !important;
+        }
+        body.dark-mode .navbar a:hover,
+        body.dark-mode .navbar a.active {
+            color: #fff !important;
+        }
+        body.dark-mode .main-content,
+        body.dark-mode main {
+            background-color: #111 !important;
+        }
+        body.dark-mode footer,
+        body.dark-mode .footer {
+            background: #1a1a1a !important;
+            color: #aaa !important;
+        }
+        body.dark-mode footer a,
+        body.dark-mode .footer a {
+            color: #888 !important;
+        }
+        body.dark-mode footer a:hover {
+            color: #ddd !important;
+        }
+        /* Product cards */
+        body.dark-mode .product-card,
+        body.dark-mode .card {
+            background: #1e1e1e !important;
+            border-color: #2a2a2a !important;
+        }
+        body.dark-mode .product-card h3,
+        body.dark-mode .product-card .name,
+        body.dark-mode .product-card p {
+            color: #ccc !important;
+        }
+        /* Inputs & Forms */
+        body.dark-mode input,
+        body.dark-mode select,
+        body.dark-mode textarea {
+            background: #1e1e1e !important;
+            border-color: #333 !important;
+            color: #ddd !important;
+        }
+        body.dark-mode input::placeholder,
+        body.dark-mode textarea::placeholder {
+            color: #666 !important;
+        }
+        /* Search bar */
+        body.dark-mode .search-bar-container {
+            background: #1a1a1a !important;
+            border-color: #2a2a2a !important;
+        }
+        /* Cart, checkout */
+        body.dark-mode .cart-table,
+        body.dark-mode .checkout-right {
+            background: #1e1e1e !important;
+            border-color: #2a2a2a !important;
+        }
+        body.dark-mode .checkout-right {
+            background-color: #1a1a1a !important;
+            border-color: #2a2a2a !important;
+        }
+        body.dark-mode .sum-total-row,
+        body.dark-mode .sum-row {
+            color: #ccc !important;
+        }
+        body.dark-mode .sum-total-row { border-top-color: #2a2a2a !important; }
+        body.dark-mode .sum-wallet-box {
+            border-color: #2a2a2a !important;
+        }
+        body.dark-mode .method-box {
+            border-color: #2a2a2a !important;
+            background: #1e1e1e !important;
+            color: #ddd !important;
+        }
+        body.dark-mode .method-name { color: #eee !important; }
+        body.dark-mode .method-desc,
+        body.dark-mode .sum-note { color: #888 !important; }
+        body.dark-mode .checkout-stepper {
+            border-bottom-color: #2a2a2a !important;
+        }
+        body.dark-mode .step-indicator.active { color: #eee !important; }
+        body.dark-mode .step-line { background-color: #333 !important; }
+        body.dark-mode .btn-back {
+            background: #1e1e1e !important;
+            border-color: #333 !important;
+            color: #ccc !important;
+        }
+
+        /* Dark mode toggle button in header */
+        .dm-user-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 17px;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+        .dm-user-toggle:hover { opacity: 0.75; }
+    </style>
+
+    <script>
+        /* Áp dụng dark mode NGAY trước khi render để tránh flash */
+        (function(){
+            if (localStorage.getItem('ntk_dark') === '1') {
+                document.documentElement.classList.add('dm-pre');
+            }
+        })();
+    </script>
+
 </head>
 
 <body>
+<script>
+    /* Chuyển class từ <html> sang <body> sau khi body tồn tại */
+    if (document.documentElement.classList.contains('dm-pre')) {
+        document.body.classList.add('dark-mode');
+        document.documentElement.classList.remove('dm-pre');
+    }
+</script>
 
     <header class="main-header">
         <div class="header-container">
@@ -117,6 +250,11 @@ try {
                         <span class="cart-count"><?php echo $cart_count; ?></span>
                     <?php endif; ?>
                 </a>
+
+                <!-- Dark mode toggle -->
+                <button class="dm-user-toggle" id="dmUserToggle" onclick="toggleUserDark()" title="Bật/tắt chế độ tối">
+                    <i class="fa-regular fa-moon" id="dmUserIcon"></i>
+                </button>
             </div>
         </div>
     </header>
@@ -128,10 +266,27 @@ try {
                 var searchBar = document.getElementById("searchBar");
                 if (searchBar.style.display === "none") {
                     searchBar.style.display = "block";
-                    // Tự động focus con trỏ chuột vào ô nhập liệu
                     searchBar.querySelector("input").focus();
                 } else {
                     searchBar.style.display = "none";
                 }
             }
+
+            // ── USER DARK MODE ──────────────────────────────────────
+            function toggleUserDark() {
+                const isDark = document.body.classList.toggle('dark-mode');
+                localStorage.setItem('ntk_dark', isDark ? '1' : '0');
+                updateDmUserIcon(isDark);
+            }
+            function updateDmUserIcon(isDark) {
+                const icon = document.getElementById('dmUserIcon');
+                const btn  = document.getElementById('dmUserToggle');
+                if (!icon) return;
+                icon.className = isDark ? 'fa-solid fa-sun' : 'fa-regular fa-moon';
+                btn.title = isDark ? 'Tắt chế độ tối' : 'Bật chế độ tối';
+            }
+            // Sync icon on load
+            document.addEventListener('DOMContentLoaded', function(){
+                updateDmUserIcon(document.body.classList.contains('dark-mode'));
+            });
         </script>

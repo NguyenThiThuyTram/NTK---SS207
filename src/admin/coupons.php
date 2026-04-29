@@ -13,8 +13,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     /* RESET & BASE — Font: Helvetica Neue | Color: NTK Brand */
     * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; box-sizing: border-box; }
 
-    .coupon-wrapper { padding: 30px; background: #fdfdfb; min-height: 100vh; }
-    
+
     /* Tiêu đề: Viết hoa, đậm, chuẩn style NTK */
     .page-title { 
         font-size: 21px; 
@@ -95,16 +94,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     .btn-delete:hover { color: #c0392b; }
 </style>
 
-<div class="coupon-wrapper">
-    <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end;">
-        <div>
-            <h2 class="page-title">QUẢN LÝ VOUCHER</h2>
-            <div class="page-subtitle">Quản lý các mã giảm giá và chương trình ưu đãi</div>
-        </div>
-        <a href="add_coupon.php" class="btn-add-ntk">
-            <i class="fa-solid fa-plus"></i> THÊM VOUCHER
-        </a>
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 26px;">
+    <div>
+        <div class="page-title">QUẢN LÝ VOUCHER</div>
+        <div class="page-subtitle">Quản lý các mã giảm giá và chương trình ưu đãi</div>
     </div>
+    <a href="add_coupon.php" class="btn-add-ntk">
+        <i class="fa-solid fa-plus"></i> THÊM VOUCHER
+    </a>
+</div>
 
     <div class="section-card">
         <table class="data-table">
@@ -163,8 +161,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             </tbody>
         </table>
     </div>
-</div>
 
+</div><!-- /.admin-content -->
 </main>
 </body>
 </html>
