@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  php-staging:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=NTK_staging
+    restart: unless-stopped

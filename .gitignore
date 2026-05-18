@@ -1,3 +1,11 @@
-# Bỏ qua các file rác hệ thống
 .DS_Store
 Thumbs.db
+.env
+mysql_data/
+.idea/
+.vscode/
+*.log
+src/gemini_error_log.txt
+src/controllers/payos_debug.txt
+
+
