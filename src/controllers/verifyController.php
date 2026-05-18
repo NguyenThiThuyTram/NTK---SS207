@@ -10,7 +10,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     try {
         // 1. Kiểm tra xem Email và Mã OTP có khớp nhau trong database không?
-        $sql = "SELECT * FROM Users WHERE email = :email AND verification_code = :code";
+        $sql = "SELECT * FROM users WHERE email = :email AND verification_code = :code";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':code', $entered_otp);
@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         if ($stmt->rowCount() > 0) {
             // 2. Nếu ĐÚNG: Cập nhật is_verified = 1 và xóa mã OTP đi (để không dùng lại được)
-            $update_sql = "UPDATE Users SET is_verified = 1, verification_code = NULL WHERE email = :email";
+            $update_sql = "UPDATE users SET is_verified = 1, verification_code = NULL WHERE email = :email";
             $update_stmt = $conn->prepare($update_sql);
             $update_stmt->bindParam(':email', $email);
             $update_stmt->execute();

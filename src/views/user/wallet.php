@@ -12,7 +12,7 @@ if (isset($conn) && $conn !== null && $user_id) {
         // (Quy ước theo SQL của đại ca: transaction_type = 1 là cộng tiền hoàn, 2 là trừ tiền thanh toán)
         $stmt_balance = $conn->prepare("
             SELECT SUM(CASE WHEN transaction_type = 1 THEN amount ELSE -amount END) as balance 
-            FROM Wallet_Transactions 
+            FROM wallet_transactions 
             WHERE user_id = :user_id
         ");
         $stmt_balance->execute(['user_id' => $user_id]);
@@ -22,8 +22,8 @@ if (isset($conn) && $conn !== null && $user_id) {
         // 2. Lấy lịch sử giao dịch (JOIN 2 bảng Users và Wallet_Transactions theo đúng lệnh đại ca)
         $stmt_tx = $conn->prepare("
             SELECT wt.amount, wt.transaction_type, wt.description, wt.created_at 
-            FROM Wallet_Transactions wt
-            JOIN Users u ON wt.user_id = u.user_id
+            FROM wallet_transactions wt
+            JOIN users u ON wt.user_id = u.user_id
             WHERE u.user_id = :user_id
             ORDER BY wt.created_at DESC
         ");

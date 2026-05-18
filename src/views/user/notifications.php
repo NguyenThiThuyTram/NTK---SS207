@@ -5,7 +5,7 @@ $user_id = $_SESSION['user_id'];
 // Lấy thông báo từ bảng Orders của user
 try {
     $sql = "SELECT order_id as id_don_hang, order_status as trang_thai, order_date as thoi_gian 
-            FROM Orders 
+            FROM orders 
             WHERE user_id = :user_id 
             ORDER BY order_date DESC";
     $stmt = $conn->prepare($sql);

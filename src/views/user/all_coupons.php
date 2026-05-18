@@ -9,7 +9,7 @@ if (isset($conn) && $conn !== null) {
     try {
         // Lấy tất cả Coupons đang hoạt động và còn hạn
         $sql = "SELECT *
-                FROM Coupons
+                FROM coupons
                 WHERE status = 1 AND end_date >= CURDATE()
                 ORDER BY end_date ASC";
         

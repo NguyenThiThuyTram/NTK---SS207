@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     try {
         // Cập nhật đúng 3 cột trong bảng Users: fullname, email, phonenumber
-        $stmt = $conn->prepare("UPDATE Users SET fullname = :fullname, email = :email, phonenumber = :phonenumber WHERE user_id = :user_id");
+        $stmt = $conn->prepare("UPDATE users SET fullname = :fullname, email = :email, phonenumber = :phonenumber WHERE user_id = :user_id");
         $stmt->execute([
             'fullname' => $fullname,
             'email' => $email,
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // Lấy thông tin mới nhất từ Database để nhét vào các ô input
-$stmt = $conn->prepare("SELECT username, fullname, email, phonenumber FROM Users WHERE user_id = :user_id");
+$stmt = $conn->prepare("SELECT username, fullname, email, phonenumber FROM users WHERE user_id = :user_id");
 $stmt->execute(['user_id' => $user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 ?>

@@ -68,7 +68,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // BƯỚC 1: LƯU ĐƠN HÀNG VÀO BẢNG Orders
         // -------------------------------------------------------------
         // (Giả sử bạn tự sinh order_id là O0001, O0002...)
-        $stmt_max = $conn->prepare("SELECT MAX(CAST(SUBSTRING(order_id, 2) AS UNSIGNED)) FROM Orders");
+        $stmt_max = $conn->prepare("SELECT MAX(CAST(SUBSTRING(order_id, 2) AS UNSIGNED)) FROM orders");
         $stmt_max->execute();
         $max_num = intval($stmt_max->fetchColumn()) + 1;
         $order_id = 'O' . str_pad($max_num, 4, '0', STR_PAD_LEFT);
@@ -78,9 +78,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             SELECT c.cart_id, c.quantity, c.variant_id,
                    v.original_price, v.sale_price,
                    p.product_id, p.name AS product_name
-            FROM Cart c
-            JOIN Product_Variants v ON c.variant_id = v.variant_id
-            JOIN Products p ON v.product_id = p.product_id
+            FROM cart c
+            JOIN product_variants v ON c.variant_id = v.variant_id
+            JOIN products p ON v.product_id = p.product_id
             WHERE c.user_id = :uid AND c.is_selected = 1
         ");
         $stmt_cart->execute(['uid' => $user_id]);
@@ -100,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $verified_coupon_id = null;
         if ($coupon_id && $coupon_discount > 0) {
             $stmt_cp = $conn->prepare("
-                SELECT * FROM Coupons
+                SELECT * FROM coupons
                 WHERE coupon_id = :cid
                   AND status = 1
                   AND start_date <= NOW()
@@ -171,7 +171,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // -------------------------------------------------------------
         if ($wallet_used > 0) {
             // 2.1 Kiểm tra lại xem số dư thật sự có đủ không (chống hack qua F12 sửa code HTML)
-            $stmt_check_wallet = $conn->prepare("SELECT wallet_balance FROM Users WHERE user_id = :uid FOR UPDATE");
+            $stmt_check_wallet = $conn->prepare("SELECT wallet_balance FROM users WHERE user_id = :uid FOR UPDATE");
             $stmt_check_wallet->execute(['uid' => $user_id]);
             $current_balance = floatval($stmt_check_wallet->fetchColumn());
 
@@ -180,7 +180,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             // 2.2 Trừ tiền trong bảng Users
-            $sql_deduct = "UPDATE Users SET wallet_balance = wallet_balance - :amount WHERE user_id = :uid";
+            $sql_deduct = "UPDATE users SET wallet_balance = wallet_balance - :amount WHERE user_id = :uid";
             $stmt_deduct = $conn->prepare($sql_deduct);
             $stmt_deduct->execute([
                 'amount' => $wallet_used,
@@ -189,7 +189,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             // 2.3 Lưu lại lịch sử giao dịch vào bảng Wallet_Transactions bạn vừa tạo
             // Giả sử transaction_type: 1 là Nạp/Hoàn tiền, 2 là Trừ tiền mua sắm
-            $sql_trans = "INSERT INTO Wallet_Transactions (user_id, amount, transaction_type, description, related_order_id) 
+            $sql_trans = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, description, related_order_id) 
                           VALUES (:uid, :amount, 2, :desc, :oid)";
             $stmt_trans = $conn->prepare($sql_trans);
             $stmt_trans->execute([
@@ -204,11 +204,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // BƯỚC 3: LƯU CHI TIẾT ĐƠN HÀNG (Order_Details)
         // -------------------------------------------------------------
         // Sinh detail_id kiểu D0001, D0002...
-        $stmt_max_d = $conn->prepare("SELECT MAX(CAST(SUBSTRING(detail_id, 2) AS UNSIGNED)) FROM Order_Details");
+        $stmt_max_d = $conn->prepare("SELECT MAX(CAST(SUBSTRING(detail_id, 2) AS UNSIGNED)) FROM order_details");
         $stmt_max_d->execute();
         $max_d = intval($stmt_max_d->fetchColumn());
 
-        $sql_detail = "INSERT INTO Order_Details (detail_id, order_id, variant_id, product_name, quantity, price) 
+        $sql_detail = "INSERT INTO order_details (detail_id, order_id, variant_id, product_name, quantity, price) 
                        VALUES (:did, :oid, :vid, :pname, :qty, :price)";
         $stmt_detail = $conn->prepare($sql_detail);
         foreach ($cart_items as $ci) {
@@ -228,14 +228,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // -------------------------------------------------------------
         // BƯỚC 4: XÓA GIỎ HÀNG
         // -------------------------------------------------------------
-        $stmt_clear_cart = $conn->prepare("DELETE FROM Cart WHERE user_id = :uid AND is_selected = 1");
+        $stmt_clear_cart = $conn->prepare("DELETE FROM cart WHERE user_id = :uid AND is_selected = 1");
         $stmt_clear_cart->execute(['uid' => $user_id]);
 
         // -------------------------------------------------------------
         // BƯỚC 5: CẬP NHẬT SỐ LẦN SỬ DỤNG COUPON
         // -------------------------------------------------------------
         if ($verified_coupon_id) {
-            $conn->prepare("UPDATE Coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")
+            $conn->prepare("UPDATE coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")
                  ->execute(['cid' => $verified_coupon_id]);
         }
 
@@ -325,7 +325,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $checkout_url = $resData['data']['checkoutUrl'] ?? '';
 
                 $upd = $conn->prepare("
-                    UPDATE Orders
+                    UPDATE orders
                     SET payos_qr_code = :qr, payos_checkout_url = :url
                     WHERE order_id = :oid
                 ");

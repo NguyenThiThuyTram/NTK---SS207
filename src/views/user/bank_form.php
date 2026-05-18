@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $bank_account_name = trim($_POST['bank_account_name']); 
             
             try {
-                $stmt = $conn->prepare("UPDATE Users SET bank_name = :bank_name, bank_account_number = :bank_account_number, bank_account_name = :bank_account_name WHERE user_id = :user_id");
+                $stmt = $conn->prepare("UPDATE users SET bank_name = :bank_name, bank_account_number = :bank_account_number, bank_account_name = :bank_account_name WHERE user_id = :user_id");
                 $stmt->execute([
                     'bank_name' => $bank_name, 
                     'bank_account_number' => $bank_account_number, 
@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'delete_bank') {
             try {
-                $stmt = $conn->prepare("UPDATE Users SET bank_name = NULL, bank_account_number = NULL, bank_account_name = NULL WHERE user_id = :user_id");
+                $stmt = $conn->prepare("UPDATE users SET bank_name = NULL, bank_account_number = NULL, bank_account_name = NULL WHERE user_id = :user_id");
                 $stmt->execute(['user_id' => $user_id]);
                 echo "<script>alert('Xóa ngân hàng thành công!'); window.location.href='dashboard.php?view=nganhang';</script>";
                 exit;
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Lấy thông tin NH hiện tại
-$stmt = $conn->prepare("SELECT bank_name, bank_account_number, bank_account_name FROM Users WHERE user_id = :user_id");
+$stmt = $conn->prepare("SELECT bank_name, bank_account_number, bank_account_name FROM users WHERE user_id = :user_id");
 $stmt->execute(['user_id' => $user_id]);
 $bank_data = $stmt->fetch(PDO::FETCH_ASSOC);
 

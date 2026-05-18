@@ -7,7 +7,7 @@ if (!$order_id) {
 }
 
 // Lấy thông tin đơn hàng
-$stmt = $conn->prepare("SELECT * FROM Orders WHERE order_id = :oid AND user_id = :uid");
+$stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = :oid AND user_id = :uid");
 $stmt->execute(['oid' => $order_id, 'uid' => $_SESSION['user_id']]);
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -19,9 +19,9 @@ if (!$order) {
 // Lấy chi tiết sản phẩm
 $stmt_items = $conn->prepare("
     SELECT od.*, p.image AS product_image, v.image AS variant_image, v.color, v.size 
-    FROM Order_Details od
-    LEFT JOIN Product_Variants v ON od.variant_id = v.variant_id
-    LEFT JOIN Products p ON v.product_id = p.product_id
+    FROM order_details od
+    LEFT JOIN product_variants v ON od.variant_id = v.variant_id
+    LEFT JOIN products p ON v.product_id = p.product_id
     WHERE od.order_id = :oid
 ");
 $stmt_items->execute(['oid' => $order_id]);

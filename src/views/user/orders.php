@@ -22,7 +22,7 @@ if ($current_tab !== 'all') {
 }
 
 /* * 3. TRUY VẤN JOIN CHUẨN THEO NTK.SQL:
- * Đi từ Orders -> Order_Details -> Product_Variants -> Products
+ * Đi từ orders -> order_details -> product_variants -> products
  */
 $sql = "
     SELECT 
@@ -30,10 +30,10 @@ $sql = "
         od.quantity, od.price,
         p.name AS product_name, p.image AS product_image,
         v.color, v.size, v.image AS variant_image
-    FROM Orders o
-    JOIN Order_Details od ON o.order_id = od.order_id
-    JOIN Product_Variants v ON od.variant_id = v.variant_id
-    JOIN Products p ON v.product_id = p.product_id
+    FROM orders o
+    JOIN order_details od ON o.order_id = od.order_id
+    JOIN product_variants v ON od.variant_id = v.variant_id
+    JOIN products p ON v.product_id = p.product_id
     WHERE o.user_id = :user_id $status_condition
     $order_by
 ";

@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['btn_doi_mat_khau'])) {
     } 
     else {
         try {
-            $sql = "SELECT password FROM Users WHERE user_id = :user_id";
+            $sql = "SELECT password FROM users WHERE user_id = :user_id";
             $stmt = $conn->prepare($sql);
             $stmt->execute(['user_id' => $user_id]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['btn_doi_mat_khau'])) {
                     // Hash mật khẩu mới bằng thuật toán bcrypt an toàn
                     $hashed_password = password_hash($mat_khau_moi, PASSWORD_DEFAULT);
                     
-                    $sql_update = "UPDATE Users SET password = :new_password WHERE user_id = :user_id";
+                    $sql_update = "UPDATE users SET password = :new_password WHERE user_id = :user_id";
                     $stmt_update = $conn->prepare($sql_update);
                     
                     if ($stmt_update->execute(['new_password' => $hashed_password, 'user_id' => $user_id])) {

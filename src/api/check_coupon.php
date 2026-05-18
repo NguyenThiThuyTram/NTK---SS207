@@ -19,7 +19,7 @@ if (!$code) {
 try {
     $stmt = $conn->prepare("
         SELECT *
-        FROM Coupons
+        FROM coupons
         WHERE code = :code
           AND status = 1
           AND start_date <= NOW()

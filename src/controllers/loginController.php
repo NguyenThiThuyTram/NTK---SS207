@@ -10,7 +10,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $redirect_to = isset($_POST['redirect_to']) ? $_POST['redirect_to'] : '../index.php';
 
     try {
-        $sql = "SELECT * FROM Users WHERE email = :email AND password = :password";
+        $sql = "SELECT * FROM users WHERE email = :email AND password = :password";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':email', $email);
         $stmt->bindParam(':password', $password);

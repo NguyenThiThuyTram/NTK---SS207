@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Lấy thông tin user
 try {
-    $stmt = $conn->prepare("SELECT * FROM Users WHERE user_id = :user_id");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE user_id = :user_id");
     $stmt->execute(['user_id' => $_SESSION['user_id']]);
     $current_user = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$current_user) {
@@ -35,7 +35,7 @@ $view = isset($_GET['view']) ? $_GET['view'] : 'hoso';
 // Đếm giỏ hàng cho header
 $cart_count = 0;
 try {
-    $stmt_c = $conn->prepare("SELECT SUM(quantity) as total FROM Cart WHERE user_id = :uid");
+    $stmt_c = $conn->prepare("SELECT SUM(quantity) as total FROM cart WHERE user_id = :uid");
     $stmt_c->execute(['uid' => $_SESSION['user_id']]);
     $row_c = $stmt_c->fetch(PDO::FETCH_ASSOC);
     $cart_count = $row_c['total'] ? (int)$row_c['total'] : 0;
