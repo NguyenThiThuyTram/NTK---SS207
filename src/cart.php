@@ -20,9 +20,9 @@ if (!$user_id) {
 $sql = "SELECT c.cart_id, c.quantity, c.is_selected,
                v.variant_id, v.color, v.size, v.original_price, v.sale_price, v.stock,
                p.product_id, p.name AS product_name, p.image
-        FROM Cart c
-        JOIN Product_Variants v ON c.variant_id = v.variant_id
-        JOIN Products p ON v.product_id = p.product_id
+        FROM cart c
+        JOIN product_variants v ON c.variant_id = v.variant_id
+        JOIN products p ON v.product_id = p.product_id
         WHERE c.user_id = :uid
         ORDER BY c.cart_id DESC";
 

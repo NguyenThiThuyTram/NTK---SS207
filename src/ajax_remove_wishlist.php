@@ -7,7 +7,7 @@ $product_id = $_POST['product_id'] ?? null;
 
 if ($user_id && $product_id) {
     // Thực hiện xóa trong DB
-    $sql = "DELETE FROM Wishlist WHERE user_id = :u AND product_id = :p";
+    $sql = "DELETE FROM wishlist WHERE user_id = :u AND product_id = :p";
     $stmt = $conn->prepare($sql);
     $result = $stmt->execute(['u' => $user_id, 'p' => $product_id]);
     

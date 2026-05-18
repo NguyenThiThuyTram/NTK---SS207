@@ -10,7 +10,7 @@ if (!$order_id) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT * FROM Orders WHERE order_id = :oid");
+$stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = :oid");
 $stmt->execute(['oid' => $order_id]);
 $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -22,8 +22,8 @@ if (!$order) {
 // Lấy chi tiết sản phẩm trong đơn hàng
 $stmt_items = $conn->prepare("
     SELECT od.order_id, od.variant_id, od.product_name, od.quantity, od.price,
-           v.color, v.size FROM Order_Details od
-    LEFT JOIN Product_Variants v ON od.variant_id = v.variant_id
+           v.color, v.size FROM order_details od
+    LEFT JOIN product_variants v ON od.variant_id = v.variant_id
     WHERE od.order_id = :oid
 ");
 $stmt_items->execute(['oid' => $order_id]);

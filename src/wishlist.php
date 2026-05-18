@@ -16,9 +16,9 @@ if (!$user_id) {
 
 // Truy vấn lấy danh sách sản phẩm từ bảng Wishlist
 $sql = "SELECT p.*, v.original_price, v.sale_price 
-        FROM Wishlist w
-        JOIN Products p ON w.product_id = p.product_id
-        LEFT JOIN Product_Variants v ON p.product_id = v.product_id
+        FROM wishlist w
+        JOIN products p ON w.product_id = p.product_id
+        LEFT JOIN product_variants v ON p.product_id = v.product_id
         WHERE w.user_id = :u
         GROUP BY p.product_id";
 

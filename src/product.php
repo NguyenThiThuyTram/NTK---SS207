@@ -3,7 +3,7 @@ require_once 'config/database.php';
 include 'includes/header.php';
 
 // 1. Lấy danh mục
-$sql_cate = "SELECT * FROM Categories ORDER BY priority ASC";
+$sql_cate = "SELECT * FROM categories ORDER BY priority ASC";
 $stmt_cate = $conn->prepare($sql_cate);
 $stmt_cate->execute();
 $categories = $stmt_cate->fetchAll(PDO::FETCH_ASSOC);
@@ -11,8 +11,8 @@ $categories = $stmt_cate->fetchAll(PDO::FETCH_ASSOC);
 // 2. Lấy sản phẩm kèm giá
 $cat_id = isset($_GET['cat']) ? $_GET['cat'] : null;
 $sql = "SELECT p.*, v.original_price, v.sale_price 
-        FROM Products p 
-        LEFT JOIN Product_Variants v ON p.product_id = v.product_id ";
+        FROM products p 
+        LEFT JOIN product_variants v ON p.product_id = v.product_id ";
 if ($cat_id) {
     $sql .= " WHERE p.category_id = :cat_id AND p.status = 1 ";
 } else {

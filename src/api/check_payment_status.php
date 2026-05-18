@@ -8,7 +8,7 @@ if (!$order_id) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT payment_status FROM Orders WHERE order_id = :oid");
+$stmt = $conn->prepare("SELECT payment_status FROM orders WHERE order_id = :oid");
 $stmt->execute(['oid' => $order_id]);
 $status = $stmt->fetchColumn();
 

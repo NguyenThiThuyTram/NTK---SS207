@@ -10,8 +10,8 @@ require_once 'includes/header.php';
 // Lấy 4 sản phẩm mới nhất (New Arrivals)
 // Sắp xếp theo product_id giảm dần (món mới tạo sẽ có ID lớn)
 $sql_new = "SELECT p.*, v.original_price, v.sale_price 
-            FROM Products p 
-            LEFT JOIN Product_Variants v ON p.product_id = v.product_id 
+            FROM products p 
+            LEFT JOIN product_variants v ON p.product_id = v.product_id 
             WHERE p.status = 1
             GROUP BY p.product_id
             ORDER BY p.product_id DESC 
@@ -23,8 +23,8 @@ $new_arrivals = $stmt_new->fetchAll(PDO::FETCH_ASSOC);
 // Lấy 4 sản phẩm bán chạy nhất (Best Sellers)
 // Sắp xếp theo cột sold_count (lượt bán) từ cao đến thấp
 $sql_best = "SELECT p.*, v.original_price, v.sale_price 
-             FROM Products p 
-             LEFT JOIN Product_Variants v ON p.product_id = v.product_id 
+             FROM products p 
+             LEFT JOIN product_variants v ON p.product_id = v.product_id 
              WHERE p.status = 1
              GROUP BY p.product_id
              ORDER BY p.sold_count DESC 

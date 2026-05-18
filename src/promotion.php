@@ -4,8 +4,8 @@ include 'includes/header.php';
 
 // Lấy danh sách sản phẩm đang giảm giá (sale_price < original_price)
 $sql_promo = "SELECT p.*, v.original_price, v.sale_price 
-              FROM Products p 
-              JOIN Product_Variants v ON p.product_id = v.product_id 
+              FROM products p 
+              JOIN product_variants v ON p.product_id = v.product_id 
               WHERE v.sale_price < v.original_price AND p.status = 1
               GROUP BY p.product_id 
               ORDER BY (v.original_price - v.sale_price) DESC";

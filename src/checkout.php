@@ -15,9 +15,9 @@ if (!$user_id) {
 $sql = "SELECT c.cart_id, c.quantity, 
                v.variant_id, v.color, v.size, v.original_price, v.sale_price,
                p.product_id, p.name AS product_name, p.image
-        FROM Cart c
-        JOIN Product_Variants v ON c.variant_id = v.variant_id
-        JOIN Products p ON v.product_id = p.product_id
+        FROM cart c
+        JOIN product_variants v ON c.variant_id = v.variant_id
+        JOIN products p ON v.product_id = p.product_id
         WHERE c.user_id = :uid AND c.is_selected = 1";
 $stmt = $conn->prepare($sql);
 $stmt->execute(['uid' => $user_id]);
@@ -29,7 +29,7 @@ if (count($checkout_items) === 0) {
 }
 
 // Lấy thông tin user để điền sẵn vào form
-$stmt_user = $conn->prepare("SELECT * FROM Users WHERE user_id = :uid");
+$stmt_user = $conn->prepare("SELECT * FROM users WHERE user_id = :uid");
 $stmt_user->execute(['uid' => $user_id]);
 $user_info = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
@@ -62,7 +62,7 @@ foreach ($checkout_items as $item) {
 $shipping_fee = 35000; // Cố định 35k như yêu cầu
 
 // 3. LẤY SỐ DƯ VÍ THẬT TỪ DATABASE
-$stmt_wallet = $conn->prepare("SELECT wallet_balance FROM Users WHERE user_id = :uid");
+$stmt_wallet = $conn->prepare("SELECT wallet_balance FROM users WHERE user_id = :uid");
 $stmt_wallet->execute(['uid' => $user_id]);
 $user_data = $stmt_wallet->fetch(PDO::FETCH_ASSOC);
 
@@ -80,7 +80,7 @@ try {
     $stmt_coupons = $conn->prepare("
         SELECT coupon_id, code, discount_type, discount_value,
                min_order_value, max_discount_amount, end_date, quantity, used_count
-        FROM Coupons
+        FROM coupons
         WHERE status = 1
           AND (start_date IS NULL OR start_date <= NOW())
           AND (end_date IS NULL OR end_date >= NOW())

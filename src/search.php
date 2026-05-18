@@ -8,7 +8,7 @@ require_once 'config/database.php';
 $categories = [];
 try {
     // Lấy category_id (VD: CAT01) và name (VD: Áo thun)
-    $stmt_cat = $conn->query("SELECT category_id, name FROM Categories");
+    $stmt_cat = $conn->query("SELECT category_id, name FROM categories");
     $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
     echo "Lỗi lấy danh mục: " . $e->getMessage();
@@ -30,8 +30,8 @@ $sql = "
         p.product_id, p.name, p.image, p.rating, p.sold_count,
         MIN(pv.original_price) as original_price,
         MIN(pv.sale_price) as sale_price
-    FROM Products p
-    LEFT JOIN Product_Variants pv ON p.product_id = pv.product_id
+    FROM products p
+    LEFT JOIN product_variants pv ON p.product_id = pv.product_id
     WHERE p.status = 1
 ";
 

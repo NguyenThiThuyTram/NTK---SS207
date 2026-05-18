@@ -15,8 +15,8 @@ $first_v = null;
 if ($product_id) {
     // 3. Lấy thông tin sản phẩm chính
     $sql_prod = "SELECT p.*, c.name as category_name 
-                 FROM Products p 
-                 JOIN Categories c ON p.category_id = c.category_id 
+                 FROM products p 
+                 JOIN categories c ON p.category_id = c.category_id 
                  WHERE p.product_id = :id";
     $stmt = $conn->prepare($sql_prod);
     $stmt->bindParam(':id', $product_id);
@@ -25,7 +25,7 @@ if ($product_id) {
 
     if ($product) {
         // 4. Lấy Biến thể (Màu, Size, Giá, Tồn kho)
-        $sql_variants = "SELECT * FROM Product_Variants WHERE product_id = :id AND is_active = 1";
+        $sql_variants = "SELECT * FROM product_variants WHERE product_id = :id AND is_active = 1";
         $stmt_v = $conn->prepare($sql_variants);
         $stmt_v->bindParam(':id', $product_id);
         $stmt_v->execute();
@@ -34,8 +34,8 @@ if ($product_id) {
 
         // 5. Lấy Sản phẩm liên quan (Cùng Category, trừ món hiện tại)
         $sql_related = "SELECT p.*, v.original_price, v.sale_price 
-                        FROM Products p 
-                        LEFT JOIN Product_Variants v ON p.product_id = v.product_id 
+                        FROM products p 
+                        LEFT JOIN product_variants v ON p.product_id = v.product_id 
                         WHERE p.category_id = :cat_id 
                         AND p.product_id != :prod_id 
                         AND p.status = 1

@@ -12,12 +12,12 @@ if ($action === 'get_count') {
     $count = 0;
     try {
         if ($user_id) {
-            $st = $conn->prepare("SELECT SUM(quantity) FROM Cart WHERE user_id = :uid");
+            $st = $conn->prepare("SELECT SUM(quantity) FROM cart WHERE user_id = :uid");
             $st->execute(['uid' => $user_id]);
             $count = intval($st->fetchColumn());
         } else {
             // Đếm theo session_id nếu chưa đăng nhập
-            $st = $conn->prepare("SELECT SUM(quantity) FROM Cart WHERE session_id = :sid AND user_id IS NULL");
+            $st = $conn->prepare("SELECT SUM(quantity) FROM cart WHERE session_id = :sid AND user_id IS NULL");
             $st->execute(['sid' => session_id()]);
             $count = intval($st->fetchColumn());
         }
@@ -42,7 +42,7 @@ if ($action === 'add_to_cart') {
         $quantity = 1;
 
     // Kiểm tra biến thể & tồn kho
-    $st = $conn->prepare("SELECT variant_id, stock FROM Product_Variants WHERE variant_id = :vid AND is_active = 1");
+    $st = $conn->prepare("SELECT variant_id, stock FROM product_variants WHERE variant_id = :vid AND is_active = 1");
     $st->execute(['vid' => $variant_id]);
     $variant = $st->fetch(PDO::FETCH_ASSOC);
 
@@ -59,26 +59,26 @@ if ($action === 'add_to_cart') {
     }
 
     // Kiểm tra sản phẩm đã có trong giỏ của người này chưa
-    $st2 = $conn->prepare("SELECT cart_id, quantity FROM Cart WHERE user_id = :uid AND variant_id = :vid");
+    $st2 = $conn->prepare("SELECT cart_id, quantity FROM cart WHERE user_id = :uid AND variant_id = :vid");
     $st2->execute(['uid' => $user_id, 'vid' => $variant_id]);
     $existing = $st2->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
         // Đã có → cộng dồn số lượng
         $new_qty = min($existing['quantity'] + $quantity, $variant['stock']);
-        $upd = $conn->prepare("UPDATE Cart SET quantity = :qty WHERE cart_id = :cid");
+        $upd = $conn->prepare("UPDATE cart SET quantity = :qty WHERE cart_id = :cid");
         $upd->execute(['qty' => $new_qty, 'cid' => $existing['cart_id']]);
         echo 'updated';
     } else {
         // Chưa có → Sinh ID mới (Tự động tạo mã C0001, C0002...)
         // Lấy số lớn nhất hiện tại
-        $stMax = $conn->prepare("SELECT MAX(CAST(SUBSTRING(cart_id, 2) AS UNSIGNED)) FROM Cart");
+        $stMax = $conn->prepare("SELECT MAX(CAST(SUBSTRING(cart_id, 2) AS UNSIGNED)) FROM cart");
         $stMax->execute();
         $maxNum = intval($stMax->fetchColumn()) + 1;
         $cart_id = 'C' . str_pad($maxNum, 4, '0', STR_PAD_LEFT);
 
         // Thêm mới
-        $ins = $conn->prepare("INSERT INTO Cart (cart_id, user_id, variant_id, quantity, is_selected) VALUES (:cid, :uid, :vid, :qty, 1)");
+        $ins = $conn->prepare("INSERT INTO cart (cart_id, user_id, variant_id, quantity, is_selected) VALUES (:cid, :uid, :vid, :qty, 1)");
         $ins->execute([
             'cid' => $cart_id,
             'uid' => $user_id,
@@ -104,7 +104,7 @@ if ($action === 'update_qty') {
     if ($quantity < 1)
         $quantity = 1;
 
-    $sql = "SELECT v.stock FROM Cart c JOIN Product_Variants v ON c.variant_id = v.variant_id
+    $sql = "SELECT v.stock FROM cart c JOIN product_variants v ON c.variant_id = v.variant_id
             WHERE c.cart_id = :cid AND c.user_id = :uid";
     $st = $conn->prepare($sql);
     $st->execute(['cid' => $cart_id, 'uid' => $user_id]);
@@ -118,7 +118,7 @@ if ($action === 'update_qty') {
         $quantity = $row['stock'];
     }
 
-    $upd = $conn->prepare("UPDATE Cart SET quantity = :qty WHERE cart_id = :cid AND user_id = :uid");
+    $upd = $conn->prepare("UPDATE cart SET quantity = :qty WHERE cart_id = :cid AND user_id = :uid");
     $upd->execute(['qty' => $quantity, 'cid' => $cart_id, 'uid' => $user_id]);
     echo 'success';
     exit;
@@ -127,7 +127,7 @@ if ($action === 'update_qty') {
 // ===================== XÓA SẢN PHẨM =====================
 if ($action === 'remove') {
     $cart_id = $_POST['cart_id'] ?? '';
-    $del = $conn->prepare("DELETE FROM Cart WHERE cart_id = :cid AND user_id = :uid");
+    $del = $conn->prepare("DELETE FROM cart WHERE cart_id = :cid AND user_id = :uid");
     $del->execute(['cid' => $cart_id, 'uid' => $user_id]);
     echo 'success';
     exit;
@@ -138,7 +138,7 @@ if ($action === 'select') {
     $cart_id = $_POST['cart_id'] ?? '';
     $is_selected = intval($_POST['is_selected'] ?? 0);
 
-    $upd = $conn->prepare("UPDATE Cart SET is_selected = :sel WHERE cart_id = :cid AND user_id = :uid");
+    $upd = $conn->prepare("UPDATE cart SET is_selected = :sel WHERE cart_id = :cid AND user_id = :uid");
     $upd->execute(['sel' => $is_selected, 'cid' => $cart_id, 'uid' => $user_id]);
     echo 'success';
     exit;
@@ -168,8 +168,8 @@ if ($action === 'apply_coupon') {
     // Tính tổng tiền các sản phẩm ĐÃ CHỌN trong giỏ
     $sql2 = "SELECT SUM(c.quantity * CASE WHEN v.sale_price > 0 THEN v.sale_price ELSE v.original_price END
                     ) AS subtotal
-             FROM Cart c
-             JOIN Product_Variants v ON c.variant_id = v.variant_id
+             FROM cart c
+             JOIN product_variants v ON c.variant_id = v.variant_id
              WHERE c.user_id = :uid AND c.is_selected = 1";
     $st2 = $conn->prepare($sql2);
     $st2->execute(['uid' => $user_id]);
