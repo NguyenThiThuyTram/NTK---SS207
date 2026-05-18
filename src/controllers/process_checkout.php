@@ -144,7 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $initial_order_status   = ($payment_method === 'cod')    ? 1 : 0; // 0=pending, 1=processing
 
         // Lưu đơn hàng
-        $sql_order = "INSERT INTO Orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value) 
+        $sql_order = "INSERT INTO orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value) 
                       VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv)";
         $stmt_order = $conn->prepare($sql_order);
         $stmt_order->execute([

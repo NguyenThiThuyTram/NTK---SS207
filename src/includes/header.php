@@ -11,13 +11,13 @@ require_once __DIR__ . '/../config/database.php';
 $cart_count = 0;
 try {
     if (isset($_SESSION['user_id'])) {
-        $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM Cart WHERE user_id = :user_id");
+        $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM cart WHERE user_id = :user_id");
         $stmt->execute(['user_id' => $_SESSION['user_id']]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $cart_count = $row['total_items'] ?: 0;
     } else {
         $session_id = session_id();
-        $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM Cart WHERE session_id = :session_id AND user_id IS NULL");
+        $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM cart WHERE session_id = :session_id AND user_id IS NULL");
         $stmt->execute(['session_id' => $session_id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $cart_count = $row['total_items'] ?: 0;

@@ -23,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $verification_code = sprintf("%04d", mt_rand(1, 9999));
     
     try {
-        $sql = "INSERT INTO Users (user_id, username, password, fullname, email, phonenumber, verification_code) 
+        $sql = "INSERT INTO users (user_id, username, password, fullname, email, phonenumber, verification_code) 
                 VALUES (:user_id, :username, :password, :fullname, :email, :phone, :code)";
         
         $stmt = $conn->prepare($sql);

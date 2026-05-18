@@ -11,5 +11,11 @@ services:
       - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
-      - DB_NAME=NTK_staging
+      - DB_NAME=ntk_staging
+    networks:
+      - ntk---ss207_default
     restart: unless-stopped
+
+networks:
+  ntk---ss207_default:
+    external: true

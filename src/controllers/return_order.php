@@ -14,7 +14,7 @@ if ($order_id) {
     try {
         $conn->beginTransaction();
 
-        $stmt_info = $conn->prepare("SELECT * FROM Orders WHERE order_id = :oid AND user_id = :uid FOR UPDATE");
+        $stmt_info = $conn->prepare("SELECT * FROM orders WHERE order_id = :oid AND user_id = :uid FOR UPDATE");
         $stmt_info->execute(['oid' => $order_id, 'uid' => $user_id]);
         $order = $stmt_info->fetch(PDO::FETCH_ASSOC);
 
@@ -37,14 +37,14 @@ if ($order_id) {
 
         $msg = '';
         if ($refund_amount > 0) {
-            $conn->prepare("UPDATE Users SET wallet_balance = wallet_balance + :amt WHERE user_id = :uid")
+            $conn->prepare("UPDATE users SET wallet_balance = wallet_balance + :amt WHERE user_id = :uid")
                  ->execute(['amt' => $refund_amount, 'uid' => $user_id]);
-            $conn->prepare("INSERT INTO Wallet_Transactions (user_id, amount, transaction_type, description, related_order_id) VALUES (:uid, :amt, 1, 'Hoàn tiền do trả hàng (Refund)', :oid)")
+            $conn->prepare("INSERT INTO wallet_transactions (user_id, amount, transaction_type, description, related_order_id) VALUES (:uid, :amt, 1, 'Hoàn tiền do trả hàng (Refund)', :oid)")
                  ->execute(['uid' => $user_id, 'amt' => $refund_amount, 'oid' => $order_id]);
         }
         
         // Đổi trạng thái đơn thành "Trả hàng/Hoàn tiền" (Status = 5)
-        $conn->prepare("UPDATE Orders SET order_status = 5 WHERE order_id = :oid")->execute(['oid' => $order_id]);
+        $conn->prepare("UPDATE orders SET order_status = 5 WHERE order_id = :oid")->execute(['oid' => $order_id]);
         $msg = 'Đã yêu cầu trả hàng và hoàn lại ' . number_format($refund_amount, 0, ',', '.') . ' VNĐ vào ví!';
 
         $conn->commit();

@@ -12,7 +12,7 @@ $user_id = $_SESSION['user_id'];
 
 if ($order_id) {
     try {
-        $stmt_info = $conn->prepare("SELECT * FROM Orders WHERE order_id = :oid AND user_id = :uid");
+        $stmt_info = $conn->prepare("SELECT * FROM orders WHERE order_id = :oid AND user_id = :uid");
         $stmt_info->execute(['oid' => $order_id, 'uid' => $user_id]);
         $order = $stmt_info->fetch(PDO::FETCH_ASSOC);
 
@@ -24,7 +24,7 @@ if ($order_id) {
             throw new Exception("Trạng thái đơn hàng không hợp lệ để xác nhận nhận hàng.");
         }
 
-        $stmt_update = $conn->prepare("UPDATE Orders SET order_status = 3 WHERE order_id = :oid");
+        $stmt_update = $conn->prepare("UPDATE orders SET order_status = 3 WHERE order_id = :oid");
         $stmt_update->execute(['oid' => $order_id]);
 
         echo "<script>

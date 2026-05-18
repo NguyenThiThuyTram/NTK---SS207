@@ -71,7 +71,7 @@ if (
 
     if ($payos_order_code) {
 
-        $stmt = $conn->prepare("SELECT order_id, payment_status FROM Orders WHERE payos_order_code = :poc");
+        $stmt = $conn->prepare("SELECT order_id, payment_status FROM orders WHERE payos_order_code = :poc");
         $stmt->execute(['poc' => $payos_order_code]);
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -80,7 +80,7 @@ if (
             if ($order['payment_status'] == 0) {
 
                 $upd = $conn->prepare("
-                    UPDATE Orders 
+                    UPDATE orders 
                     SET payment_status = 1, order_status = 1 
                     WHERE order_id = :oid
                 ");
