@@ -1,0 +1,27 @@
+name: CD Pipeline - Auto Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    name: Deploy lên máy chủ AWS
+    runs-on: self-hosted
+
+    steps:
+    - name: 🚀 Tự động kéo code và Deploy
+      run: |
+        echo "Di chuyển vào thư mục code chính của dự án..."
+        cd /home/ubuntu/NTK---SS207
+        
+        echo "Kéo code mới nhất từ Github..."
+        git pull origin main
+        
+        echo "Cập nhật và khởi động lại website..."
+        docker compose up -d --build
+        
+        echo "Dọn dẹp rác Docker để nhẹ máy..."
+        docker image prune -f
+        
+        echo "✅ Hoàn tất quá trình Deploy tự động!"
