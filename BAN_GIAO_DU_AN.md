@@ -83,3 +83,12 @@ Nếu website chạy không đúng ý muốn, bạn dùng các câu lệnh này 
 
 *   **Tắt hoàn toàn hệ thống để dọn dẹp:**
     `docker compose down`
+
+---
+
+## 6. HỆ THỐNG TỰ ĐỘNG HÓA (CI/CD PIPELINE) 🤖
+
+Dự án này đã được tích hợp công nghệ **CI/CD siêu xịn sò** chuẩn DevOps:
+*   **CI (Kiểm tra lỗi tự động):** Mỗi khi có code đẩy lên Github, hệ thống sẽ tự động quét lỗi cú pháp PHP để đảm bảo website không bao giờ bị "màn hình trắng" do code lỗi.
+*   **CD (Deploy tự động):** Đã cài đặt một "Self-hosted Runner" túc trực 24/24 trên máy chủ AWS. Khi code an toàn vượt qua bài test, Runner sẽ tự động kéo code mới nhất về và reset website. 
+👉 **Chỉ cần Push code lên Github là 30 giây sau Web sẽ tự động đổi giao diện! Người vận hành không cần gõ lệnh thủ công nữa.**
