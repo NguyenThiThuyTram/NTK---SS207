@@ -14,6 +14,7 @@ $page_titles = [
     'coupons.php'    => 'Coupon',
     'accounts.php'   => 'Tài khoản',
 ];
+$current_page_title = $page_titles[$admin_current_page] ?? '';
 // ── THÔNG BÁO ADMIN ────────────────────────────────────────────
 require_once __DIR__ . '/../config/database.php';
 $notifications = [];
