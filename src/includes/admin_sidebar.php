@@ -116,7 +116,8 @@ $notif_count = count($notifications);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($current_page_title) ?> — Admin NTK Fashion</title>
+    <title><?= !empty($current_page_title) ? htmlspecialchars($current_page_title) . ' — ' : '' ?>Admin NTK Fashion</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo-ntk.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         /* ============================================================

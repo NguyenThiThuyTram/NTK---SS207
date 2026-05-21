@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng Ký NTK</title>
+    <link rel="icon" type="image/png" href="../assets/images/logo-ntk.png">
 
     <style>
         * { box-sizing: border-box; font-family: sans-serif; }
