@@ -1,19 +1,56 @@
 </main> 
 
 <style>
+    /* ============================================================
+       CSS CHUẨN ĐỒNG BỘ DARK MODE & FIX CĂN GIỮA ICON ICON
+    ============================================================ */
+    
+    /* ÉP CĂN GIỮA MẠNG XÃ HỘI CHUẨN HIGH-FASHION CHO BEE */
+    .social-icons {
+        display: flex !important;
+        justify-content: center !important; /* Căn giữa theo chiều ngang */
+        align-items: center !important;     /* Căn giữa theo chiều dọc */
+        gap: 15px;                          /* Khoảng cách giữa các vòng tròn icon */
+        margin: 15px auto 20px;             /* Tạo khoảng cách thông thoáng trên dưới */
+        width: 100%;
+    }
+
+    /* Đảm bảo vòng tròn bọc icon cũng chuẩn tâm */
+    .social-icons a {
+        display: inline-flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 40px;
+        height: 40px;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .social-icons a:hover {
+        border-color: #222;
+        background-color: #222;
+    }
+    .social-icons a:hover i {
+        color: #fff !important;
+    }
+
     /* CSS bổ trợ để fix triệt để hiển thị Footer trong Dark Mode */
     body.dark-mode .main-footer {
         background-color: #1a1a1a !important;
         border-top: 1px solid #333;
         color: #ddd !important;
     }
-    /* Ép màu cho các tiêu đề H3 mà Bee đang dùng */
+    
+    /* Ép màu cho các tiêu đề H3 */
     body.dark-mode .footer-col h3 {
         color: #ffffff !important;
         text-shadow: 0 0 2px rgba(255,255,255,0.2);
         margin-bottom: 20px;
         font-weight: bold;
     }
+    
     /* Làm nổi bật các dòng text thông thường và link */
     body.dark-mode .footer-col p, 
     body.dark-mode .footer-col li,
@@ -23,22 +60,36 @@
     body.dark-mode .footer-col a:hover {
         color: #f1c40f !important; /* Di chuột vào hiện màu vàng NTK */
     }
+    
     /* Phần bản quyền phía dưới */
     body.dark-mode .footer-bottom {
         background-color: #111 !important;
         border-top: 1px solid #222;
         color: #888 !important;
     }
-    /* Icon mạng xã hội */
+    
+    /* Icon mạng xã hội khi ở Dark Mode */
+    body.dark-mode .social-icons a {
+        border-color: #444 !important;
+    }
     body.dark-mode .social-icons a i {
         color: #f1c40f !important;
+    }
+    body.dark-mode .social-icons a:hover {
+        background-color: #f1c40f !important;
+        border-color: #f1c40f !important;
+    }
+    body.dark-mode .social-icons a:hover i {
+        color: #111 !important;
     }
 </style>
 
 <footer class="main-footer">
     <div class="footer-container">
         <div class="footer-col">
-            <img src="assets/images/logo-ntk.png" alt="NTK Logo" class="footer-logo" id="footerLogo">
+            <div class="footer-logo-box" style="margin-bottom: 15px;">
+                <img src="assets/images/logo-ntk.png" alt="NTK Logo" class="footer-logo" id="footerLogo">
+            </div>
             <p>Khám phá những thiết kế giúp bạn tự tin mỗi ngày.</p>
             <p>Hotline: <strong>0373546444</strong></p>
             <p>Giờ hoạt động: 9:00 - 21:00</p>
@@ -65,15 +116,14 @@
             </ul>
         </div>
 
-        <div class="footer-col">
-            <h3>KẾT NỐI VỚI CHÚNG TÔI</h3>
+        <div class="footer-col" style="text-align: center;"> <h3>KẾT NỐI VỚI CHÚNG TÔI</h3>
             <div class="social-icons">
                 <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
                 <a href="#"><i class="fa-brands fa-instagram"></i></a>
                 <a href="#"><i class="fa-brands fa-telegram"></i></a>
                 <a href="#"><i class="fa-solid fa-bag-shopping"></i></a>
             </div>
-            <p class="social-note">Follow để cập nhật xu hướng mới nhất và nhận các deal hot từ NTK!</p>
+            <p class="social-note" style="margin-top: 10px;">Follow để cập nhật xu hướng mới nhất và nhận các deal hot từ NTK!</p>
         </div>
     </div>
 
@@ -86,7 +136,7 @@
 </footer>
 
 <script>
-    // Thêm logic nhỏ để đổi màu logo footer khi sang Dark Mode nếu cần
+    // Đồng bộ màu sắc logo tự động khi load trang
     document.addEventListener('DOMContentLoaded', function() {
         const isDark = document.body.classList.contains('dark-mode');
         const fLogo = document.getElementById('footerLogo');

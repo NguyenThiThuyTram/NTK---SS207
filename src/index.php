@@ -8,7 +8,6 @@ require_once 'includes/header.php';
 // --- PHẦN LOGIC LẤY DỮ LIỆU ---
 
 // Lấy 4 sản phẩm mới nhất (New Arrivals)
-// Sắp xếp theo product_id giảm dần (món mới tạo sẽ có ID lớn)
 $sql_new = "SELECT p.*, v.original_price, v.sale_price 
             FROM products p 
             LEFT JOIN product_variants v ON p.product_id = v.product_id 
@@ -21,7 +20,6 @@ $stmt_new->execute();
 $new_arrivals = $stmt_new->fetchAll(PDO::FETCH_ASSOC);
 
 // Lấy 4 sản phẩm bán chạy nhất (Best Sellers)
-// Sắp xếp theo cột sold_count (lượt bán) từ cao đến thấp
 $sql_best = "SELECT p.*, v.original_price, v.sale_price 
              FROM products p 
              LEFT JOIN product_variants v ON p.product_id = v.product_id 
@@ -35,12 +33,11 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="banner">
-    <div class="banner-content" style="text-align: center; padding: 100px 0; background: #f4f4f4;">
-
-    </div>
+    <div class="banner-content" style="text-align: center; padding: 100px 0;">
+        </div>
 </div>
 
-<div class="section">
+<div class="section main-section-card">
     <div class="section-header">
         <p>MỚI RA MẮT</p>
         <h2>New Arrivals</h2>
@@ -66,7 +63,7 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<div class="section bg-be">
+<div class="section bg-be main-section-card">
     <div class="section-header">
         <p>ĐƯỢC YÊU THÍCH NHẤT</p>
         <h2>Best Sellers</h2>
@@ -93,7 +90,7 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
-<div class="section">
+<div class="section main-section-card">
     <div class="section-header">
         <p>DANH MỤC</p>
         <h2>Shop by Category</h2>
@@ -123,10 +120,35 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
 </div>
 
 <style>
-    /* Nút tròn để mở chat */
+    /* ============================================================
+        CSS FIX ĐỒNG BỘ DARKMODE TRANG CHỦ NTK FASHION
+    ============================================================ */
+    .banner {
+        background-color: #f4f4f4; /* Nền mặc định Lightmode */
+        transition: background-color 0.3s ease;
+    }
+
+    /* Ép đồng bộ nền tối sâu tuyệt đối khi bật Dark Mode */
+    body.dark-mode, 
+    body.dark-mode .main-content, 
+    body.dark-mode .banner, 
+    body.dark-mode .main-section-card {
+        background-color: #121212 !important;
+    }
+
+    body.dark-mode .bg-be {
+        background-color: #1a1a1a !important; /* Biến vùng Best Seller thành xám đen sang trọng */
+    }
+
+    body.dark-mode .section-header h2, 
+    body.dark-mode .section-header p {
+        color: #ffffff !important;
+    }
+
+    /* Các css phụ cho Chatbox */
     #ntk-chat-toggle { 
         position: fixed; bottom: 20px; right: 20px; 
-        background: #2f1c00; /* Primary: #2f1c00 */
+        background: #2f1c00; 
         color: #ffffff; 
         border: none; border-radius: 50%; 
         width: 60px; height: 60px; 
@@ -136,23 +158,29 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     }
     
-    /* Khung hộp thoại chat */
     #ntk-chatbox { 
         position: fixed; bottom: 90px; right: 20px; 
         width: 320px; 
-        background: #ffffff; /* Background: #ffffff */
-        border: 1px solid #e5e5e5; /* Border: #e5e5e5 */
+        background: #ffffff; 
+        border: 1px solid #e5e5e5; 
         border-radius: 12px; 
         box-shadow: 0 5px 20px rgba(0,0,0,0.1); 
         display: none; flex-direction: column; 
         z-index: 9999; overflow: hidden; 
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
-        color: #111111; /* Text: #111111 */
+        color: #111111; 
     }
     
-    /* Đầu hộp thoại */
+    body.dark-mode #ntk-chatbox, 
+    body.dark-mode #ntk-chat-messages,
+    body.dark-mode #ntk-chat-input-area {
+        background: #1e1e1e !important;
+        border-color: #333 !important;
+        color: #fff !important;
+    }
+    
     #ntk-chat-header { 
-        background: #2f1c00; /* Primary: #2f1c00 */
+        background: #2f1c00; 
         color: #ffffff; 
         padding: 15px; 
         font-weight: bold; cursor: pointer; 
@@ -160,33 +188,37 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
         border-bottom: 1px solid #e5e5e5;
     }
     
-    /* Vùng hiển thị tin nhắn */
     #ntk-chat-messages { 
         height: 320px; overflow-y: auto; 
         padding: 15px; 
-        background: #ffffff; /* Background: #ffffff */
+        background: #ffffff; 
         display: flex; flex-direction: column; gap: 12px; 
     }
     
-    /* Vùng nhập liệu */
     #ntk-chat-input-area { 
         display: flex; 
-        border-top: 1px solid #e5e5e5; /* Border: #e5e5e5 */
+        border-top: 1px solid #e5e5e5; 
         padding: 12px; 
         background: #ffffff; 
     }
     
     #ntk-chat-input { 
         flex: 1; padding: 10px 15px; 
-        border: 1px solid #e5e5e5; /* Border: #e5e5e5 */
+        border: 1px solid #e5e5e5; 
         border-radius: 20px; outline: none; 
         font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
         color: #111111;
         background-color: #ffffff;
     }
+
+    body.dark-mode #ntk-chat-input {
+        background-color: #252525 !important;
+        border-color: #444 !important;
+        color: #fff !important;
+    }
     
     #ntk-send-btn { 
-        background: #2f1c00; /* Primary: #2f1c00 */
+        background: #2f1c00; 
         color: #ffffff; border: none; 
         padding: 8px 18px; margin-left: 8px; 
         border-radius: 20px; cursor: pointer; 
@@ -194,24 +226,32 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
         font-weight: bold;
     }
     
-    /* Style tin nhắn */
     .msg-user { 
-        background: #f5f1eb; /* Beige: #f5f1eb */
-        color: #111111; /* Text: #111111 */
+        background: #f5f1eb; 
+        color: #111111; 
         padding: 10px 14px; 
         border-radius: 15px 15px 0 15px; 
         align-self: flex-end; max-width: 80%; 
         font-size: 14px; line-height: 1.4;
     }
+    body.dark-mode .msg-user {
+        background: #332211 !important;
+        color: #fff !important;
+    }
     
     .msg-bot { 
-        background: #ffffff; /* Background: #ffffff */
-        border: 1px solid #e5e5e5; /* Border: #e5e5e5 */
-        color: #111111; /* Text: #111111 */
+        background: #ffffff; 
+        border: 1px solid #e5e5e5; 
+        color: #111111; 
         padding: 10px 14px; 
         border-radius: 15px 15px 15px 0; 
         align-self: flex-start; max-width: 80%; 
         font-size: 14px; line-height: 1.4;
+    }
+    body.dark-mode .msg-bot {
+        background: #252525 !important;
+        border-color: #444 !important;
+        color: #eee !important;
     }
 </style>
 
@@ -230,6 +270,7 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
         <button id="ntk-send-btn" onclick="sendMessage()">Gửi</button>
     </div>
 </div>
+
 <script>
     function toggleChat() {
         const chatbox = document.getElementById('ntk-chatbox');
@@ -243,18 +284,15 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
 
         const messagesDiv = document.getElementById('ntk-chat-messages');
         
-        // Hiện tin nhắn của bạn
         messagesDiv.innerHTML += `<div class="msg-user">${msgText}</div>`;
         input.value = '';
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        // Hiện trạng thái đang gõ
         const typingId = "typing-" + Date.now();
         messagesDiv.innerHTML += `<div class="msg-bot" id="${typingId}">Nhân viên AI đang tìm câu trả lời...</div>`;
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
         try {
-            // Gửi dữ liệu tới file xử lý PHP
             const response = await fetch('api_chatbot.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -262,7 +300,6 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
             });
             const data = await response.json();
             
-            // Xóa dòng "đang gõ" và hiện câu trả lời
             document.getElementById(typingId).remove();
             messagesDiv.innerHTML += `<div class="msg-bot">${data.reply.replace(/\n/g, '<br>')}</div>`;
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
