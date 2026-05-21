@@ -167,6 +167,18 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     }
     .data-table tbody tr:hover { background: #fafaf8; }
     
+    /* FIX KHUNG GIÁ TIỀN ĐEN CHỮ TRẮNG SANG TRỌNG */
+    .price-badge {
+        display: inline-block;
+        background-color: #111111 !important; /* Khung màu đen tuyền */
+        color: #ffffff !important;           /* Chữ màu trắng tinh */
+        padding: 6px 14px;                  /* Khoảng đệm cho khung cân đối */
+        border-radius: 4px;                 /* Bo góc nhẹ đồng bộ thương hiệu */
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.5px;
+    }
+
     .status-badge {
         display: inline-block;
         padding: 4px 10px;
@@ -188,7 +200,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 
 <div class="detail-grid">
     
-    <!-- Cột trái: Thông tin sản phẩm -->
     <div class="panel info-card">
         <?php if(!empty($product['image'])): ?>
             <?php $img_src = (strpos($product['image'], 'http') === 0) ? $product['image'] : '../' . $product['image']; ?>
@@ -240,7 +251,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         </div>
     </div>
 
-    <!-- Cột phải: Danh sách biến thể -->
     <div class="panel">
         <div class="panel-title">Biến thể sản phẩm (<?= count($variants) ?>)</div>
         
@@ -263,7 +273,11 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             <td style="color:#555; font-family: monospace;"><?= htmlspecialchars($v['sku'] ?? 'N/A') ?></td>
                             <td style="font-weight:500;"><?= htmlspecialchars($v['color']) ?></td>
                             <td><?= htmlspecialchars($v['size']) ?></td>
-                            <td style="color:#c0392b; font-weight:600;"><?= number_format($v['sale_price'] ?? $v['original_price'] ?? 0, 0, ',', '.') ?>đ</td>
+                            <td>
+                                <span class="price-badge">
+                                    <?= number_format($v['sale_price'] ?? $v['original_price'] ?? 0, 0, ',', '.') ?>đ
+                                </span>
+                            </td>
                             <td>
                                 <?php if($v['stock'] > 0): ?>
                                     <span style="font-weight:600;"><?= (int)$v['stock'] ?></span>

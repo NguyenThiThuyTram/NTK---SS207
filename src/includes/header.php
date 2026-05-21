@@ -42,17 +42,15 @@ try {
            USER DARK MODE - PHIÊN BẢN NỔI BẬT CHỮ
         ============================================================ */
         body.dark-mode {
-            background-color: #121212 !important; /* Nền tối sâu */
-            color: #f5f5f5 !important; /* Chữ trắng sữa dễ đọc */
+            background-color: #121212 !important;
+            color: #f5f5f5 !important;
         }
 
-        /* Làm nổi bật toàn bộ văn bản */
         body.dark-mode p, body.dark-mode span, body.dark-mode li, 
         body.dark-mode td, body.dark-mode th, body.dark-mode label {
             color: #e0e0e0 !important;
         }
 
-        /* Tiêu đề trắng tinh khôi */
         body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
         body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
         body.dark-mode strong, body.dark-mode b {
@@ -60,7 +58,6 @@ try {
             text-shadow: 0 0 1px rgba(255,255,255,0.1);
         }
 
-        /* Header & Navbar */
         body.dark-mode .main-header {
             background: #1a1a1a !important;
             border-bottom: 1px solid #333 !important;
@@ -69,26 +66,23 @@ try {
             color: #f5f5f5 !important;
         }
         body.dark-mode .navbar a:hover, body.dark-mode .navbar a.active {
-            color: #f1c40f !important; /* Màu vàng Gold đặc trưng */
+            color: #f1c40f !important;
         }
 
-        /* Thẻ sản phẩm & Voucher */
         body.dark-mode .product-card, body.dark-mode .card, 
         body.dark-mode .voucher-item, body.dark-mode .coupon-suggest-item {
             background: #1e1e1e !important;
             border-color: #444 !important;
         }
 
-        /* Input & Form */
         body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
             background: #252525 !important;
             border-color: #444 !important;
             color: #fff !important;
         }
 
-        /* Icon Dark mode khi bật */
         body.dark-mode #dmUserIcon {
-            color: #f1c40f !important; /* Màu vàng cho mặt trời */
+            color: #f1c40f !important;
         }
 
         .dm-user-toggle {
@@ -97,10 +91,56 @@ try {
             align-items: center; padding: 0 8px; transition: 0.3s;
         }
         .dm-user-toggle:hover { transform: scale(1.1); }
+
+        /* CSS THUẦN CHO THANH TÌM KIẾM CỦA NTK FASHION */
+        .search-bar-container {
+            display: none;
+            background: #ffffff;
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            position: absolute;
+            width: 100%;
+            left: 0;
+            top: 70px; /* Căn chỉnh theo chiều cao header của ní */
+            z-index: 999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        body.dark-mode .search-bar-container {
+            background: #1a1a1a !important;
+            border-bottom: 1px solid #333 !important;
+        }
+        .search-form {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            outline: none;
+            font-size: 14px;
+        }
+        .search-btn {
+            padding: 10px 20px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #222;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+        body.dark-mode .search-btn {
+            background: #f1c40f !important;
+            color: #222 !important;
+            border-color: #f1c40f !important;
+        }
     </style>
 
     <script>
-        // Kiểm tra dark mode ngay lập tức
         if (localStorage.getItem('ntk_dark') === '1') {
             document.documentElement.classList.add('dark-mode-init');
         }
@@ -155,6 +195,15 @@ try {
                 </button>
             </div>
         </div>
+
+        <div id="searchBar" class="search-bar-container">
+            <form action="search.php" method="GET" class="search-form">
+                <input type="text" name="q" placeholder="Tìm kiếm sản phẩm tại NTK Fashion..." class="search-input" required>
+                <button type="submit" class="search-btn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+        </div>
     </header>
 
     <main class="main-content">
@@ -172,22 +221,27 @@ try {
             if (!icon) return;
 
             if (isDark) {
-                icon.className = 'fa-solid fa-sun'; // Mặt trời vàng
-                if(logo) logo.style.filter = 'brightness(0) invert(1)'; // Đổi logo sang trắng nếu cần
+                icon.className = 'fa-solid fa-sun';
+                if(logo) logo.style.filter = 'brightness(0) invert(1)';
             } else {
-                icon.className = 'fa-regular fa-moon'; // Mặt trăng tối
+                icon.className = 'fa-regular fa-moon';
                 if(logo) logo.style.filter = 'none';
             }
         }
 
-        // Chạy ngay khi load trang để đồng bộ icon
         document.addEventListener('DOMContentLoaded', function() {
             updateDmUserIcon(document.body.classList.contains('dark-mode'));
         });
 
+        // HÀM TOGGLE ĐÃ CHẠY PHÀ PHÀ VÌ ĐÃ CÓ THẺ SEARCHBAR
         function toggleSearch() {
-            // Giữ nguyên logic search của Bee
             const sb = document.getElementById("searchBar");
-            if(sb) sb.style.display = (sb.style.display === "none") ? "block" : "none";
+            if(sb) {
+                if (sb.style.display === "none" || sb.style.display === "") {
+                    sb.style.display = "block";
+                } else {
+                    sb.style.display = "none";
+                }
+            }
         }
     </script>

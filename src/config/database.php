@@ -10,12 +10,12 @@ try {
         $username,
         $password,
         [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
-            PDO::MYSQL_ATTR_SSL_CA       => false,
+            // Chỉ cần giữ lại chế độ báo lỗi exception là đủ chuẩn rồi Bee
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
         ]
     );
 } catch(PDOException $e) {
     die("Kết nối Database thất bại: " . $e->getMessage());
 }
-?>
+?>

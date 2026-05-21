@@ -64,9 +64,127 @@ if ($product_id) {
 include 'includes/header.php';
 ?>
 
+<style>
+    /* ============================================================
+       STYLE THANH ĐIỀU HƯỚNG BREADCRUMB - NTK FASHION
+    ============================================================ */
+    .breadcrumb {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 25px;
+    }
+    
+    .breadcrumb a {
+        color: #666;
+        text-decoration: none; /* Khử gạch chân mặc định */
+        transition: color 0.2s ease;
+        font-weight: 500;
+    }
+    
+    .breadcrumb a:hover {
+        color: #111; 
+        text-decoration: underline; /* Chỉ hiện gạch dưới khi rê chuột vào */
+    }
+
+    /* ============================================================
+       STYLING BIẾN THỂ & TRÁI TIM CAO CẤP
+    ============================================================ */
+    .option-list {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    /* Định dạng nút chọn biến thể mặc định */
+    .btn-option {
+        padding: 10px 24px;
+        border: 1px solid #ddd !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        outline: none;
+    }
+
+    .btn-option:hover {
+        border-color: #888888 !important;
+    }
+
+    /* TRẠNG THÁI ACTIVE: Ép viền đen dày in đậm khung, giữ nền trắng */
+    .btn-option.active {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #000000 !important;
+        font-weight: 700 !important;
+        padding: 9px 23px; /* Bù trừ kích thước viền 2px */
+    }
+
+    /* ĐỊNH DẠNG NÚT TRÁI TIM NỀN ĐEN CHỮ TRẮNG */
+    .btn-wishlist {
+        background-color: #111111 !important;
+        border: 1px solid #111111 !important;
+        color: #ffffff !important;
+        width: 50px;
+        height: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 20px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-wishlist:hover {
+        background-color: #222222 !important;
+        transform: scale(1.05);
+    }
+    
+    .btn-wishlist.liked i {
+        color: #e63946 !important; /* Đổi sang màu đỏ rực khi đã thích */
+    }
+
+    /* ============================================================
+       ĐỒNG BỘ DARK MODE TOÀN DIỆN
+    ============================================================ */
+    body.dark-mode .breadcrumb a {
+        color: #aaa;
+    }
+    body.dark-mode .breadcrumb a:hover {
+        color: #fff;
+    }
+    body.dark-mode .btn-option {
+        background-color: #1e1e1e !important;
+        border-color: #444444 !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .btn-option:hover {
+        border-color: #888888 !important;
+    }
+    body.dark-mode .btn-option.active {
+        background-color: #1e1e1e !important;
+        color: #ffffff !important;
+        border: 2px solid #ffffff !important;
+    }
+    body.dark-mode .btn-wishlist {
+        background-color: #ffffff !important;
+        border-color: #ffffff !important;
+        color: #111111 !important;
+    }
+</style>
+
 <main class="container">
     <?php if ($product): ?>
-        <nav class="breadcrumb">Trang chủ / Shop / <b><?php echo $product['name']; ?></b></nav>
+        
+        <nav class="breadcrumb">
+            <a href="index.php">Trang chủ</a> / 
+            <a href="product.php">Cửa hàng</a> / 
+            <b><?php echo htmlspecialchars($product['name']); ?></b>
+        </nav>
 
         <div class="product-detail-container">
             <div class="product-image-section">
@@ -95,20 +213,16 @@ include 'includes/header.php';
                         endif; ?>
                     </span>
                     <?php if ($first_v && $first_v['sale_price'] < $first_v['original_price'] && $first_v['sale_price'] > 0): ?>
-                        <span class="detail-old-price"
-                            id="detail-old-price"><?php echo number_format($first_v['original_price'], 0, ',', '.'); ?>đ</span>
-                        <span class="discount-tag"
-                            id="detail-discount">-<?php echo round((($first_v['original_price'] - $first_v['sale_price']) / $first_v['original_price']) * 100); ?>%</span>
+                        <span class="detail-old-price" id="detail-old-price"><?php echo number_format($first_v['original_price'], 0, ',', '.'); ?>đ</span>
+                        <span class="discount-tag" id="detail-discount">-<?php echo round((($first_v['original_price'] - $first_v['sale_price']) / $first_v['original_price']) * 100); ?>%</span>
                     <?php else: ?>
                         <span class="detail-old-price" id="detail-old-price" style="display:none;"></span>
                         <span class="discount-tag" id="detail-discount" style="display:none;"></span>
                     <?php endif; ?>
                 </div>
 
-                <!-- CHỌN MÀU SẮC -->
                 <div class="detail-options">
-                    <p class="option-label">Màu sắc: <strong
-                            id="selected-color"><?php echo $first_v['color'] ?? ''; ?></strong></p>
+                    <p class="option-label">Màu sắc: <strong id="selected-color"><?php echo $first_v['color'] ?? ''; ?></strong></p>
                     <div class="option-list" id="color-list">
                         <?php
                         $unique_colors = array_unique(array_column($variants, 'color'));
@@ -125,14 +239,11 @@ include 'includes/header.php';
                     </div>
                 </div>
 
-                <!-- CHỌN KÍCH CỠ -->
                 <div class="detail-options">
-                    <p class="option-label">Kích cỡ: <strong
-                            id="selected-size"><?php echo $first_v['size'] ?? ''; ?></strong></p>
+                    <p class="option-label">Kích cỡ: <strong id="selected-size"><?php echo $first_v['size'] ?? ''; ?></strong></p>
                     <div class="option-list" id="size-list">
                         <?php
                         $first_size = $first_v['size'] ?? '';
-                        // Chỉ lấy size của màu đang chọn
                         $sizes_for_first_color = [];
                         foreach ($variants as $v) {
                             if ($v['color'] === $first_color)
@@ -149,7 +260,6 @@ include 'includes/header.php';
                     </div>
                 </div>
 
-                <!-- SỐ LƯỢNG -->
                 <div class="detail-options">
                     <p class="option-label">Số lượng:</p>
                     <div class="quantity-wrapper">
@@ -158,15 +268,12 @@ include 'includes/header.php';
                             <input type="text" id="quantity" value="1" readonly>
                             <button type="button" class="qty-btn" onclick="changeQty(1)">+</button>
                         </div>
-                        <span class="stock-info"><?php echo $first_v['stock'] ?? 0; ?> sản phẩm có sẵn</span>
+                        <span class="stock-info" id="stock-info"><?php echo $first_v['stock'] ?? 0; ?> sản phẩm có sẵn</span>
                     </div>
                 </div>
 
-                <!-- THÔNG BÁO INLINE -->
-                <div id="cart-inline-msg"
-                    style="display:none; margin: 10px 0; padding: 10px 14px; border-radius: 8px; font-size: 13px;"></div>
+                <div id="cart-inline-msg" style="display:none; margin: 10px 0; padding: 10px 14px; border-radius: 8px; font-size: 13px;"></div>
 
-                <!-- NÚT HÀNH ĐỘNG -->
                 <div class="detail-actions">
                     <button class="btn-add-to-cart" id="btn-add-cart" onclick="addToCart(false)">
                         <i class="fa fa-shopping-bag"></i> Thêm vào giỏ
@@ -175,7 +282,7 @@ include 'includes/header.php';
                         Mua ngay
                     </button>
                     <button class="btn-wishlist" id="add-to-wishlist" data-id="<?php echo $product['product_id']; ?>">
-                        <i class="fa fa-heart-o"></i>
+                        <i class="fa fa-heart"></i>
                     </button>
                 </div>
 
@@ -189,8 +296,7 @@ include 'includes/header.php';
                     <?php if (count($reviews) > 0): ?>
                         <div class="review-list">
                             <?php foreach ($reviews as $rev): ?>
-                                <div class="review-item"
-                                    style="margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px;">
+                                <div class="review-item" style="margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px;">
                                     <div style="display: flex; justify-content: space-between;">
                                         <b><?php echo $rev['fullname'] ?: 'Khách hàng ẩn danh'; ?></b>
                                         <span style="color: #ffc107;">
@@ -202,8 +308,7 @@ include 'includes/header.php';
                                     <small style="color: #999;"><?php echo date('d/m/Y', strtotime($rev['created_at'])); ?></small>
 
                                     <?php if (!empty($rev['reply'])): ?>
-                                        <div
-                                            style="background: #f9f5f0; padding: 10px; border-radius: 4px; font-size: 13px; margin-top: 8px;">
+                                        <div style="background: #f9f5f0; padding: 10px; border-radius: 4px; font-size: 13px; margin-top: 8px;">
                                             <b>NTK phản hồi:</b> <?php echo $rev['reply']; ?>
                                         </div>
                                     <?php endif; ?>
@@ -245,24 +350,30 @@ include 'includes/header.php';
     <?php endif; ?>
 </main>
 
-<!-- Dữ liệu biến thể dạng JSON để JS xử lý -->
 <script>
     var allVariants = <?php echo json_encode($variants); ?>;
     var selectedColor = "<?php echo addslashes($first_v['color'] ?? ''); ?>";
     var selectedSize = "<?php echo addslashes($first_v['size'] ?? ''); ?>";
 
-    // ===================== TÌM BIẾN THỂ =====================
+    document.addEventListener("DOMContentLoaded", function() {
+        var stockSpan = document.querySelector('.stock-info');
+        if(stockSpan && !stockSpan.id) {
+            stockSpan.id = 'stock-info';
+        }
+    });
+
     function findVariant(color, size) {
         return allVariants.find(function (v) {
             return v.color === color && v.size === size;
         }) || null;
     }
 
-    // ===================== CẬP NHẬT GIÁ + TỒN KHO =====================
     function updatePriceAndStock() {
         var v = findVariant(selectedColor, selectedSize);
+        var stockInfoEl = document.getElementById('stock-info');
+        
         if (!v) {
-            document.getElementById('stock-info').textContent = 'Không có sẵn';
+            if(stockInfoEl) stockInfoEl.textContent = 'Không có sẵn';
             document.getElementById('btn-add-cart').disabled = true;
             document.getElementById('btn-buy-now').disabled = true;
             return;
@@ -288,7 +399,7 @@ include 'includes/header.php';
             discountEl.style.display = 'none';
         }
 
-        document.getElementById('stock-info').textContent = v.stock + ' sản phẩm có sẵn';
+        if(stockInfoEl) stockInfoEl.textContent = v.stock + ' sản phẩm có sẵn';
         document.getElementById('quantity').value = 1;
 
         var disabled = (v.stock < 1);
@@ -296,17 +407,14 @@ include 'includes/header.php';
         document.getElementById('btn-buy-now').disabled = disabled;
     }
 
-    // ===================== CHỌN MÀU =====================
     function selectColor(color) {
         selectedColor = color;
         document.getElementById('selected-color').textContent = color;
 
-        // Highlight nút màu
         document.querySelectorAll('#color-list .btn-option').forEach(function (b) {
             b.classList.toggle('active', b.dataset.color === color);
         });
 
-        // Cập nhật danh sách Size theo màu vừa chọn
         var sizesForColor = allVariants
             .filter(function (v) { return v.color === color; })
             .map(function (v) { return v.size; });
@@ -323,11 +431,9 @@ include 'includes/header.php';
             sizeList.appendChild(btn);
         });
 
-        // Tự chọn size đầu tiên
         if (uniqueSizes.length > 0) selectSize(uniqueSizes[0]);
     }
 
-    // ===================== CHỌN SIZE =====================
     function selectSize(size) {
         selectedSize = size;
         document.getElementById('selected-size').textContent = size;
@@ -339,7 +445,6 @@ include 'includes/header.php';
         updatePriceAndStock();
     }
 
-    // ===================== THAY ĐỔI SỐ LƯỢNG =====================
     function changeQty(amt) {
         var v = findVariant(selectedColor, selectedSize);
         var max = v ? parseInt(v.stock) : 1;
@@ -350,7 +455,6 @@ include 'includes/header.php';
         inp.value = newVal;
     }
 
-    // ===================== THÊM VÀO GIỎ =====================
     function addToCart(buyNow) {
         var v = findVariant(selectedColor, selectedSize);
         if (!v) {
@@ -390,7 +494,6 @@ include 'includes/header.php';
                         window.location.href = 'cart.php';
                     } else {
                         showInlineMsg('✓ Đã thêm vào giỏ hàng!', 'success');
-                        // Cập nhật số trên icon giỏ hàng header
                         updateCartCount();
                     }
                 } else if (result === 'not_logged_in') {
@@ -410,7 +513,6 @@ include 'includes/header.php';
         });
     }
 
-    // ===================== CẬP NHẬT ICON GIỎ HÀNG =====================
     function updateCartCount() {
         $.get('ajax_cart.php', { action: 'get_count' }, function (res) {
             var count = parseInt(res.trim());
@@ -421,7 +523,6 @@ include 'includes/header.php';
         });
     }
 
-    // ===================== THÔNG BÁO INLINE =====================
     function showInlineMsg(msg, type) {
         var el = document.getElementById('cart-inline-msg');
         el.style.display = 'block';
@@ -434,11 +535,12 @@ include 'includes/header.php';
         el._timer = setTimeout(function () { el.style.display = 'none'; }, 4000);
     }
 
-    // ===================== WISHLIST =====================
     $(document).ready(function () {
-        $('#add-to-wishlist').click(function (e) {
+        var wishBtn = $('#add-to-wishlist');
+        var productId = wishBtn.data('id');
+        
+        wishBtn.click(function (e) {
             e.preventDefault();
-            var productId = $(this).data('id');
             var btn = $(this);
 
             $.ajax({
@@ -448,7 +550,7 @@ include 'includes/header.php';
                 dataType: 'json',
                 success: function (response) {
                     if (response.status === 'success') {
-                        btn.find('i').removeClass('fa-heart-o').addClass('fa-heart').css('color', 'red');
+                        btn.addClass('liked');
                         showInlineMsg('Đã thêm vào danh sách yêu thích!', 'success');
                     } else {
                         showInlineMsg(response.message, 'error');
