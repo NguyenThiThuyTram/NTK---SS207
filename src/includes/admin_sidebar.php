@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $admin_current_page = basename($_SERVER['PHP_SELF']);
 // Map tên file → tiêu đề trang
 $page_titles = [
-    'dashboard.php'  => 'Dashboard',
+    'dashboard.php'  => 'Trang Chủ',
     'categories.php' => 'Danh mục',
     'products.php'   => 'Sản phẩm',
     'orders.php'     => 'Đơn hàng',
@@ -541,7 +541,7 @@ $notif_count = count($notifications);
     <!-- Navigation (không có section title) -->
     <nav class="sidebar-nav">
         <a href="dashboard.php" class="nav-item <?= ($admin_current_page === 'dashboard.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-table-columns"></i> Dashboard
+            <i class="fa-solid fa-table-columns"></i> Trang Chủ
         </a>
         <a href="categories.php" class="nav-item <?= ($admin_current_page === 'categories.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-layer-group"></i> Danh mục

@@ -270,7 +270,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 
 <!-- Page Header -->
 <div class="page-header">
-    <div class="page-title">Dashboard</div>
+    <div class="page-title">Trang Chủ</div>
     <div class="page-subtitle">Tổng quan hoạt động kinh doanh</div>
 </div>
 
