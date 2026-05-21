@@ -13,9 +13,9 @@ try {
             // Chỉ cần giữ lại chế độ báo lỗi exception là đủ chuẩn rồi Bee
             PDO::ATTR_ERRMODE                      => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE           => PDO::FETCH_ASSOC,
-            // Fix lỗi: MySQL yêu cầu SSL (require_secure_transport=ON)
-            // Cho phép kết nối SSL nhưng không verify CA certificate (dùng self-signed)
+            // Cấu hình SSL chính xác như cũ để vượt qua lỗi require_secure_transport=ON
             PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+            PDO::MYSQL_ATTR_SSL_CA                 => false,
         ]
     );
 } catch(PDOException $e) {
