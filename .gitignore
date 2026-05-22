@@ -7,5 +7,5 @@ mysql_data/
 *.log
 src/gemini_error_log.txt
 src/controllers/payos_debug.txt
-
+api_key.php
 
