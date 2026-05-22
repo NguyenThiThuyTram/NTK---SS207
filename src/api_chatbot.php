@@ -1,86 +1,46 @@
 <?php
-session_start();
-
-// Set header trả về dạng JSON
 header('Content-Type: application/json');
 
-// Gọi file kết nối database
-require_once __DIR__ . '/config/database.php';
-
-// Nhận câu hỏi từ Frontend gửi lên
 $data = json_decode(file_get_contents('php://input'), true);
 $userMessage = $data['message'] ?? '';
+
 if (empty($userMessage)) {
     echo json_encode(['reply' => 'Anh/chị muốn hỏi gì ạ?']);
     exit;
 }
 
-// ==========================================
-// ĐẠI CA DÁN API KEY CỦA GEMINI VÀO ĐÂY NHÉ:
-$apiKey = 'AIzaSyBXwQjYyVqnzidwLHyOHA27xcjbtB6hWxI'; 
-// ==========================================
+require_once __DIR__ . '/api_key.php'; 
+$apiKey = $GEMINI_API_KEY; 
 
-// Cấu hình gửi lên server Google Gemini
+$systemPrompt = "Bạn là 'Nhân viên tư vấn AI' chuyên nghiệp của shop thời trang NTK.
+QUY TẮC GIAO TIẾP:
+- Luôn xưng là 'em' và gọi khách hàng là 'anh/chị'. Lịch sự, tận tâm, chuyên nghiệp, duyên dáng.
+- Nhiệm vụ: Tư vấn size, báo giá, kiểm tra hàng và gợi ý sản phẩm.
+
+BẮT BUỘC TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON SAU (Tuyệt đối không có ký tự ngoài JSON):
+{
+    \"action\": \"chat\" hoặc \"search\" hoặc \"suggest\" hoặc \"policy\",
+    \"keyword\": \"tên sản phẩm nếu có (để trống nếu không)\",
+    \"size\": \"S, M, L, XL... nếu có (để trống nếu không)\",
+    \"price_max\": số_tiền_tối_đa_nếu_khách_hỏi_giá (mặc định 0),
+    \"reply_text\": \"Câu trả lời thân thiện của em\"
+}
+
+QUY TẮC CHỌN 'action' VÀ CÁCH NÓI CHUYỆN (RẤT QUAN TRỌNG):
+1. KHÁCH CHO CHIỀU CAO, CÂN NẶNG: Tự suy luận size chuẩn (S, M, L, XL), chốt action là \"search\", điền size vào biến \"size\". ĐẶC BIỆT phần 'reply_text' phải có câu dẫn dắt mời khách xem đồ, ví dụ: 'Dạ với vóc dáng của mình, anh/chị mặc size M là vừa đẹp và tôn dáng luôn ạ. Em gửi anh/chị xem thử một số mẫu size M đang sẵn hàng cực xinh bên em nhé:'. (Tuyệt đối KHÔNG hỏi lại khách muốn mua gì nữa vì hàng sẽ được hiển thị ngay bên dưới).
+2. TÌM ĐỒ CỤ THỂ HOẶC THEO TIÊU CHÍ (Tìm tên, tìm giá): action: \"search\". 'reply_text' dẫn dắt: 'Dạ em tìm được một số mẫu ưng ý theo yêu cầu của anh/chị đây ạ, mình xem thử nha:'.
+3. HỎI CHUNG CHUNG / GỢI Ý: action: \"suggest\". 'reply_text': 'Dạ, shop đang có nhiều mẫu xinh lắm, em gửi anh/chị xem thử vài mẫu đang BÁN CHẠY NHẤT bên em nha:'.
+4. CHÀO HỎI / TRÒ CHUYỆN: Khách chào, cảm ơn -> action: \"chat\". 'reply_text' nói chuyện bình thường.
+5. HỎI CHÍNH SÁCH: Khách hỏi ship, đổi trả -> action: \"policy\".";
+
 $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;
+// Thay đổi dòng URL thành phiên bản 1.5 flash chuẩn xác nhất
+//$url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=' . $apiKey;
 
-// KỊCH BẢN YÊU CẦU CỦA ĐẠI CA
-$systemPrompt = "Bạn là Nhân viên AI chính thức của shop thời trang NTK.
-Phong cách: Chuyên nghiệp, lịch sự, tận tâm và ngắn gọn.
-Xưng hô: Luôn tự xưng là 'em', gọi khách hàng là 'anh/chị'. 
-Tuyệt đối KHÔNG xưng tôi-bạn, KHÔNG nhận mình là người thật (nếu khách hỏi, hãy nói rõ mình là Nhân viên AI của hệ thống).
-
-KIẾN THỨC NỀN TẢNG CỦA SHOP NTK:
-1. Tư vấn Size (Không cần gọi lệnh, tự tính toán và trả lời khách dựa trên bảng này):
-- Size S: Dưới 1m60, Cân nặng 40kg - 48kg.
-- Size M: Từ 1m60 - 1m68, Cân nặng 49kg - 58kg.
-- Size L: Từ 1m68 - 1m75, Cân nặng 59kg - 68kg.
-- Size XL: Trên 1m75, Cân nặng 69kg - 85kg.
-(Nếu số đo của khách nằm giữa 2 size, hãy khuyên khách lấy size lớn hơn để mặc cho thoải mái).
-
-QUY TẮC SỬ DỤNG LỆNH ẨN (RẤT QUAN TRỌNG):
-Khi khách hàng có các yêu cầu dưới đây, bạn KHÔNG ĐƯỢC tự bịa ra thông tin mà CHỈ ĐƯỢC PHÉP trả lời bằng đúng 1 dòng chứa cú pháp [LỆNH] tương ứng để hệ thống xử lý:
-
-1. TÌM SẢN PHẨM: Khi khách muốn tìm áo, quần, váy... 
--> Trả lời: [SEARCH: <từ_khóa>] (VD: [SEARCH: áo baby tee])
-
-2. HỎI MÃ GIẢM GIÁ / KHUYẾN MÃI: Khi khách hỏi 'có mã giảm giá không', 'shop có sale không'...
--> Trả lời: [COUPON]
-
-3. TRA CỨU ĐƠN HÀNG: Khi khách muốn kiểm tra đơn hàng, khách cung cấp mã đơn (VD: kiểm tra cho anh đơn #12345).
--> Trả lời: [TRACK_ORDER: <mã_đơn>] (VD: [TRACK_ORDER: 12345])
-
-4. CHÍNH SÁCH ĐỔI TRẢ: Khi khách hỏi về việc đổi trả hàng.
--> Trả lời: [POLICY_RETURN]
-
-5. GẶP NHÂN VIÊN THẬT: Khi khách cáu gắt, hoặc có yêu cầu phức tạp mà AI không xử lý được.
--> Trả lời: [CONTACT_HUMAN]";
-
-// 2. LƯU LỊCH SỬ TRÒ CHUYỆN ĐỂ AI CÓ TRÍ NHỚ (SESSION)
-if (!isset($_SESSION['chat_history'])) {
-    $_SESSION['chat_history'] = [];
-}
-
-// Đưa câu hỏi mới của khách vào lịch sử
-$_SESSION['chat_history'][] = [
-    "role" => "user",
-    "parts" => [
-        ["text" => $userMessage]
-    ]
-];
-
-// Giới hạn lịch sử để gọi API không bị quá tải (lưu 20 tin nhắn gần nhất)
-if (count($_SESSION['chat_history']) > 20) {
-    $_SESSION['chat_history'] = array_slice($_SESSION['chat_history'], -20);
-}
-
-// 3. GÓI DỮ LIỆU GỬI ĐI BAO GỒM LỊCH SỬ
 $payload = [
-    "system_instruction" => [   
-        "parts" => [
-            ["text" => $systemPrompt]
-        ]
-    ],
-    "contents" => array_values($_SESSION['chat_history'])
+    "system_instruction" => ["parts" => [["text" => $systemPrompt]]],
+    "generationConfig" => ["responseMimeType" => "application/json"], 
+    "contents" => [["role" => "user", "parts" => [["text" => $userMessage]]]]
 ];
 
 $ch = curl_init($url);
@@ -88,129 +48,139 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-// Bỏ qua check SSL trên localhost để không bị lỗi XAMPP
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false); 
 
 $response = curl_exec($ch);
+if(curl_errno($ch)) { 
+    echo json_encode(['reply' => 'Lỗi kết nối máy chủ cURL: ' . curl_error($ch)]); 
+    curl_close($ch); 
+    exit; 
+}
 curl_close($ch);
 
 $result = json_decode($response, true);
 
 if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-    $botReply = $result['candidates'][0]['content']['parts'][0]['text'];
-
-    // Lưu lại câu trả lời gốc của con AI (dạng tag) vào lịch sử
-    $_SESSION['chat_history'][] = [
-        "role" => "model",
-        "parts" => [
-            ["text" => $botReply]
-        ]
-    ];
-
-    // CHUỖI XỬ LÝ LỆNH ẨN TỪ AI THEO YÊU CẦU CỦA ĐẠI CA (REGEX & DATABASE)
+    $jsonString = $result['candidates'][0]['content']['parts'][0]['text'];
+    $aiData = json_decode($jsonString, true);
     
-    // 1. TÌM SẢN PHẨM: [SEARCH: <từ_khóa>]
-    if (preg_match('/\[SEARCH:\s*(.*?)\]/i', $botReply, $matches)) {
-        $keyword = trim($matches[1]); 
-        
-        $stmt = $conn->prepare("
-            SELECT p.product_id, p.name, p.image, MIN(v.sale_price) as min_price
-            FROM products p
-            LEFT JOIN product_variants v ON p.product_id = v.product_id
-            WHERE p.name LIKE :keyword OR p.description LIKE :keyword
-            GROUP BY p.product_id
-            LIMIT 5
-        ");
-        $stmt->execute(['keyword' => "%$keyword%"]);
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        if (count($products) > 0) {
-            $botReply = "Dạ, em đã tìm thấy một số mẫu <b>" . htmlspecialchars($keyword) . "</b> cho anh/chị nè:<br><br>";
-            $botReply .= "<div class='product-list-chat' style='display: flex; flex-direction: column; gap: 10px;'>";
-            foreach ($products as $row) {
-                $priceFormat = number_format($row['min_price'] ?? 0, 0, ',', '.') . "đ";
-                $imgUrl = !empty($row['image']) ? htmlspecialchars($row['image']) : 'assets/img/default.jpg';
-                $botReply .= "<div class='product-item' style='display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 8px;'>";
-                $botReply .= "<img src='" . $imgUrl . "' style='width: 60px; height: 60px; object-fit: cover; border-radius: 4px;'>";
-                $botReply .= "<div>";
-                $botReply .= "<a href='product_detail.php?id=" . htmlspecialchars($row['product_id']) . "' style='font-weight: bold; text-decoration: none; color: #333;'>" . htmlspecialchars($row['name']) . "</a><br>";
-                $botReply .= "<span style='color:red; font-weight: bold;'>" . $priceFormat . "</span>";
-                $botReply .= "</div></div>";
-            }
-            $botReply .= "</div>";
-        } else {
-            $botReply = "Dạ hiện tại bên em không tìm thấy mẫu <b>" . htmlspecialchars($keyword) . "</b> nào ạ. Anh/chị thử tìm kiếm với từ khóa khác giúp em nha!";
-        }
-    } 
-    // 2. HỎI MÃ GIẢM GIÁ: [COUPON]
-    elseif (preg_match('/\[COUPON\]/i', $botReply)) {
-        $stmt = $conn->prepare("SELECT code, discount_type, discount_value, min_order_value FROM coupons WHERE status = 1 AND end_date > NOW() LIMIT 5");
-        $stmt->execute();
-        $coupons = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (count($coupons) > 0) {
-            $botReply = "Dạ hiện shop đang có mã giảm giá cho anh/chị đây ạ:<br><br>";
-            $botReply .= "<ul style='padding-left: 20px;'>";
-            foreach ($coupons as $coupon) {
-                // discount_type: 1 là tiền mặt, 0 là phần trăm
-                $discount = $coupon['discount_type'] == 1 
-                            ? number_format($coupon['discount_value'], 0, ',', '.') . '₫' 
-                            : $coupon['discount_value'] . '%';
-                $minOrder = number_format($coupon['min_order_value'], 0, ',', '.');
-                $botReply .= "<li>Mã <b>{$coupon['code']}</b>: Giảm {$discount} (Áp dụng cho đơn từ {$minOrder}₫)</li>";
-            }
-            $botReply .= "</ul>";
-        } else {
-            $botReply = "Dạ hiện tại shop em đang tạm hết mã giảm giá rồi ạ. Anh/chị theo dõi website để chờ đợt ưu đãi tới nha!";
-        }
+    if (!$aiData) {
+         echo json_encode(['reply' => 'Dạ AI đang xử lý bị nhầm lẫn chút, đại ca thử hỏi lại nhé!']);
+         exit;
     }
-    // 3. TRA CỨU ĐƠN HÀNG: [TRACK_ORDER: <mã>]
-    elseif (preg_match('/\[TRACK_ORDER:\s*(.*?)\]/i', $botReply, $matches)) {
-        $orderCode = trim($matches[1]);
-        $stmt = $conn->prepare("SELECT order_status, total_price, order_date FROM orders WHERE order_id = :order_id OR payos_order_code = :order_id");
-        $stmt->execute(['order_id' => $orderCode]);
-        $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($order) {
-            $statuses = [
-                0 => 'Chờ xác nhận',
-                1 => 'Đã xác nhận',
-                2 => 'Đang giao hàng',
-                3 => 'Đã giao tới',
-                4 => 'Đã hủy',
-                5 => 'Hoàn trả'
-            ];
-            $statusText = $statuses[$order['order_status']] ?? 'Không xác định';
-            $total = number_format($order['total_price'], 0, ',', '.');
-            $date = date('d/m/Y H:i', strtotime($order['order_date']));
+    $action = strtolower(trim($aiData['action'] ?? 'chat'));
+    $botReply = $aiData['reply_text'] ?? 'Dạ em nghe ạ.';
+    $keyword = $aiData['keyword'] ?? '';
+
+    // =================================================================
+    // ⚙️ BẪY KÉP CHỐNG AI LƯỜI (Rất Quan Trọng)
+    // Nếu AI gán nhầm action, ta sẽ tự ép lại dựa vào câu nói của nó
+    // =================================================================
+    if (strpos(mb_strtoupper($botReply, 'UTF-8'), 'BÁN CHẠY NHẤT') !== false) {
+        $action = 'suggest';
+    }
+
+    // GỌI KẾT NỐI DATABASE
+    $keyword = trim($aiData['keyword'] ?? '');
+    $size = strtoupper(trim($aiData['size'] ?? ''));
+    $price_max = $aiData['price_max'] ?? 0;
+
+    require_once __DIR__ . '/config/database.php';
+
+    if ($action === 'search' || $action === 'suggest') {
+        try {
+            // --- CẤU TRÚC TRUY VẤN CHÍNH ---
+            $sql_base = "SELECT p.*, v.original_price, v.sale_price,
+                           GROUP_CONCAT(DISTINCT v.size SEPARATOR ', ') as available_sizes,
+                           SUM(v.stock) as total_stock
+                    FROM products p 
+                    LEFT JOIN product_variants v ON p.product_id = v.product_id 
+                    WHERE p.status = 1";
             
-            $botReply = "Dạ em tìm thấy đơn hàng <b>" . htmlspecialchars($orderCode) . "</b> rồi ạ:<br><br>";
-            $botReply .= "- Trạng thái: <b><span style='color: green;'>{$statusText}</span></b><br>";
-            $botReply .= "- Ngày đặt: {$date}<br>";
-            $botReply .= "- Tổng giá trị: {$total}₫<br>";
-        } else {
-            $botReply = "Dạ em không tìm thấy đơn hàng nào có mã <b>" . htmlspecialchars($orderCode) . "</b> ạ. Anh/chị kiểm tra lại mã giúp em với nhé!";
+            $where = "";
+            $params = [];
+
+            if ($action === 'search') {
+                if (!empty($keyword)) {
+                    $where .= " AND p.name LIKE :keyword";
+                    $params['keyword'] = '%' . $keyword . '%';
+                }
+                if (!empty($size)) {
+                    // Lọc cực kỳ nghiêm ngặt: Chỉ lấy sản phẩm mà chính cái size đó còn hàng
+                    $where .= " AND p.product_id IN (SELECT product_id FROM product_variants WHERE size = :size AND stock > 0)";
+                    $params['size'] = $size;
+                }
+                if ($price_max > 0) {
+                    $where .= " AND v.original_price <= :price_max";
+                    $params['price_max'] = $price_max;
+                }
+            }
+
+            $sql = $sql_base . $where . " GROUP BY p.product_id";
+            if ($action === 'suggest') $sql .= " ORDER BY p.sold_count DESC";
+            $sql .= " LIMIT 3";
+            
+            $stmt = $conn->prepare($sql);
+            $stmt->execute($params);
+            $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // --- LOGIC XỬ LÝ KHI KHÔNG CÓ KẾT QUẢ ĐÚNG YÊU CẦU ---
+            // --- LOGIC XỬ LÝ KHI KHÔNG CÓ KẾT QUẢ ĐÚNG YÊU CẦU ---
+            if (count($products) == 0 && $action === 'search') {
+                
+                // Tự động nội suy ra khách vừa tìm cái gì để xin lỗi cho chuẩn
+                $ten_mon = !empty($keyword) ? "mẫu '$keyword'" : "mẫu sản phẩm này";
+                $dk_size = !empty($size) ? " size $size" : "";
+                $dk_gia = ($price_max > 0) ? " tầm giá dưới " . number_format($price_max, 0, ',', '.') . "đ" : "";
+                
+                $cau_dieu_kien = $ten_mon . $dk_size . $dk_gia;
+
+                // 1. Đổi lại câu dẫn dắt (botReply) linh hoạt theo đúng yêu cầu khách tìm
+                $botReply = "Dạ, hiện tại $cau_dieu_kien bên em đang tạm hết hàng rồi ạ. Tuy nhiên, shop đang có một số mẫu cực hot khác, anh/chị tham khảo thử xem có ưng ý không nhé:";
+
+                // 2. Chạy một truy vấn khác để lấy sản phẩm Bán chạy (Gợi ý thay thế)
+                $sql_fallback = $sql_base . " GROUP BY p.product_id ORDER BY p.sold_count DESC LIMIT 3";
+                $stmt_fallback = $conn->prepare($sql_fallback);
+                $stmt_fallback->execute();
+                $products = $stmt_fallback->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            // --- HIỂN THỊ KẾT QUẢ ---
+            if (count($products) > 0) {
+                $botReply .= "<div style='display:flex; flex-direction:column; gap:12px; margin-top:10px;'>";
+                foreach ($products as $row) {
+                    $price = number_format($row['original_price'], 0, ',', '.') . 'đ';
+                    $sizes = !empty($row['available_sizes']) ? $row['available_sizes'] : 'Freesize';
+                    
+                    $stockStatus = ($row['total_stock'] > 0) 
+                        ? "<span style='color:#27ae60;'>● Còn hàng</span>" 
+                        : "<span style='color:#e74c3c;'>○ Tạm hết hàng</span>";
+
+                    $botReply .= "
+                    <a href='product_detail.php?id={$row['product_id']}' style='display:flex; text-decoration:none; color:#333; background:#fff; padding:10px; border-radius:10px; border:1px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.05);'>
+                        <img src='{$row['image']}' style='width:70px; height:70px; object-fit:cover; border-radius:6px; margin-right:12px;'>
+                        <div style='flex:1;'>
+                            <div style='font-size:14px; font-weight:bold; margin-bottom:4px;'>{$row['name']}</div>
+                            <div style='color:#d35400; font-size:13px; font-weight:bold;'>Giá: $price</div>
+                            <div style='color:#666; font-size:12px; margin: 2px 0;'>Size: $sizes</div>
+                            <div style='font-size:11px; font-weight:500;'>$stockStatus</div>
+                        </div>
+                    </a>";
+                }
+                $botReply .= "</div>";
+            }
+        } catch (PDOException $e) {
+            $botReply .= "<br><i>Lỗi hệ thống, anh/chị vui lòng thử lại sau ạ.</i>";
         }
-    }
-    // 4. CHÍNH SÁCH ĐỔI TRẢ: [POLICY_RETURN]
-    elseif (preg_match('/\[POLICY_RETURN\]/i', $botReply)) {
-        $botReply = "Dạ về chính sách đổi trả của bên em ạ:<br><br>";
-        $botReply .= "1. Điều kiện: Sản phẩm quần áo còn mới, đầy đủ tem mác, hóa đơn và chưa qua sử dụng/giặt ủi.<br>";
-        $botReply .= "2. Thời gian: Trong vòng 7 ngày kể từ khi nhận được hàng.<br>";
-        $botReply .= "Anh/chị có thể xem chi tiết hơn tại <a href='return-policy.php' target='_blank' style='color: blue;'>Trang Chính sách Đổi Trả</a> của bọn em nha!";
-    }
-    // 5. GẶP NHÂN VIÊN THẬT: [CONTACT_HUMAN]
-    elseif (preg_match('/\[CONTACT_HUMAN\]/i', $botReply)) {
-        $botReply = "Dạ anh/chị đợi một tẹo nhé, em đang xin phép chuyển lời qua các anh chị admin cửa hàng để được hỗ trợ trực tiếp ạ! Hoặc anh/chị có thể gọi hotline: <b>0123-456-789</b> nếu cần gấp ạ.";
     }
 
     echo json_encode(['reply' => $botReply]);
 
 } else {
-    // Ghi log lỗi vào file mảng
-    $error_msg = json_encode(['curl_error' => curl_error($ch), 'api_response' => $result]);
-    file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - ' . $error_msg . PHP_EOL, FILE_APPEND);
-    
-    echo json_encode(['reply' => 'Dạ nhân viên AI của NTK đang bận chút xíu, anh/chị đợi xíu nhắn lại nha!']);
+    // Ép in ra toàn bộ nội dung thật sự mà Google gửi về để xem lỗi gì
+    $chi_tiet_loi = json_encode($result, JSON_UNESCAPED_UNICODE);
+    echo json_encode(['reply' => 'Lỗi từ Google: ' . $chi_tiet_loi]);
 }
 ?>
