@@ -33,16 +33,20 @@ while ($row = $stmt->fetch()) {
 
 // 1b. Thông báo từ bảng notifications (new_order type - từ process_checkout)
 $admin_user_id = $_SESSION['user_id'] ?? 0;
-$stmt_noti = $conn->prepare("SELECT title, message, related_order_id, created_at FROM notifications WHERE user_id = :uid AND type = 'new_order' AND created_at >= NOW() - INTERVAL 48 HOUR AND is_read = 0 ORDER BY created_at DESC LIMIT 10");
-$stmt_noti->execute(['uid' => $admin_user_id]);
-while ($row = $stmt_noti->fetch()) {
-    $notifications[] = [
-        'time'     => strtotime($row['created_at']),
-        'icon'     => 'fa-bell', 'color' => '#ee4d2d',
-        'label'    => $row['title'] ?: ('Đơn hàng mới: #' . $row['related_order_id']),
-        'link'     => 'order_detail.php?id=' . $row['related_order_id'],
-        'time_str' => date('H:i d/m', strtotime($row['created_at']))
-    ];
+try {
+    $stmt_noti = $conn->prepare("SELECT title, message, related_order_id, created_at FROM notifications WHERE user_id = :uid AND type = 'new_order' AND created_at >= NOW() - INTERVAL 48 HOUR AND is_read = 0 ORDER BY created_at DESC LIMIT 10");
+    $stmt_noti->execute(['uid' => $admin_user_id]);
+    while ($row = $stmt_noti->fetch()) {
+        $notifications[] = [
+            'time'     => strtotime($row['created_at']),
+            'icon'     => 'fa-bell', 'color' => '#ee4d2d',
+            'label'    => $row['title'] ?: ('Đơn hàng mới: #' . $row['related_order_id']),
+            'link'     => 'order_detail.php?id=' . $row['related_order_id'],
+            'time_str' => date('H:i d/m', strtotime($row['created_at']))
+        ];
+    }
+} catch (PDOException $e) {
+    // Ignore error if table notifications does not exist yet
 }
 
 // 2. Yêu cầu trả hàng (order_status = 5)
