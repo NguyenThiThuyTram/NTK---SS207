@@ -22,8 +22,8 @@ try {
         FROM coupons
         WHERE code = :code
           AND status = 1
-          AND start_date <= NOW()
-          AND end_date   >= NOW()
+          AND (start_date IS NULL OR start_date <= NOW())
+          AND (end_date IS NULL OR end_date >= NOW())
     ");
     $stmt->execute(['code' => $code]);
     $coupon = $stmt->fetch(PDO::FETCH_ASSOC);

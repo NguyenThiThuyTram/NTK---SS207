@@ -327,6 +327,12 @@ include 'includes/header.php';
                     <span>Phí vận chuyển</span>
                     <span><?= number_format($order['shipping_fee'], 0, ',', '.') ?> VNĐ</span>
                 </div>
+                <?php if (!empty($order['discount_value']) && floatval($order['discount_value']) > 0): ?>
+                <div class="price-row" style="color:#2e7d32;">
+                    <span>Giảm giá (voucher)</span>
+                    <span>-<?= number_format($order['discount_value'], 0, ',', '.') ?> VNĐ</span>
+                </div>
+                <?php endif; ?>
                 <?php if ($order['wallet_used_amount'] > 0): ?>
                 <div class="price-row" style="color:#d32f2f;">
                     <span>Dùng ví nội bộ</span>

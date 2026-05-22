@@ -67,13 +67,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // -------------------------------------------------------------
         // BƯỚC 1: LƯU ĐƠN HÀNG VÀO BẢNG Orders
         // -------------------------------------------------------------
-        // (Giả sử bạn tự sinh order_id là O0001, O0002...)
         $stmt_max = $conn->prepare("SELECT MAX(CAST(SUBSTRING(order_id, 2) AS UNSIGNED)) FROM orders");
         $stmt_max->execute();
         $max_num = intval($stmt_max->fetchColumn()) + 1;
         $order_id = 'O' . str_pad($max_num, 4, '0', STR_PAD_LEFT);
 
-        // Lấy các sản phẩm đã chọn từ giỏ hàng (dùng Product_Variants để lấy đúng giá)
+        // Lấy các sản phẩm đã chọn từ giỏ hàng
         $stmt_cart = $conn->prepare("
             SELECT c.cart_id, c.quantity, c.variant_id,
                    v.original_price, v.sale_price,
@@ -95,55 +94,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $shipping_fee = 35000;
         $total_price  = $subtotal + $shipping_fee;
 
-        // ── Xác nhận lại coupon phía server (bảo mật) ──────────────────
+        // ── Xác nhận lại coupon phía server ──────────────────
         $verified_coupon_discount = 0;
         $verified_coupon_id = null;
         if ($coupon_id && $coupon_discount > 0) {
-            $stmt_cp = $conn->prepare("
-                SELECT * FROM coupons
-                WHERE coupon_id = :cid
-                  AND status = 1
-                  AND start_date <= NOW()
-                  AND end_date   >= NOW()
-            ");
+            $stmt_cp = $conn->prepare("SELECT * FROM coupons WHERE coupon_id = :cid AND status = 1 AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW())");
             $stmt_cp->execute(['cid' => $coupon_id]);
             $cp = $stmt_cp->fetch(PDO::FETCH_ASSOC);
 
             if ($cp) {
-                // Kiểm tra số lượng
                 $qty_ok = ($cp['quantity'] === null || $cp['used_count'] < $cp['quantity']);
-                // Kiểm tra đơn tối thiểu
                 $min_ok = ($subtotal >= floatval($cp['min_order_value']));
-
                 if ($qty_ok && $min_ok) {
-                    // Tính lại chính xác
                     if ($cp['discount_type'] == 0) {
-                        $calc = $total_price * (floatval($cp['discount_value']) / 100);
+                        // Giảm % áp dụng trên subtotal (nhất quán với JS checkout)
+                        $calc = $subtotal * (floatval($cp['discount_value']) / 100);
                         if (!empty($cp['max_discount_amount']) && $cp['max_discount_amount'] > 0) {
                             $calc = min($calc, floatval($cp['max_discount_amount']));
                         }
                     } else {
                         $calc = floatval($cp['discount_value']);
                     }
-                    $verified_coupon_discount = min(round($calc), $total_price);
+                    $verified_coupon_discount = min(round($calc), $subtotal);
                     $verified_coupon_id = $cp['coupon_id'];
                 }
             }
         }
 
         $final_price = max(0, $total_price - $verified_coupon_discount - $wallet_used);
-
-        // Sinh mã payos_order_code (INT)
         $payos_order_code = intval(date('ymd') . rand(1000, 9999));
 
-        // Xác định trạng thái ban đầu
-        // order_status: 0=chờ thanh toán (online), 1=đang xử lý (COD)
-        // payment_status: 0=chưa TT, 1=đã TT
-        $pay_method_int         = ($payment_method === 'online') ? 2 : 1;
-        $initial_payment_status = ($wallet_used >= $total_price) ? 1 : 0; // COD và Online đều là 0 ban đầu trừ khi ví trả hết
-        $initial_order_status   = ($payment_method === 'cod')    ? 1 : 0; // 0=pending, 1=processing
+        // Logic trạng thái: COD=1 (pay_method=1), Online=2 (pay_method=2)
+        // payment_status: 1=Đã TT, 0=Chưa TT
+        // order_status: 1=Processing, 0=Pending
+        $pay_method_int = ($payment_method === 'online') ? 2 : 1;
+        $initial_payment_status = ($wallet_used >= $total_price && $payment_method !== 'online') ? 1 : 0;
+        $initial_order_status = ($payment_method === 'online') ? 0 : 1;
 
-        // Lưu đơn hàng
         $sql_order = "INSERT INTO orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value) 
                       VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv)";
         $stmt_order = $conn->prepare($sql_order);
@@ -167,193 +154,79 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         ]);
 
         // -------------------------------------------------------------
-        // BƯỚC 2: XỬ LÝ VÍ ĐIỆN TỬ (Nếu khách có dùng)
+        // BƯỚC 2: XỬ LÝ VÍ ĐIỆN TỬ
         // -------------------------------------------------------------
         if ($wallet_used > 0) {
-            // 2.1 Kiểm tra lại xem số dư thật sự có đủ không (chống hack qua F12 sửa code HTML)
             $stmt_check_wallet = $conn->prepare("SELECT wallet_balance FROM users WHERE user_id = :uid FOR UPDATE");
             $stmt_check_wallet->execute(['uid' => $user_id]);
             $current_balance = floatval($stmt_check_wallet->fetchColumn());
-
-            if ($current_balance < $wallet_used) {
-                throw new Exception("Số dư ví không đủ để thực hiện giao dịch này!");
-            }
-
-            // 2.2 Trừ tiền trong bảng Users
-            $sql_deduct = "UPDATE users SET wallet_balance = wallet_balance - :amount WHERE user_id = :uid";
-            $stmt_deduct = $conn->prepare($sql_deduct);
-            $stmt_deduct->execute([
-                'amount' => $wallet_used,
-                'uid' => $user_id
-            ]);
-
-            // 2.3 Lưu lại lịch sử giao dịch vào bảng Wallet_Transactions bạn vừa tạo
-            // Giả sử transaction_type: 1 là Nạp/Hoàn tiền, 2 là Trừ tiền mua sắm
-            $sql_trans = "INSERT INTO wallet_transactions (user_id, amount, transaction_type, description, related_order_id) 
-                          VALUES (:uid, :amount, 2, :desc, :oid)";
-            $stmt_trans = $conn->prepare($sql_trans);
-            $stmt_trans->execute([
-                'uid' => $user_id,
-                'amount' => $wallet_used,
-                'desc' => "Sử dụng ví thanh toán đơn hàng " . $order_id,
-                'oid' => $order_id
-            ]);
+            if ($current_balance < $wallet_used) throw new Exception("Số dư ví không đủ!");
+            
+            $conn->prepare("UPDATE users SET wallet_balance = wallet_balance - :amount WHERE user_id = :uid")->execute(['amount' => $wallet_used, 'uid' => $user_id]);
+            $conn->prepare("INSERT INTO wallet_transactions (user_id, amount, transaction_type, description, related_order_id) VALUES (:uid, :amount, 2, :desc, :oid)")
+                 ->execute(['uid' => $user_id, 'amount' => $wallet_used, 'desc' => "Sử dụng ví thanh toán đơn hàng " . $order_id, 'oid' => $order_id]);
         }
 
         // -------------------------------------------------------------
-        // BƯỚC 3: LƯU CHI TIẾT ĐƠN HÀNG (Order_Details)
+        // BƯỚC 3 & 4 & 5: CHI TIẾT, XÓA GIỎ, COUPON
         // -------------------------------------------------------------
-        // Sinh detail_id kiểu D0001, D0002...
         $stmt_max_d = $conn->prepare("SELECT MAX(CAST(SUBSTRING(detail_id, 2) AS UNSIGNED)) FROM order_details");
         $stmt_max_d->execute();
         $max_d = intval($stmt_max_d->fetchColumn());
-
-        $sql_detail = "INSERT INTO order_details (detail_id, order_id, variant_id, product_name, quantity, price) 
-                       VALUES (:did, :oid, :vid, :pname, :qty, :price)";
-        $stmt_detail = $conn->prepare($sql_detail);
+        $stmt_detail = $conn->prepare("INSERT INTO order_details (detail_id, order_id, variant_id, product_name, quantity, price) VALUES (:did, :oid, :vid, :pname, :qty, :price)");
         foreach ($cart_items as $ci) {
             $max_d++;
-            $detail_id  = 'D' . str_pad($max_d, 4, '0', STR_PAD_LEFT);
-            $unit_price = ($ci['sale_price'] > 0) ? $ci['sale_price'] : $ci['original_price'];
-            $stmt_detail->execute([
-                'did'   => $detail_id,
-                'oid'   => $order_id,
-                'vid'   => $ci['variant_id'],
-                'pname' => $ci['product_name'],
-                'qty'   => $ci['quantity'],
-                'price' => $unit_price
-            ]);
+            $stmt_detail->execute(['did' => 'D' . str_pad($max_d, 4, '0', STR_PAD_LEFT), 'oid' => $order_id, 'vid' => $ci['variant_id'], 'pname' => $ci['product_name'], 'qty' => $ci['quantity'], 'price' => ($ci['sale_price'] > 0 ? $ci['sale_price'] : $ci['original_price'])]);
         }
+        $conn->prepare("DELETE FROM cart WHERE user_id = :uid AND is_selected = 1")->execute(['uid' => $user_id]);
+        if ($verified_coupon_id) $conn->prepare("UPDATE coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")->execute(['cid' => $verified_coupon_id]);
 
-        // -------------------------------------------------------------
-        // BƯỚC 4: XÓA GIỎ HÀNG
-        // -------------------------------------------------------------
-        $stmt_clear_cart = $conn->prepare("DELETE FROM cart WHERE user_id = :uid AND is_selected = 1");
-        $stmt_clear_cart->execute(['uid' => $user_id]);
+        // ── Thông báo Admin có đơn hàng mới ────────────────────────────
+        try {
+            // Lấy user_id của admin (role = 1)
+            $stmt_admin = $conn->prepare("SELECT user_id FROM users WHERE role = 1 LIMIT 1");
+            $stmt_admin->execute();
+            $admin = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+            if ($admin) {
+                $admin_uid = $admin['user_id'];
+                $order_total_fmt = number_format($final_price, 0, ',', '.');
+                $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'new_order', :title, :msg, :oid)")
+                     ->execute([
+                         'uid'   => $admin_uid,
+                         'title' => 'Đơn hàng mới #' . $order_id,
+                         'msg'   => "Có đơn hàng mới #{$order_id} từ khách hàng, tổng tiền {$order_total_fmt} VNĐ. Vui lòng xử lý.",
+                         'oid'   => $order_id
+                     ]);
+            }
+        } catch (PDOException $e) { /* Không throw, không ảnh hưởng luồng chính */ }
 
-        // -------------------------------------------------------------
-        // BƯỚC 5: CẬP NHẬT SỐ LẦN SỬ DỤNG COUPON
-        // -------------------------------------------------------------
-        if ($verified_coupon_id) {
-            $conn->prepare("UPDATE coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")
-                 ->execute(['cid' => $verified_coupon_id]);
-        }
-
-        // CHỐT GIAO DỊCH
         $conn->commit();
 
-        // ===============================
-        // ✅ PAYOS PAYMENT (FINAL FIX)
-        // ===============================
+        // -------------------------------------------------------------
+        // PAYOS
+        // -------------------------------------------------------------
         if ($payment_method === 'online' && $final_price > 0) {
-
             $PAYOS_CLIENT_ID = "d9c795f0-0eea-438e-9f92-3a2902c7c99c";
             $PAYOS_API_KEY = "610ff3aa-21e6-4713-ba23-d9b74e545129";
             $PAYOS_CHECKSUM_KEY = "b7b836b8064139b2906a3431c5bad44ad104ade4777d83cf7059eb316623ebfe";
-
-            // 🔥 Tự động lấy base URL động để chạy tốt trên mọi thư mục/máy tính
-            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-            $src_path = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
-            $base_url = rtrim($protocol . $_SERVER['HTTP_HOST'] . $src_path, '/');
-
-            $return_url = $base_url . "/order_success.php?id=" . $order_id . "&method=online";
-            $cancel_url = $base_url . "/checkout.php";
-
-            $payos_data = [
-                "orderCode" => $payos_order_code,
-                "amount" => intval($final_price),
-                "description" => "NTK " . $order_id,
-                "returnUrl" => $return_url,
-                "cancelUrl" => $cancel_url
-            ];
-
-            // ===============================
-            // ✅ FIX SIGNATURE (KHÔNG dng http_build_query)
-            // ===============================
+            $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/');
+            $payos_data = ["orderCode" => $payos_order_code, "amount" => intval($final_price), "description" => "Don hang $order_id", "returnUrl" => "$base_url/order_success.php?id=$order_id&method=online", "cancelUrl" => "$base_url/checkout.php"];
             ksort($payos_data);
-
-            $rawData = "";
-            foreach ($payos_data as $key => $value) {
-                $rawData .= $key . "=" . trim($value) . "&";
-            }
-            $rawData = rtrim($rawData, "&");
-
-            $signature = hash_hmac("sha256", $rawData, $PAYOS_CHECKSUM_KEY);
-            $payos_data["signature"] = $signature;
-
-            // ===============================
-            // CALL API
-            // ===============================
+            $rawData = ""; foreach ($payos_data as $key => $value) $rawData .= "$key=" . trim($value) . "&";
+            $payos_data["signature"] = hash_hmac("sha256", rtrim($rawData, "&"), $PAYOS_CHECKSUM_KEY);
             $ch = curl_init("https://api-merchant.payos.vn/v2/payment-requests");
-
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode($payos_data),
-                CURLOPT_HTTPHEADER => [
-                    "Content-Type: application/json",
-                    "x-client-id: $PAYOS_CLIENT_ID",
-                    "x-api-key: $PAYOS_API_KEY"
-                ],
-                CURLOPT_TIMEOUT => 15,
-                CURLOPT_SSL_VERIFYPEER => false  // Fix lỗi cURL SSL (60) trên XAMPP
-            ]);
-
-            $response = curl_exec($ch);
-
-            // ❗ Nếu call lỗi thật (network lỗi)
-            if ($response === false) {
-                $err = curl_error($ch);
-                curl_close($ch);
-                echo "<script>alert('Lỗi CURL: $err'); window.location.href = '../checkout.php';</script>";
-                exit;
-            }
-
-            curl_close($ch);
-
-            $resData = json_decode($response, true);
-
-            // 📝 LOG để debug
-            file_put_contents(__DIR__ . "/payos_debug.txt", print_r($resData, true));
-
-            // ===============================
-            // ✅ SUCCESS
-            // ===============================
-            if (isset($resData['code']) && $resData['code'] === '00' && isset($resData['data'])) {
-
-                $qr_code = $resData['data']['qrCode'] ?? '';
-                $checkout_url = $resData['data']['checkoutUrl'] ?? '';
-
-                $upd = $conn->prepare("
-                    UPDATE orders
-                    SET payos_qr_code = :qr, payos_checkout_url = :url
-                    WHERE order_id = :oid
-                ");
-                $upd->execute([
-                    'qr' => $qr_code,
-                    'url' => $checkout_url,
-                    'oid' => $order_id
-                ]);
-
-                header("Location: ../order_success.php?id=$order_id&method=online");
-                exit;
-
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($payos_data), CURLOPT_HTTPHEADER => ["Content-Type: application/json", "x-client-id: $PAYOS_CLIENT_ID", "x-api-key: $PAYOS_API_KEY"], CURLOPT_SSL_VERIFYPEER => false]);
+            $response = json_decode(curl_exec($ch), true); curl_close($ch);
+            if (isset($response['code']) && $response['code'] === '00') {
+                $conn->prepare("UPDATE orders SET payos_qr_code = :qr, payos_checkout_url = :url WHERE order_id = :oid")->execute(['qr' => $response['data']['qrCode'], 'url' => $response['data']['checkoutUrl'], 'oid' => $order_id]);
+                header("Location: " . $response['data']['checkoutUrl']); exit;
             } else {
-                // ❗ FIX: show full lỗi thật
-                $err = $resData['desc'] ?? json_encode($resData);
-                echo "<script>alert('PayOS lỗi: " . addslashes($err) . "'); window.location.href = '../checkout.php';</script>";
-                exit;
+                echo "<script>alert('Lỗi thanh toán: " . ($response['desc'] ?? 'Unknown') . "'); window.location.href='../checkout.php';</script>"; exit;
             }
         }
-
-        // COD hoặc ví đủ trả hoàn toàn → Chuyển trang thành công
-        header("Location: ../order_success.php?id=" . $order_id . "&method=cod");
-        exit;
-
+        header("Location: ../order_success.php?id=$order_id&method=cod"); exit;
     } catch (Exception $e) {
-        // NẾU CÓ LỖI (Ví dụ: Mạng rớt, hack số dư, lỗi SQL) -> HOÀN TÁC TOÀN BỘ! Khách không bị trừ tiền.
         $conn->rollBack();
-
         $error_msg = $e->getMessage();
         echo "<script>
                 alert('Có lỗi xảy ra: " . addslashes($error_msg) . "');

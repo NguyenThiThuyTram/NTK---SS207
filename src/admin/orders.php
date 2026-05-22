@@ -11,19 +11,21 @@ $whereClause = "1=1";
 $params = [];
 
 if ($tab === '0') {
-    $whereClause .= " AND o.order_status = 0"; // Chờ xác nhận
-} elseif ($tab === 'wait_pay') {
-    $whereClause .= " AND o.payment_status = 0 AND o.order_status NOT IN (3, 4)"; // Chờ thanh toán
+    $whereClause .= " AND o.order_status = 0"; // Chờ thanh toán
 } elseif ($tab === '1') {
-    $whereClause .= " AND o.order_status = 1"; // Đang xử lý
+    $whereClause .= " AND o.order_status = 1"; // Chờ lấy hàng
 } elseif ($tab === '2') {
-    $whereClause .= " AND o.order_status = 2"; // Đang giao
+    $whereClause .= " AND o.order_status = 2"; // Đang giao hàng
 } elseif ($tab === '3') {
     $whereClause .= " AND o.order_status = 3"; // Hoàn thành
 } elseif ($tab === '4') {
     $whereClause .= " AND o.order_status = 4"; // Đã hủy
-} elseif ($tab === '5') {
-    $whereClause .= " AND o.order_status = 5"; // Trả hàng
+} elseif ($tab === 'return') {
+    $whereClause .= " AND o.order_status IN (5, 6, 7)"; // Trả hàng/Hoàn tiền
+} elseif ($tab === '8') {
+    $whereClause .= " AND o.order_status = 8"; // Chờ duyệt hủy
+} elseif ($tab === '9') {
+    $whereClause .= " AND o.order_status IN (9, 10)"; // Giao thất bại
 }
 
 // Search
@@ -50,18 +52,16 @@ $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Counts for tabs
 $counts = [
-    'all' => 0, '0' => 0, 'wait_pay' => 0, '1' => 0, '2' => 0, '3' => 0, '4' => 0, '5' => 0
+    'all' => 0, '0' => 0, '1' => 0, '2' => 0, '3' => 0, '4' => 0,
+    '5' => 0, '6' => 0, '7' => 0, '8' => 0, '9' => 0, '10' => 0,
+    'return' => 0  // 5+6+7
 ];
-$countStmt = $conn->query("SELECT order_status, payment_status FROM orders");
+$countStmt = $conn->query("SELECT order_status FROM orders");
 while ($row = $countStmt->fetch(PDO::FETCH_ASSOC)) {
     $counts['all']++;
-    if ($row['order_status'] == 0) $counts['0']++;
-    if ($row['payment_status'] == 0 && !in_array($row['order_status'], [3,4])) $counts['wait_pay']++;
-    if ($row['order_status'] == 1) $counts['1']++;
-    if ($row['order_status'] == 2) $counts['2']++;
-    if ($row['order_status'] == 3) $counts['3']++;
-    if ($row['order_status'] == 4) $counts['4']++;
-    if ($row['order_status'] == 5) $counts['5']++;
+    $s = (string)$row['order_status'];
+    if (isset($counts[$s])) $counts[$s]++;
+    if (in_array($row['order_status'], [5, 6, 7])) $counts['return']++;
 }
 
 $admin_current_page = 'orders.php';
@@ -220,26 +220,22 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </div>
 
 <div class="tabs-container">
-    <a href="?tab=all" class="tab-item <?= $tab == 'all' ? 'active' : '' ?>">Tất cả <span class="badge"><?= $counts['all'] ?></span></a>
-    <a href="?tab=0" class="tab-item <?= $tab == '0' ? 'active' : '' ?>">Chờ xác nhận <span class="badge"><?= $counts['0'] ?></span></a>
-    <a href="?tab=wait_pay" class="tab-item <?= $tab == 'wait_pay' ? 'active' : '' ?>">Chờ thanh toán <span class="badge"><?= $counts['wait_pay'] ?></span></a>
-    <a href="?tab=1" class="tab-item <?= $tab == '1' ? 'active' : '' ?>">Đang xử lý <span class="badge"><?= $counts['1'] ?></span></a>
-    <a href="?tab=2" class="tab-item <?= $tab == '2' ? 'active' : '' ?>">Đang giao <span class="badge"><?= $counts['2'] ?></span></a>
-    <a href="?tab=3" class="tab-item <?= $tab == '3' ? 'active' : '' ?>">Hoàn thành <span class="badge"><?= $counts['3'] ?></span></a>
-    <a href="?tab=4" class="tab-item <?= $tab == '4' ? 'active' : '' ?>">Đã hủy <span class="badge"><?= $counts['4'] ?></span></a>
-    <a href="?tab=5" class="tab-item <?= $tab == '5' ? 'active' : '' ?>">Trả hàng <span class="badge"><?= $counts['5'] ?></span></a>
+    <a href="?tab=all"    class="tab-item <?= $tab == 'all'    ? 'active' : '' ?>">Tất cả <span class="badge"><?= $counts['all'] ?></span></a>
+    <a href="?tab=0"      class="tab-item <?= $tab == '0'      ? 'active' : '' ?>">Chờ TT <span class="badge"><?= $counts['0'] ?></span></a>
+    <a href="?tab=1"      class="tab-item <?= $tab == '1'      ? 'active' : '' ?>">Chờ lấy hàng <span class="badge"><?= $counts['1'] ?></span></a>
+    <a href="?tab=2"      class="tab-item <?= $tab == '2'      ? 'active' : '' ?>">Đang giao <span class="badge"><?= $counts['2'] ?></span></a>
+    <a href="?tab=3"      class="tab-item <?= $tab == '3'      ? 'active' : '' ?>">Hoàn thành <span class="badge"><?= $counts['3'] ?></span></a>
+    <a href="?tab=4"      class="tab-item <?= $tab == '4'      ? 'active' : '' ?>">Đã hủy <span class="badge"><?= $counts['4'] ?></span></a>
+    <a href="?tab=return" class="tab-item <?= $tab == 'return' ? 'active' : '' ?>">Trả hàng <span class="badge"><?= $counts['return'] ?></span></a>
+    <a href="?tab=8"      class="tab-item <?= $tab == '8'      ? 'active' : '' ?>">Chờ duyệt hủy <span class="badge"><?= $counts['8'] ?></span></a>
+    <a href="?tab=9"      class="tab-item <?= $tab == '9'      ? 'active' : '' ?>">Giao thất bại <span class="badge"><?= $counts['9'] ?></span></a>
 </div>
 
 <div class="toolbar">
     <form action="" method="GET" style="display:flex; flex:1; gap:16px;">
         <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
         <input type="text" name="search" class="search-input" placeholder="Tìm theo mã đơn, tên khách hàng..." value="<?= htmlspecialchars($search) ?>">
-        <select class="filter-select">
-            <option value="">Trạng thái thanh toán</option>
-        </select>
-        <select class="filter-select">
-            <option value="">Đơn vị vận chuyển</option>
-        </select>
+
         <button type="submit" style="display:none;"></button>
     </form>
 </div>
@@ -289,7 +285,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             <?php if ($o['payment_status'] == 1): ?>
                                 <span class="status-badge status-pay-done">Đã thanh toán</span>
                             <?php else: ?>
-                                <?php if ($o['payment_method'] == 2): // COD ?>
+                                <?php if ($o['payment_method'] == 1): // COD ?>
                                     <span class="status-badge status-pay-cod">COD</span>
                                 <?php else: ?>
                                     <span class="status-badge status-pay-wait">Chờ thanh toán</span>
@@ -297,16 +293,21 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php 
+                            <?php
                                 $statusMap = [
-                                    0 => ['class' => 'status-order-wait', 'text' => 'Chờ xác nhận'],
-                                    1 => ['class' => 'status-order-process', 'text' => 'Đang xử lý'],
-                                    2 => ['class' => 'status-order-shipping', 'text' => 'Đang giao'],
-                                    3 => ['class' => 'status-order-done', 'text' => 'Hoàn thành'],
-                                    4 => ['class' => 'status-order-cancel', 'text' => 'Đã hủy'],
-                                    5 => ['class' => 'status-order-cancel', 'text' => 'Trả hàng']
+                                    0  => ['class' => 'status-order-wait',     'text' => 'Chờ thanh toán'],
+                                    1  => ['class' => 'status-order-process',  'text' => 'Chờ lấy hàng'],
+                                    2  => ['class' => 'status-order-shipping', 'text' => 'Đang giao hàng'],
+                                    3  => ['class' => 'status-order-done',     'text' => 'Hoàn thành'],
+                                    4  => ['class' => 'status-order-cancel',   'text' => 'Đã hủy'],
+                                    5  => ['class' => 'status-order-cancel',   'text' => 'Yêu cầu trả hàng'],
+                                    6  => ['class' => 'status-order-shipping', 'text' => 'Đang hoàn trả'],
+                                    7  => ['class' => 'status-order-done',     'text' => 'Đã hoàn tiền'],
+                                    8  => ['class' => 'status-order-wait',     'text' => 'Chờ duyệt hủy'],
+                                    9  => ['class' => 'status-order-cancel',   'text' => 'Giao thất bại'],
+                                    10 => ['class' => 'status-order-wait',     'text' => 'Đang hoàn về kho'],
                                 ];
-                                $s = $statusMap[$o['order_status']] ?? ['class' => 'status-order-wait', 'text' => 'Chờ xác nhận'];
+                                $s = $statusMap[$o['order_status']] ?? ['class' => 'status-order-wait', 'text' => 'Không rõ'];
                             ?>
                             <span class="status-badge <?= $s['class'] ?>"><?= $s['text'] ?></span>
                         </td>

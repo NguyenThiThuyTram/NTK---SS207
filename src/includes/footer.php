@@ -1,4 +1,13 @@
-</main> 
+<?php
+// Tính BASE URL cho footer (giống header.php)
+$_f_protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$_f_host = $_SERVER['HTTP_HOST'];
+$_f_src_dir = str_replace('\\', '/', realpath(__DIR__ . '/../'));
+$_f_doc_root = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
+$_f_src_path = str_replace($_f_doc_root, '', $_f_src_dir);
+$_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
+?>
+</main>
 
 <style>
     /* ============================================================
@@ -88,7 +97,7 @@
     <div class="footer-container">
         <div class="footer-col">
             <div class="footer-logo-box" style="margin-bottom: 15px;">
-                <img src="assets/images/logo-ntk.png" alt="NTK Logo" class="footer-logo" id="footerLogo">
+                <img src="<?= $_FBASE ?>/assets/images/logo-ntk.png" alt="NTK Logo" class="footer-logo" id="footerLogo">
             </div>
             <p>Khám phá những thiết kế giúp bạn tự tin mỗi ngày.</p>
             <p>Hotline: <strong>0373546444</strong></p>
@@ -146,6 +155,6 @@
     });
 </script>
 
-<script src="assets/js/main.js"></script>
+<script src="<?= $_FBASE ?>/assets/js/main.js"></script>
 </body>
 </html>

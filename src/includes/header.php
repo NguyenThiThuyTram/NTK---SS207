@@ -7,6 +7,16 @@ if (session_status() === PHP_SESSION_NONE) {
 // 2. Gọi file kết nối Database
 require_once __DIR__ . '/../config/database.php';
 
+// Tính BASE URL (tuyệt đối) để dùng cho link/image trong header
+// Luôn trỏ về thư mục src/
+$_protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$_host = $_SERVER['HTTP_HOST'];
+// Lấy đường dẫn của thư mục src/ từ document root
+$_src_dir = str_replace('\\', '/', realpath(__DIR__ . '/../'));
+$_doc_root = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
+$_src_path = str_replace($_doc_root, '', $_src_dir);
+$_BASE = $_protocol . '://' . $_host . $_src_path;
+
 // 3. Đếm số lượng sản phẩm trong giỏ hàng
 $cart_count = 0;
 try {
@@ -25,6 +35,17 @@ try {
 } catch (PDOException $e) {
     $cart_count = 0;
 }
+
+// Đếm số lượng thông báo chưa đọc
+$unread_noti_count = 0;
+try {
+    if (isset($_SESSION['user_id'])) {
+        $stmt_n = $conn->prepare("SELECT COUNT(*) as unread FROM notifications WHERE user_id = :user_id AND is_read = 0");
+        $stmt_n->execute(['user_id' => $_SESSION['user_id']]);
+        $row_n = $stmt_n->fetch(PDO::FETCH_ASSOC);
+        $unread_noti_count = $row_n['unread'] ?: 0;
+    }
+} catch (PDOException $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -33,9 +54,9 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NTK Fashion</title>
-    <link rel="icon" type="image/png" href="assets/images/logo-ntk.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/png" href="<?= $_BASE ?>/assets/images/logo-ntk.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= $_BASE ?>/assets/css/style.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <style>
@@ -159,8 +180,8 @@ try {
     <header class="main-header">
         <div class="header-container">
             <div class="logo">
-                <a href="index.php">
-                    <img src="assets/images/logo-ntk.png" alt="NTK Logo" id="mainLogo">
+                <a href="<?= $_BASE ?>/index.php">
+                    <img src="<?= $_BASE ?>/assets/images/logo-ntk.png" alt="NTK Logo" id="mainLogo">
                 </a>
             </div>
 
@@ -168,10 +189,10 @@ try {
 
             <nav class="navbar">
                 <ul>
-                    <li><a href="index.php" class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">Trang chủ</a></li>
-                    <li><a href="product.php" class="<?= ($current_page == 'product.php') ? 'active' : ''; ?>">Cửa hàng</a></li>
-                    <li><a href="wishlist.php" class="<?= ($current_page == 'wishlist.php') ? 'active' : ''; ?>">Yêu thích</a></li>
-                    <li><a href="promotion.php" class="<?= ($current_page == 'promotion.php') ? 'active' : ''; ?>">Khuyến mãi</a></li>
+                    <li><a href="<?= $_BASE ?>/index.php" class="<?= ($current_page == 'index.php') ? 'active' : ''; ?>">Trang chủ</a></li>
+                    <li><a href="<?= $_BASE ?>/product.php" class="<?= ($current_page == 'product.php') ? 'active' : ''; ?>">Cửa hàng</a></li>
+                    <li><a href="<?= $_BASE ?>/wishlist.php" class="<?= ($current_page == 'wishlist.php') ? 'active' : ''; ?>">Yêu thích</a></li>
+                    <li><a href="<?= $_BASE ?>/promotion.php" class="<?= ($current_page == 'promotion.php') ? 'active' : ''; ?>">Khuyến mãi</a></li>
                 </ul>
             </nav>
 
@@ -179,14 +200,20 @@ try {
                 <a href="javascript:void(0)" onclick="toggleSearch()"><i class="fa-solid fa-magnifying-glass"></i></a>
                 
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="<?= ($_SESSION['role'] == 1) ? 'admin/dashboard.php' : 'views/user/dashboard.php'; ?>" title="Tài khoản">
+                    <?php if ($_SESSION['role'] != 1): ?>
+                        <a href="<?= $_BASE ?>/views/user/dashboard.php?view=thongbao" class="cart-icon" title="Thông báo">
+                            <i class="fa-regular fa-bell"></i>
+                            <?php if ($unread_noti_count > 0): ?><span class="cart-count" style="background:#ee4d2d;"><?= $unread_noti_count; ?></span><?php endif; ?>
+                        </a>
+                    <?php endif; ?>
+                    <a href="<?= ($_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản">
                         <i class="<?= ($_SESSION['role'] == 1) ? 'fa-solid fa-user-gear' : 'fa-solid fa-user'; ?>"></i>
                     </a>
                 <?php else: ?>
-                    <a href="views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
+                    <a href="<?= $_BASE ?>/views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>
 
-                <a href="cart.php" class="cart-icon">
+                <a href="<?= $_BASE ?>/cart.php" class="cart-icon">
                     <i class="fa-solid fa-bag-shopping"></i>
                     <?php if ($cart_count > 0): ?><span class="cart-count"><?= $cart_count; ?></span><?php endif; ?>
                 </a>
@@ -197,8 +224,8 @@ try {
             </div>
         </div>
 
-        <div id="searchBar" class="search-bar-container">
-            <form action="search.php" method="GET" class="search-form">
+        <div id="searchBar" class="search-bar-container" style="display:none;">
+            <form action="<?= $_BASE ?>/search.php" method="GET" class="search-form">
                 <input type="text" name="q" placeholder="Tìm kiếm sản phẩm tại NTK Fashion..." class="search-input" required>
                 <button type="submit" class="search-btn">
                     <i class="fa-solid fa-magnifying-glass"></i>

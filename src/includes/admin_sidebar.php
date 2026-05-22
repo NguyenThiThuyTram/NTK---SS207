@@ -31,13 +31,39 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
-// 2. Yêu cầu hủy đơn (order_status = 5)
+// 1b. Thông báo từ bảng notifications (new_order type - từ process_checkout)
+$admin_user_id = $_SESSION['user_id'] ?? 0;
+$stmt_noti = $conn->prepare("SELECT title, message, related_order_id, created_at FROM notifications WHERE user_id = :uid AND type = 'new_order' AND created_at >= NOW() - INTERVAL 48 HOUR AND is_read = 0 ORDER BY created_at DESC LIMIT 10");
+$stmt_noti->execute(['uid' => $admin_user_id]);
+while ($row = $stmt_noti->fetch()) {
+    $notifications[] = [
+        'time'     => strtotime($row['created_at']),
+        'icon'     => 'fa-bell', 'color' => '#ee4d2d',
+        'label'    => $row['title'] ?: ('Đơn hàng mới: #' . $row['related_order_id']),
+        'link'     => 'order_detail.php?id=' . $row['related_order_id'],
+        'time_str' => date('H:i d/m', strtotime($row['created_at']))
+    ];
+}
+
+// 2. Yêu cầu trả hàng (order_status = 5)
 $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 5 ORDER BY order_date DESC LIMIT 5");
 while ($row = $stmt->fetch()) {
     $notifications[] = [
         'time' => strtotime($row['order_date']),
+        'icon' => 'fa-rotate-left', 'color' => '#e67e22',
+        'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
+        'link' => 'order_detail.php?id=' . $row['order_id'],
+        'time_str' => date('H:i d/m', strtotime($row['order_date']))
+    ];
+}
+
+// 2b. Khách hàng hủy đơn (order_status = 4 hoặc 8)
+$stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status IN (4, 8) AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC LIMIT 5");
+while ($row = $stmt->fetch()) {
+    $notifications[] = [
+        'time' => strtotime($row['order_date']),
         'icon' => 'fa-ban', 'color' => '#e74c3c',
-        'label' => 'Yêu cầu hủy đơn: #' . $row['order_id'],
+        'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
         'link' => 'order_detail.php?id=' . $row['order_id'],
         'time_str' => date('H:i d/m', strtotime($row['order_date']))
     ];
@@ -609,8 +635,8 @@ $notif_count = count($notifications);
                     </div>
                     <div class="notif-body">
                         <div class="notif-label"><?= htmlspecialchars($n['label']) ?></div>
-                        <?php if ($n['time']): ?>
-                        <div class="notif-time"><?= htmlspecialchars($n['time']) ?></div>
+                        <?php if (isset($n['time_str'])): ?>
+                        <div class="notif-time"><?= htmlspecialchars($n['time_str']) ?></div>
                         <?php endif; ?>
                     </div>
                 </a>

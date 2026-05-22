@@ -8,4 +8,5 @@ mysql_data/
 src/gemini_error_log.txt
 src/controllers/payos_debug.txt
 api_key.php
+src/assets/uploads/
 
