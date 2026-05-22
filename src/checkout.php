@@ -570,6 +570,10 @@ include 'includes/header.php';
                     </div>
 
                     <input type="hidden" name="wallet_used" id="input_wallet_used" value="0">
+                    <!-- Hidden inputs để submit form -->
+                    <input type="hidden" name="coupon_code" id="input_coupon_code" value="">
+                    <input type="hidden" name="coupon_discount" id="input_coupon_discount" value="0">
+                    <input type="hidden" name="coupon_id" id="input_coupon_id" value="">
 
                     <div class="step-actions">
                         <button type="button" class="btn-back" onclick="goToStep(2)">< Quay lại</button>
@@ -679,10 +683,6 @@ include 'includes/header.php';
                     <span id="coupon_tag_text"></span>
                     <button class="coupon-remove" onclick="removeCoupon()" title="Xóa mã">✕</button>
                 </div>
-                <!-- Hidden inputs để submit form -->
-                <input type="hidden" name="coupon_code" id="input_coupon_code" value="">
-                <input type="hidden" name="coupon_discount" id="input_coupon_discount" value="0">
-                <input type="hidden" name="coupon_id" id="input_coupon_id" value="">
             </div>
 
             <div class="sum-row">

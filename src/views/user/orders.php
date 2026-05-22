@@ -133,7 +133,7 @@ try {
     .tracking-info strong { color: #2980b9; }
 
     /* BUTTONS */
-    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0 15px; border-radius: 3px; font-size: 13.5px; cursor: pointer; text-decoration: none; min-width: 90px; height: 36px; box-sizing: border-box; border: 1px solid transparent; font-family: inherit; transition: 0.2s; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0 15px; border-radius: 3px; font-size: 13.5px; cursor: pointer; text-decoration: none; min-width: 90px; height: 36px; box-sizing: border-box; border: 1px solid transparent; font-family: inherit; transition: 0.2s; margin: 0; line-height: 1; white-space: nowrap; }
     .btn-primary { background: #ee4d2d; color: #fff; border-color: #ee4d2d; }
     .btn-primary:hover { background: #d73211; }
     .btn-teal { background: #26aa99; color: #fff; border-color: #26aa99; }

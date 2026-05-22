@@ -210,7 +210,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $PAYOS_API_KEY = "610ff3aa-21e6-4713-ba23-d9b74e545129";
             $PAYOS_CHECKSUM_KEY = "b7b836b8064139b2906a3431c5bad44ad104ade4777d83cf7059eb316623ebfe";
             $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/');
-            $payos_data = ["orderCode" => $payos_order_code, "amount" => intval($final_price), "description" => "Don hang $order_id", "returnUrl" => "$base_url/order_success.php?id=$order_id&method=online", "cancelUrl" => "$base_url/checkout.php"];
+            $payos_data = ["orderCode" => $payos_order_code, "amount" => intval($final_price), "description" => "Don hang $order_id", "returnUrl" => "$base_url/order_success.php?order_id=$order_id&method=online", "cancelUrl" => "$base_url/checkout.php"];
             ksort($payos_data);
             $rawData = ""; foreach ($payos_data as $key => $value) $rawData .= "$key=" . trim($value) . "&";
             $payos_data["signature"] = hash_hmac("sha256", rtrim($rawData, "&"), $PAYOS_CHECKSUM_KEY);

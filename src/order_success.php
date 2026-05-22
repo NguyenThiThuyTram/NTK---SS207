@@ -2,7 +2,7 @@
 session_start();
 require_once 'config/database.php';
 
-$order_id = $_GET['id'] ?? '';
+$order_id = $_GET['order_id'] ?? $_GET['id'] ?? '';
 $method   = $_GET['method'] ?? 'cod'; // 'online' hoặc 'cod'
 
 if (!$order_id) {
@@ -439,15 +439,14 @@ include 'includes/header.php';
 
             <?php endif; ?>
 
-            <!-- CTA buttons -->
             <div class="cta-buttons">
                 <a href="index.php" class="cta-btn secondary">
                     <i class="fa-solid fa-arrow-left" style="font-size:12px;"></i>
                     Tiếp tục mua sắm
                 </a>
-                <a href="views/user/dashboard.php?view=chitietdonhang&id=<?= $order_id ?>" class="cta-btn primary">
+                <a href="views/user/dashboard.php?view=donmua" class="cta-btn primary">
                     <i class="fa-solid fa-box"></i>
-                    Theo dõi đơn hàng
+                    Quản lý đơn mua
                 </a>
             </div>
 
