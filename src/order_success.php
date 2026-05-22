@@ -34,6 +34,31 @@ $is_paid    = ($order['payment_status'] == 1);
 $has_qr     = (!empty($order['payos_qr_code']));
 $checkout_url = $order['payos_checkout_url'] ?? '';
 
+// Tự động verify nếu PayOS redirect về có status=PAID
+if ($is_online && !$is_paid && isset($_GET['status']) && $_GET['status'] === 'PAID' && isset($_GET['orderCode'])) {
+    $PAYOS_CLIENT_ID = "d9c795f0-0eea-438e-9f92-3a2902c7c99c";
+    $PAYOS_API_KEY = "610ff3aa-21e6-4713-ba23-d9b74e545129";
+    
+    $ch = curl_init("https://api-merchant.payos.vn/v2/payment-requests/" . $_GET['orderCode']);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            "x-client-id: $PAYOS_CLIENT_ID",
+            "x-api-key: $PAYOS_API_KEY"
+        ],
+        CURLOPT_SSL_VERIFYPEER => false
+    ]);
+    $res = json_decode(curl_exec($ch), true);
+    curl_close($ch);
+
+    if (isset($res['data']['status']) && $res['data']['status'] === 'PAID') {
+        $is_paid = true;
+        // Cập nhật DB (Phòng trường hợp webhook bị trễ hoặc thất bại)
+        $conn->prepare("UPDATE orders SET payment_status = 1, order_status = 1 WHERE order_id = :oid")
+             ->execute(['oid' => $order_id]);
+    }
+}
+
 $page_title = "Đặt Hàng Thành Công";
 include 'includes/header.php';
 ?>
