@@ -263,10 +263,10 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
         <span>✖</span>
     </div>
     <div id="ntk-chat-messages">
-        <div class="msg-bot">Dạ chào anh/chị, em là nhân viên AI của shop NTK. Mình đang tìm đồ phong cách nào để em tư vấn cho ạ? </div>
+        <div class="msg-bot">Dạ chào anh/chị, em là nhân viên AI của shop NTK. Mình đang tìm đồ như thế nào để em tư vấn cho ạ? </div>
     </div>
     <div id="ntk-chat-input-area">
-        <input type="text" id="ntk-chat-input" placeholder="Hỏi bé AI ngay..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <input type="text" id="ntk-chat-input" placeholder="Hãy nhập câu hỏi của bạn nhé..." onkeypress="if(event.key==='Enter') sendMessage()">
         <button id="ntk-send-btn" onclick="sendMessage()">Gửi</button>
     </div>
 </div>
