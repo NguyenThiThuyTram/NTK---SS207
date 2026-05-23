@@ -21,8 +21,8 @@ if (!$order) {
 
 // Lấy chi tiết sản phẩm trong đơn hàng
 $stmt_items = $conn->prepare("
-    SELECT od.order_id, od.variant_id, od.product_name, od.quantity, od.price,
-           v.color, v.size FROM order_details od
+        SELECT od.order_id, od.variant_id, od.product_name, od.quantity, od.price,
+            v.color, v.size, v.product_id FROM order_details od
     LEFT JOIN product_variants v ON od.variant_id = v.variant_id
     WHERE od.order_id = :oid
 ");
@@ -334,8 +334,15 @@ include 'includes/header.php';
                             &nbsp;&times; <?= intval($item['quantity']) ?>
                         </div>
                     </div>
-                    <div class="prod-price">
-                        <?= number_format($item['price'] * $item['quantity'], 0, ',', '.') ?> VNĐ
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+                        <div class="prod-price">
+                            <?= number_format($item['price'] * $item['quantity'], 0, ',', '.') ?> VNĐ
+                        </div>
+                        <?php if ((intval($order['order_status']) === 3 || isset($_GET['force_review'])) && !empty($item['product_id'])): ?>
+                            <div>
+                                <a href="product_detail.php?id=<?= intval($item['product_id']) ?>&open_review=1" class="cta-btn secondary" style="padding:8px 12px; font-size:13px; text-decoration:none;">Đánh giá</a>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endforeach; ?>

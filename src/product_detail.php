@@ -286,12 +286,23 @@ include 'includes/header.php';
                         <div class="main-review-form" style="margin-bottom: 30px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
                             <p style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Viết đánh giá của bạn:</p>
                             <textarea id="main_comment_text" style="width:100%; height:70px; padding:10px; border:1px solid #ddd; outline:none; resize:none;" placeholder="Chia sẻ cảm nhận về sản phẩm..."></textarea>
-                            <div style="display:flex; justify-content: space-between; align-items:center; margin-top:10px;">
-                                <div>
+                            <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px;">
+                                <div style="flex:1; min-width:180px;">
                                     <label style="font-size:13px; color:#666;">Số sao: </label>
-                                    <select id="main_rating_val" style="padding:4px 8px; border:1px solid #ddd;"><option value="5">5 ★</option><option value="4">4 ★</option><option value="3">3 ★</option><option value="2">2 ★</option><option value="1">1 ★</option></select>
+                                    <select id="main_rating_val" style="padding:8px 10px; border:1px solid #ddd; border-radius:4px; width:100%;">
+                                        <option value="5">5 ★</option>
+                                        <option value="4">4 ★</option>
+                                        <option value="3">3 ★</option>
+                                        <option value="2">2 ★</option>
+                                        <option value="1">1 ★</option>
+                                    </select>
                                 </div>
-                                <button type="button" onclick="submitReview(0)" style="background:#2f1c00; color:#fff; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:600; font-size:13px;">Gửi Đánh Giá</button>
+                                <div style="flex:1; min-width:260px;">
+                                    <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">Hình ảnh (tùy chọn):</label>
+                                    <input id="main_review_image" type="file" accept="image/*" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
+                                    <div id="main_review_image_preview" style="display:none; margin-top:10px;"><img src="" alt="Preview" style="max-width:100%; border-radius:6px; border:1px solid #eee;"></div>
+                                </div>
+                                <button type="button" onclick="submitReview(0)" style="background:#2f1c00; color:#fff; border:none; padding:12px 24px; border-radius:4px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Gửi Đánh Giá</button>
                             </div>
                         </div>
                     <?php else: ?>
@@ -321,7 +332,11 @@ include 'includes/header.php';
                                         </span>
                                     </div>
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
-                                    
+                                    <?php if (!empty($rev['image'])): ?>
+                                        <div style="margin: 10px 0;">
+                                            <img src="<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 190px; max-height: 190px; border-radius: 10px; border: 1px solid #eee; object-fit: cover;">
+                                        </div>
+                                    <?php endif; ?>
                                     <div style="display:flex; gap:15px; align-items:center; margin-top:5px;">
                                         <button type="button" onclick="toggleLike(<?= $rev['review_id'] ?>)" id="like-btn-<?= $rev['review_id'] ?>" style="background:none; border:none; color:<?= $is_root_liked ? '#e63946' : '#888' ?>; font-size:13px; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;"><i class="<?= $is_root_liked ? 'fa-solid' : 'fa-regular' ?> fa-thumbs-up"></i> Thích (<span class="like-count"><?= $rev['total_likes'] ?></span>)</button>
                                         
@@ -372,11 +387,45 @@ include 'includes/header.php';
     var allVariants = <?php echo json_encode($variants); ?>;
     var selectedColor = "<?php echo addslashes($first_v['color'] ?? ''); ?>";
     var selectedSize = "<?php echo addslashes($first_v['size'] ?? ''); ?>";
+    var openReview = <?php echo isset($_GET['open_review']) ? 'true' : 'false'; ?>;
 
     document.addEventListener("DOMContentLoaded", function() {
         var stockSpan = document.querySelector('.stock-info');
         if(stockSpan && !stockSpan.id) {
             stockSpan.id = 'stock-info';
+        }
+
+        var mainImageInput = document.getElementById('main_review_image');
+        if (mainImageInput) {
+            mainImageInput.addEventListener('change', function () {
+                var file = this.files[0];
+                var preview = document.querySelector('#main_review_image_preview img');
+                if (file && preview) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        document.getElementById('main_review_image_preview').style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else if (preview) {
+                    preview.src = '';
+                    document.getElementById('main_review_image_preview').style.display = 'none';
+                }
+            });
+        }
+
+        // Nếu được gọi từ trang đơn hàng với open_review=1 thì cuộn xuống form đánh giá
+        if (openReview) {
+            var reviewForm = document.querySelector('.main-review-form');
+            if (reviewForm) {
+                reviewForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var ta = document.getElementById('main_comment_text');
+                if (ta) ta.focus();
+            } else {
+                // Nếu không có form (không đủ quyền), cuộn tới khu vực feedback để hiển thị thông báo
+                var fb = document.querySelector('.product-feedback');
+                if (fb) fb.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
     });
 
@@ -608,28 +657,42 @@ include 'includes/header.php';
         const productId = "<?= $product_id ?>";
         let comment = '';
         let rating = 5;
+        let reviewImage = null;
 
         if (parentId === 0) {
             comment = document.getElementById('main_comment_text').value.trim();
             rating = document.getElementById('main_rating_val').value;
+            reviewImage = document.getElementById('main_review_image').files[0] || null;
         } else {
             comment = document.getElementById('reply_text_' + parentId).value.trim();
         }
 
         if (!comment) { alert('Vui lòng nhập nội dung!'); return; }
 
-        $.ajax({
-            url: 'ajax_review.php',
+        const formData = new FormData();
+        formData.append('action', 'submit_comment');
+        formData.append('product_id', productId);
+        formData.append('parent_id', parentId > 0 ? parentId : '');
+        formData.append('comment', comment);
+        formData.append('rating', rating);
+        if (reviewImage) {
+            formData.append('review_image', reviewImage);
+        }
+
+        fetch('ajax_review.php', {
             method: 'POST',
-            data: { action: 'submit_comment', product_id: productId, parent_id: parentId > 0 ? parentId : '', comment: comment, rating: rating },
-            dataType: 'json',
-            success: function(res) {
-                if (res.status === 'success') {
-                    window.location.reload();
-                } else {
-                    alert(res.message);
-                }
+            body: formData
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.status === 'success') {
+                window.location.reload();
+            } else {
+                alert(res.message || 'Không thể gửi đánh giá. Vui lòng thử lại.');
             }
+        })
+        .catch(() => {
+            alert('Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.');
         });
     }
 

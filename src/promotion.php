@@ -84,4 +84,56 @@ setInterval(updateCountdown, 1000);
 updateCountdown();
 </script>
 
+<style>
+/* Cải thiện hiển thị cho Dark Mode */
+body.dark-mode {
+    background-color: #121212 !important;
+}
+
+body.dark-mode .promo-banner {
+    background-color: #1a1a1a !important; /* Nền banner đậm hơn */
+    border-bottom: 1px solid #333;
+}
+
+body.dark-mode h1, body.dark-mode h2 {
+    color: #ffffff !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Tạo độ sâu cho chữ */
+}
+
+body.dark-mode .promo-sub {
+    color: #f1c40f !important; /* Màu vàng Gold cho chữ SPECIAL OFFER */
+    font-weight: bold;
+}
+
+body.dark-mode .time-box {
+    background: #252525 !important;
+    color: #fff !important;
+    border: 1px solid #444;
+}
+
+body.dark-mode .product-card {
+    background: #1e1e1e !important;
+    border: 1px solid #333 !important;
+}
+
+body.dark-mode .product-name {
+    color: #ffffff !important;
+}
+
+body.dark-mode .current-price {
+    color: #f1c40f !important; /* Giá nổi bật hơn */
+    font-weight: bold;
+}
+
+body.dark-mode .old-price-strike {
+    color: #888 !important;
+}
+
+/* Hiệu ứng hover cho thẻ sản phẩm */
+body.dark-mode .product-card:hover {
+    border-color: #f1c40f !important;
+    box-shadow: 0 4px 12px rgba(241, 196, 15, 0.2);
+}
+</style>
+
 <?php include 'includes/footer.php'; ?>

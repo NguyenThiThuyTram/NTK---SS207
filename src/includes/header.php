@@ -400,7 +400,10 @@ try {
                 <?php else: ?>
                     <a href="<?= $_BASE ?>/views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>
-                <a href="<?= $_BASE ?>/cart.php"><i class="fa-solid fa-bag-shopping"></i></a>
+                <a href="<?= $_BASE ?>/cart.php" style="position:relative;">
+                    <i class="fa-solid fa-bag-shopping"></i>
+                    <span class="cart-count" style="position:absolute; top:-6px; right:-8px; background:#e63946; color:#fff; font-size:12px; padding:2px 6px; border-radius:12px; display:inline-block;"><?= intval($cart_count) ?></span>
+                </a>
                 <button class="dm-user-toggle" onclick="toggleUserDark()"><i class="fa-regular fa-moon" id="dmUserIcon"></i></button>
             </div>
         </div>

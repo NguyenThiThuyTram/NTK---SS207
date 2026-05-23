@@ -36,32 +36,55 @@ if ($action === 'submit_comment') {
         $stmt_check->execute(['uid' => $user_id, 'pid' => $product_id]);
         
         if (intval($stmt_check->fetchColumn()) === 0) {
-            echo json_encode(['status' => 'error', 'message' => 'Bạn phải mua và nhận sản phẩm này thành công mới có quyền để lại đánh giá!']);
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Bạn phải mua và nhận sản phẩm này thành công mới có quyền để lại đánh giá!']);
             exit;
         }
     } else {
         // TRƯỜNG HỢP 2: Viết phản hồi con -> Chỉ duy nhất ADMIN (role = 1) mới có quyền
         if (intval($user_role) !== 1) {
-            echo json_encode(['status' => 'error', 'message' => 'Chỉ có Quản trị viên mới có quyền phản hồi đánh giá này!']);
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Chỉ có Quản trị viên mới có quyền phản hồi đánh giá này!']);
             exit;
         }
         $rating = null; // Phản hồi không cần số sao
     }
 
+    $review_image = null;
+    if (!empty($_FILES['review_image']['name']) && $_FILES['review_image']['error'] === UPLOAD_ERR_OK) {
+        $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $file_ext = strtolower(pathinfo($_FILES['review_image']['name'], PATHINFO_EXTENSION));
+        if (!in_array($file_ext, $allowed_ext, true)) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Chỉ cho phép tập tin ảnh JPG, PNG, GIF, WEBP.']);
+            exit;
+        }
+
+        $upload_dir = __DIR__ . '/assets/uploads/reviews/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+        $unique_name = 'review_' . time() . '_' . bin2hex(random_bytes(5)) . '.' . $file_ext;
+        $destination = $upload_dir . $unique_name;
+
+        if (move_uploaded_file($_FILES['review_image']['tmp_name'], $destination)) {
+            $review_image = 'assets/uploads/reviews/' . $unique_name;
+        }
+    }
+
     try {
-        $sql = "INSERT INTO reviews (user_id, product_id, parent_id, rating, comment, created_at) 
-                VALUES (:uid, :pid, :parent, :rate, :text, NOW())";
+        $sql = "INSERT INTO reviews (user_id, product_id, parent_id, rating, comment, image, created_at) 
+                VALUES (:uid, :pid, :parent, :rate, :text, :img, NOW())";
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             'uid'    => $user_id,
             'pid'    => $product_id,
             'parent' => !empty($parent_id) ? $parent_id : null,
             'rate'   => $rating,
-            'text'   => $comment
+            'text'   => $comment,
+            'img'    => $review_image,
         ]);
-        echo json_encode(['status' => 'success', 'message' => 'Gửi dữ liệu thành công!']);
+        echo json_encode(['status' => 'success', 'success' => true, 'message' => 'Gửi dữ liệu thành công!']);
     } catch (PDOException $e) {
-        echo json_encode(['status' => 'error', 'message' => 'Lỗi: ' . $e->getMessage()]);
+        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
     }
     exit;
 }
