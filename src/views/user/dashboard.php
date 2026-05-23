@@ -117,14 +117,354 @@ $view = isset($_GET['view']) ? $_GET['view'] : 'hoso';
         .dashboard-content { padding-left: 0; }
     }
 
-    /* Dark mode */
-    body.dark-mode { background: #121212 !important; color: #f5f5f5 !important; }
-    body.dark-mode .dashboard-sidebar { border-right-color: #333; }
-    body.dark-mode .user-card { border-bottom-color: #333; }
-    body.dark-mode .sidebar-menu a { color: #e0e0e0; }
-    body.dark-mode .sidebar-menu a:hover { background: #2a2a2a; color: #f1c40f; }
-    body.dark-mode .sidebar-menu a.active { background: #444; color: #fff; }
-    body.dark-mode .menu-section-title { color: #666; }
+    /* ============================================================
+       HỆ THỐNG ĐỒNG BỘ DARK MODE TOÀN DIỆN CHO USER DASHBOARD
+       ============================================================ */
+    body.dark-mode {
+        background-color: #121212 !important;
+        color: #eeeeee !important;
+    }
+    body.dark-mode .dashboard-sidebar {
+        border-right-color: #2a2a2a !important;
+    }
+    body.dark-mode .user-card {
+        border-bottom-color: #2a2a2a !important;
+    }
+    body.dark-mode .sidebar-menu a {
+        color: #cccccc !important;
+    }
+    body.dark-mode .sidebar-menu a:hover {
+        background: #252525 !important;
+        color: #e5c199 !important;
+    }
+    body.dark-mode .sidebar-menu a:hover i {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .sidebar-menu a.active {
+        background: #a6825c !important;
+        color: #121212 !important;
+    }
+    body.dark-mode .sidebar-menu a.active i {
+        color: #121212 !important;
+    }
+    body.dark-mode .menu-section-title {
+        color: #666666 !important;
+    }
+
+    /* Subpage Containers */
+    body.dark-mode .profile-container,
+    body.dark-mode .wallet-wrapper,
+    body.dark-mode .order-container,
+    body.dark-mode .coupon-container,
+    body.dark-mode .coupon-card,
+    body.dark-mode .address-item,
+    body.dark-mode .address-card,
+    body.dark-mode .bank-card,
+    body.dark-mode .order-card,
+    body.dark-mode .empty-order,
+    body.dark-mode .tx-empty,
+    body.dark-mode .balance-card {
+        background-color: #1e1e1e !important;
+        border-color: #2a2a2a !important;
+        color: #eeeeee !important;
+    }
+
+    /* Form labels & descriptions */
+    body.dark-mode .form-group label,
+    body.dark-mode .toggle-info .title,
+    body.dark-mode .tx-title,
+    body.dark-mode .balance-label {
+        color: #dddddd !important;
+    }
+    body.dark-mode .form-text,
+    body.dark-mode .tx-date,
+    body.dark-mode .balance-desc {
+        color: #888888 !important;
+    }
+
+    /* Form input fields & textareas */
+    body.dark-mode .form-control,
+    body.dark-mode .input-edit,
+    body.dark-mode select,
+    body.dark-mode textarea {
+        background-color: #252525 !important;
+        border-color: #333333 !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .form-control:focus,
+    body.dark-mode select:focus,
+    body.dark-mode textarea:focus {
+        border-color: #a6825c !important;
+    }
+    body.dark-mode .form-control:disabled {
+        background-color: #1a1a1a !important;
+        color: #666666 !important;
+    }
+
+    /* Tables & Order Details */
+    body.dark-mode .order-tabs {
+        background-color: #1e1e1e !important;
+        border-bottom-color: #2a2a2a !important;
+    }
+    body.dark-mode .order-tabs a {
+        color: #aaaaaa !important;
+    }
+    body.dark-mode .order-tabs a:hover {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .order-tabs a.active {
+        color: #e5c199 !important;
+        border-bottom-color: #e5c199 !important;
+    }
+    body.dark-mode .order-search {
+        background-color: #252525 !important;
+    }
+    body.dark-mode .order-search input {
+        color: #ffffff !important;
+    }
+    body.dark-mode .order-header {
+        border-bottom-color: #2a2a2a !important;
+    }
+    body.dark-mode .order-item {
+        border-bottom-color: #2a2a2a !important;
+    }
+    body.dark-mode .item-name {
+        color: #ffffff !important;
+    }
+    body.dark-mode .item-variant {
+        color: #aaaaaa !important;
+    }
+    body.dark-mode .item-qty {
+        color: #888888 !important;
+    }
+    body.dark-mode .item-price,
+    body.dark-mode .total-price {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .order-footer {
+        background-color: #1a1a1a !important;
+    }
+    body.dark-mode .order-total {
+        color: #dddddd !important;
+    }
+    body.dark-mode .item-img {
+        border-color: #333333 !important;
+        background-color: #252525 !important;
+    }
+
+    /* Modal dialogs inside orders (Return order modal) */
+    body.dark-mode div[style*="background:#fff"],
+    body.dark-mode div[style*="background: #fff"],
+    body.dark-mode div[style*="background-color:#fff"],
+    body.dark-mode div[style*="background-color: #fff"] {
+        background-color: #1e1e1e !important;
+        color: #eeeeee !important;
+        border-color: #2a2a2a !important;
+    }
+    body.dark-mode h3[style*="color:#333"],
+    body.dark-mode h3[style*="color: #333"],
+    body.dark-mode label[style*="color:#333"],
+    body.dark-mode label[style*="color: #333"],
+    body.dark-mode p[style*="color:#333"],
+    body.dark-mode p[style*="color: #333"] {
+        color: #ffffff !important;
+    }
+    body.dark-mode button[style*="background:#fff"],
+    body.dark-mode button[style*="background: #fff"],
+    body.dark-mode button[style*="background-color:#fff"] {
+        background-color: #252525 !important;
+        color: #dddddd !important;
+        border-color: #555555 !important;
+    }
+
+    /* Tx details and wallet */
+    body.dark-mode .balance-amount {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .tx-section-title {
+        color: #ffffff !important;
+        border-bottom-color: #2a2a2a !important;
+    }
+    body.dark-mode .tx-item {
+        border-bottom-color: #252525 !important;
+    }
+    body.dark-mode .tx-amount.minus {
+        color: #dddddd !important;
+    }
+    body.dark-mode .tx-empty {
+        border-color: #333333 !important;
+    }
+
+    /* Address list specifics */
+    body.dark-mode .address-name {
+        color: #ffffff !important;
+    }
+    body.dark-mode .address-phone {
+        color: #aaaaaa !important;
+    }
+    body.dark-mode .address-detail {
+        color: #cccccc !important;
+    }
+    body.dark-mode .badge-default {
+        background-color: #1c3d27 !important;
+        color: #2ecc71 !important;
+    }
+
+    /* Buttons */
+    body.dark-mode .btn-save,
+    body.dark-mode .btn-primary,
+    body.dark-mode .btn-teal {
+        background: #a6825c !important;
+        color: #121212 !important;
+        border-color: #a6825c !important;
+    }
+    body.dark-mode .btn-save:hover,
+    body.dark-mode .btn-primary:hover,
+    body.dark-mode .btn-teal:hover {
+        background: #c9a47e !important;
+        border-color: #c9a47e !important;
+    }
+    body.dark-mode .btn-outline,
+    body.dark-mode .btn-back {
+        background-color: #252525 !important;
+        color: #dddddd !important;
+        border-color: #555555 !important;
+    }
+    body.dark-mode .btn-outline:hover,
+    body.dark-mode .btn-back:hover {
+        background-color: #333333 !important;
+        color: #ffffff !important;
+        border-color: #ffffff !important;
+    }
+    body.dark-mode .btn-danger-outline {
+        background-color: #252525 !important;
+        color: #ff4d4d !important;
+        border-color: #c0392b !important;
+    }
+    body.dark-mode .btn-danger-outline:hover {
+        background-color: #3d1a1a !important;
+        color: #ffffff !important;
+    }
+
+    /* Intercept inline styled colors in user views */
+    body.dark-mode span[style*="color:#333"],
+    body.dark-mode span[style*="color: #333"],
+    body.dark-mode span[style*="color:#555"],
+    body.dark-mode span[style*="color: #555"],
+    body.dark-mode strong[style*="color:#333"],
+    body.dark-mode strong[style*="color: #333"],
+    body.dark-mode div[style*="color:#333"],
+    body.dark-mode div[style*="color: #333"] {
+        color: #eeeeee !important;
+    }
+
+    /* Info boxes inside user orders */
+    body.dark-mode .info-box-orange {
+        background-color: #3d2d18 !important;
+        border-color: #f39c12 !important;
+        color: #f39c12 !important;
+    }
+    body.dark-mode .info-box-blue {
+        background-color: #182d3d !important;
+        border-color: #3498db !important;
+        color: #3498db !important;
+    }
+    body.dark-mode .info-box-red {
+        background-color: #3d1a1a !important;
+        border-color: #ff4d4d !important;
+        color: #ff4d4d !important;
+    }
+    body.dark-mode .info-box-green {
+        background-color: #1c3d27 !important;
+        border-color: #2ecc71 !important;
+        color: #2ecc71 !important;
+    }
+
+    /* Coupon page dark mode overrides */
+    body.dark-mode .coupon-wrapper,
+    body.dark-mode .discover-wrapper {
+        background-color: transparent !important;
+        color: #eeeeee !important;
+    }
+    body.dark-mode .coupon-header,
+    body.dark-mode .discover-header {
+        border-bottom-color: #2a2a2a !important;
+    }
+    body.dark-mode .coupon-header h2,
+    body.dark-mode .discover-header h2 {
+        color: #ffffff !important;
+    }
+    body.dark-mode .coupon-count {
+        background-color: #252525 !important;
+        color: #cccccc !important;
+    }
+    body.dark-mode .coupon-left {
+        background-color: #2a2a2a !important;
+        color: #e5c199 !important;
+        border-right-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    body.dark-mode .coupon-left .c-pct,
+    body.dark-mode .coupon-left .tag {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .c-title {
+        color: #ffffff !important;
+    }
+    body.dark-mode .c-desc,
+    body.dark-mode .c-desc-text {
+        color: #bbbbbb !important;
+    }
+    body.dark-mode .c-meta span {
+        background-color: #252525 !important;
+        color: #cccccc !important;
+    }
+    body.dark-mode .c-expire {
+        background-color: #3d2d18 !important;
+        color: #f39c12 !important;
+    }
+    body.dark-mode .c-footer {
+        border-top-color: #2a2a2a !important;
+    }
+    body.dark-mode .c-code-tag,
+    body.dark-mode .c-code {
+        background-color: #252525 !important;
+        color: #e5c199 !important;
+        border-color: #a6825c !important;
+    }
+    body.dark-mode .c-code-tag:hover {
+        background-color: #333333 !important;
+    }
+    body.dark-mode .c-copy-btn,
+    body.dark-mode .c-btn-save {
+        background-color: #a6825c !important;
+        color: #121212 !important;
+    }
+    body.dark-mode .c-copy-btn:hover,
+    body.dark-mode .c-btn-save:hover {
+        background-color: #c9a47e !important;
+    }
+    body.dark-mode .c-copy-btn.copied {
+        background-color: #2ecc71 !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .c-btn-saved {
+        background-color: #333333 !important;
+        color: #666666 !important;
+    }
+    body.dark-mode .btn-back-wallet {
+        color: #e5c199 !important;
+        border-color: #e5c199 !important;
+    }
+    body.dark-mode .btn-back-wallet:hover {
+        background-color: #e5c199 !important;
+        color: #121212 !important;
+    }
+    body.dark-mode .coupon-empty,
+    body.dark-mode .empty-state {
+        background-color: #1e1e1e !important;
+        border-color: #333333 !important;
+        color: #aaaaaa !important;
+    }
 
     /* Dark mode logo fix – handled by header.php JS */
     </style>

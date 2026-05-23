@@ -48,6 +48,44 @@
         }
         .footer-link { text-align: center; margin-top: 30px; font-size: 14px; color: #666; }
         .footer-link a { color: #5b3e31; font-weight: bold; text-decoration: none; }
+
+        /* DARK MODE OVERRIDES */
+        body.dark-mode {
+            background-color: #121212 !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .login-box {
+            background: #1e1e1e !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .close-btn {
+            color: #ffffff !important;
+        }
+        body.dark-mode .input-group label {
+            color: #aaaaaa !important;
+        }
+        body.dark-mode .input-group input {
+            background: transparent !important;
+            color: #ffffff !important;
+            border-bottom-color: #555555 !important;
+        }
+        body.dark-mode .input-group input:focus {
+            border-bottom-color: #a6825c !important;
+        }
+        body.dark-mode .btn-login {
+            background: #a6825c !important;
+            color: #121212 !important;
+        }
+        body.dark-mode .btn-login:hover {
+            background: #c9a47e !important;
+        }
+        body.dark-mode .footer-link {
+            color: #bbbbbb !important;
+        }
+        body.dark-mode .footer-link a {
+            color: #e5c199 !important;
+        }
     </style>
 </head>
 <body style="margin: 0;">
@@ -102,6 +140,11 @@
     </div>
 
     <script>
+        // --- 0. Áp dụng chế độ tối từ localStorage ---
+        if (localStorage.getItem('ntk_dark') === '1') {
+            document.body.classList.add('dark-mode');
+        }
+
         // --- 1. Xử lý click ra ngoài nền xám để về trang chủ ---
         document.getElementById('modal-overlay').addEventListener('click', function(event) {
             if (event.target === this) {

@@ -5,12 +5,14 @@ require_once 'config/database.php';
 // 2. Lấy ID sản phẩm từ URL
 $product_id = $_GET['id'] ?? '';
 
-// Khởi tạo biến để tránh lỗi
 $product = null;
 $variants = [];
 $related_products = [];
-$reviews = [];
+$root_reviews = [];
 $first_v = null;
+
+$user_id_session = $_SESSION['user_id'] ?? null;
+$user_role_session = isset($_SESSION['role']) ? intval($_SESSION['role']) : 0; // 1: Admin, 0: Khách
 
 if ($product_id) {
     // 3. Lấy thông tin sản phẩm chính
@@ -47,17 +49,93 @@ if ($product_id) {
         $stmt_related->execute();
         $related_products = $stmt_related->fetchAll(PDO::FETCH_ASSOC);
 
-        // 6. Lấy Feedback (Lấy fullname từ bảng users)
-        $sql_reviews = "SELECT r.*, u.fullname 
+        // 6. TẢI DỮ LIỆU ĐÁNH GIÁ GỐC (parent_id IS NULL)
+        $sql_reviews = "SELECT r.*, u.fullname, u.role,
+                               (SELECT COUNT(*) FROM review_likes WHERE review_id = r.review_id) as total_likes
                         FROM reviews r 
                         LEFT JOIN users u ON r.user_id = u.user_id 
-                        WHERE r.product_id = :prod_id 
+                        WHERE r.product_id = :prod_id AND r.parent_id IS NULL 
                         ORDER BY r.created_at DESC";
         $stmt_rev = $conn->prepare($sql_reviews);
         $stmt_rev->bindParam(':prod_id', $product_id);
         $stmt_rev->execute();
-        $reviews = $stmt_rev->fetchAll(PDO::FETCH_ASSOC);
+        $root_reviews = $stmt_rev->fetchAll(PDO::FETCH_ASSOC);
     }
+}
+
+// 7. KIỂM TRA QUYỀN ĐƯỢC VIẾT ĐÁNH GIÁ GỐC (Đã mua và Hoàn thành = 3)
+$can_user_review = false;
+if ($user_id_session && $product) {
+    $sql_verify_buy = "SELECT COUNT(*) FROM orders o 
+                       JOIN order_details od ON o.order_id = od.order_id 
+                       WHERE o.user_id = :uid 
+                         AND od.variant_id IN (SELECT variant_id FROM product_variants WHERE product_id = :pid) 
+                         AND o.order_status = 3";
+    $stmt_v_buy = $conn->prepare($sql_verify_buy);
+    $stmt_v_buy->execute(['uid' => $user_id_session, 'pid' => $product_id]);
+    if (intval($stmt_v_buy->fetchColumn()) > 0) {
+        $can_user_review = true;
+    }
+}
+
+// 7.5 KIỂM TRA SẢN PHẨM ĐÃ CÓ TRONG DANH SÁCH YÊU THÍCH CHƯA
+$is_in_wishlist = false;
+if ($user_id_session && $product) {
+    $stmt_wl = $conn->prepare("SELECT COUNT(*) FROM wishlist WHERE user_id = :uid AND product_id = :pid");
+    $stmt_wl->execute(['uid' => $user_id_session, 'pid' => $product_id]);
+    $is_in_wishlist = (intval($stmt_wl->fetchColumn()) > 0);
+}
+
+// 8. HÀM ĐỆ QUY HIỂN THỊ LUỒNG TƯƠNG TÁC CON
+function renderReviewReplies($conn, $parent_id, $product_id, $user_id_session, $user_role_session) {
+    $sql = "SELECT r.*, u.fullname, u.role,
+                   (SELECT COUNT(*) FROM review_likes WHERE review_id = r.review_id) as total_likes
+            FROM reviews r 
+            LEFT JOIN users u ON r.user_id = u.user_id 
+            WHERE r.product_id = :pid AND r.parent_id = :parent 
+            ORDER BY r.created_at ASC";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute(['pid' => $product_id, 'parent' => $parent_id]);
+    $replies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (empty($replies)) return;
+
+    echo '<div class="review-replies-list" style="margin-left: 45px; border-left: 2px solid #f5f1eb; padding-left: 15px; margin-top: 10px;">';
+    foreach ($replies as $reply) {
+        $isAdmin = ($reply['role'] == 1);
+        $bg_color = $isAdmin ? '#f9f5f0' : '#fcfcfc';
+        $border_left = $isAdmin ? '3px solid #a6825c' : '1px solid #eee';
+        $label = $isAdmin ? '<span style="font-size:10px; background:#2f1c00; color:#fff; padding:1px 5px; border-radius:3px; margin-left:5px;">Quản trị viên</span>' : '';
+
+        // Kiểm tra xem tài khoản hiện tại đã Like chưa
+        $is_liked = false;
+        if ($user_id_session) {
+            $st_l = $conn->prepare("SELECT COUNT(*) FROM review_likes WHERE review_id = :rid AND user_id = :uid");
+            $st_l->execute(['rid' => $reply['review_id'], 'uid' => $user_id_session]);
+            $is_liked = (intval($st_l->fetchColumn()) > 0);
+        }
+
+        echo '<div class="review-item reply-item" style="background:'.$bg_color.'; border-left:'.$border_left.'; padding:12px; margin-bottom:10px; border-radius:4px;">';
+        echo '  <div style="display:flex; justify-content:space-between; font-size:13px;">';
+        echo '      <b>' . htmlspecialchars($reply['fullname'] ?? 'Khách hàng') . $label . '</b>';
+        echo '      <small style="color:#aaa;">' . date('d/m/Y H:i', strtotime($reply['created_at'])) . '</small>';
+        echo '  </div>';
+        echo '  <p style="font-size:13.5px; color:#444; margin:5px 0;">' . htmlspecialchars($reply['comment']) . '</p>';
+        
+        echo '  <div style="display:flex; gap:15px; align-items:center; margin-top:5px;">';
+        echo '      <button type="button" onclick="toggleLike('.$reply['review_id'].')" id="like-btn-'.$reply['review_id'].'" style="background:none; border:none; color:'.($is_liked ? '#e63946':'#888').'; font-size:12px; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;"><i class="'.($is_liked ? 'fa-solid':'fa-regular').' fa-thumbs-up"></i> Thích (<span class="like-count">'.$reply['total_likes'].'</span>)</button>';
+        
+        // CHỈ ADMIN MỚI HIỆN NÚT PHẢN HỒI
+        if ($user_role_session === 1) {
+            echo '  <button type="button" class="reply-trigger-btn" onclick="openReplyForm('.$reply['review_id'].')" style="background:none; border:none; color:#a6825c; font-size:12px; cursor:pointer; padding:0; font-weight:600;"><i class="fa-regular fa-comment-dots"></i> Phản hồi</button>';
+        }
+        echo '  </div>';
+        echo '  <div class="reply-form-container" id="reply-form-'.$reply['review_id'].'" style="display:none; margin-top:10px;"></div>';
+        
+        renderReviewReplies($conn, $reply['review_id'], $product_id, $user_id_session, $user_role_session);
+        echo '</div>';
+    }
+    echo '</div>';
 }
 
 // Gọi header
@@ -65,116 +143,26 @@ include 'includes/header.php';
 ?>
 
 <style>
-    /* ============================================================
-       STYLE THANH ĐIỀU HƯỚNG BREADCRUMB - NTK FASHION
-    ============================================================ */
-    .breadcrumb {
-        font-size: 14px;
-        color: #888;
-        margin-bottom: 25px;
-    }
+    .breadcrumb { font-size: 14px; color: #888; margin-bottom: 25px; }
+    .breadcrumb a { color: #666; text-decoration: none; transition: color 0.2s ease; font-weight: 500; }
+    .breadcrumb a:hover { color: #111; text-decoration: underline; }
+    .option-list { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+    .btn-option { padding: 10px 24px; border: 1px solid #ddd !important; background-color: #ffffff !important; color: #333333 !important; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: 4px; transition: all 0.2s ease; outline: none; }
+    .btn-option:hover { border-color: #888888 !important; }
+    .btn-option.active { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: 700 !important; padding: 9px 23px; }
+    .btn-wishlist { background-color: #ffffff !important; border: 1px solid #2f1c00 !important; color: #2f1c00 !important; width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; font-size: 20px; transition: all 0.2s ease; outline: none; }
+    .btn-wishlist:hover { background-color: #fdfaf6 !important; transform: scale(1.05); }
+    .btn-wishlist.liked { border-color: #e63946 !important; }
+    .btn-wishlist.liked i { color: #e63946 !important; }
     
-    .breadcrumb a {
-        color: #666;
-        text-decoration: none; /* Khử gạch chân mặc định */
-        transition: color 0.2s ease;
-        font-weight: 500;
-    }
-    
-    .breadcrumb a:hover {
-        color: #111; 
-        text-decoration: underline; /* Chỉ hiện gạch dưới khi rê chuột vào */
-    }
-
-    /* ============================================================
-       STYLING BIẾN THỂ & TRÁI TIM CAO CẤP
-    ============================================================ */
-    .option-list {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-        margin-top: 10px;
-    }
-
-    /* Định dạng nút chọn biến thể mặc định */
-    .btn-option {
-        padding: 10px 24px;
-        border: 1px solid #ddd !important;
-        background-color: #ffffff !important;
-        color: #333333 !important;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-        outline: none;
-    }
-
-    .btn-option:hover {
-        border-color: #888888 !important;
-    }
-
-    /* TRẠNG THÁI ACTIVE: Ép viền đen dày in đậm khung, giữ nền trắng */
-    .btn-option.active {
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: 2px solid #000000 !important;
-        font-weight: 700 !important;
-        padding: 9px 23px; /* Bù trừ kích thước viền 2px */
-    }
-
-    /* ĐỊNH DẠNG NÚT TRÁI TIM NỀN ĐEN CHỮ TRẮNG */
-    .btn-wishlist {
-        background-color: #111111 !important;
-        border: 1px solid #111111 !important;
-        color: #ffffff !important;
-        width: 50px;
-        height: 50px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 20px;
-        transition: all 0.2s ease;
-    }
-
-    .btn-wishlist:hover {
-        background-color: #222222 !important;
-        transform: scale(1.05);
-    }
-    
-    .btn-wishlist.liked i {
-        color: #e63946 !important; /* Đổi sang màu đỏ rực khi đã thích */
-    }
-
-    /* ============================================================
-       ĐỒNG BỘ DARK MODE TOÀN DIỆN
-    ============================================================ */
-    body.dark-mode .breadcrumb a {
-        color: #aaa;
-    }
-    body.dark-mode .breadcrumb a:hover {
-        color: #fff;
-    }
-    body.dark-mode .btn-option {
-        background-color: #1e1e1e !important;
-        border-color: #444444 !important;
-        color: #ffffff !important;
-    }
-    body.dark-mode .btn-option:hover {
-        border-color: #888888 !important;
-    }
-    body.dark-mode .btn-option.active {
-        background-color: #1e1e1e !important;
-        color: #ffffff !important;
-        border: 2px solid #ffffff !important;
-    }
-    body.dark-mode .btn-wishlist {
-        background-color: #ffffff !important;
-        border-color: #ffffff !important;
-        color: #111111 !important;
-    }
+    body.dark-mode .breadcrumb a { color: #aaa; }
+    body.dark-mode .breadcrumb a:hover { color: #fff; }
+    body.dark-mode .btn-option { background-color: #1e1e1e !important; border-color: #444444 !important; color: #ffffff !important; }
+    body.dark-mode .btn-option:hover { border-color: #888888 !important; }
+    body.dark-mode .btn-option.active { background-color: #1e1e1e !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+    body.dark-mode .btn-wishlist { background-color: #1e1e1e !important; border-color: #444444 !important; color: #ffffff !important; }
+    body.dark-mode .btn-wishlist.liked { border-color: #e63946 !important; }
+    body.dark-mode .btn-wishlist.liked i { color: #e63946 !important; }
 </style>
 
 <main class="container">
@@ -202,7 +190,7 @@ include 'includes/header.php';
                             echo ($i <= $rating) ? '★' : '☆';
                         ?>
                     </span>
-                    <span class="rating-text"><?php echo $rating; ?> (<?php echo count($reviews); ?> đánh giá)</span> |
+                    <span class="rating-text"><?php echo $rating; ?> (<?php echo count($root_reviews); ?> đánh giá)</span> |
                     <span class="sold-count">Đã bán <?php echo $product['sold_count']; ?></span>
                 </div>
 
@@ -281,8 +269,8 @@ include 'includes/header.php';
                     <button class="btn-buy-now" id="btn-buy-now" onclick="addToCart(true)">
                         Mua ngay
                     </button>
-                    <button class="btn-wishlist" id="add-to-wishlist" data-id="<?php echo $product['product_id']; ?>">
-                        <i class="fa fa-heart"></i>
+                    <button class="btn-wishlist <?php echo $is_in_wishlist ? 'liked' : ''; ?>" id="add-to-wishlist" data-id="<?php echo $product['product_id']; ?>">
+                        <i class="<?php echo $is_in_wishlist ? 'fa-solid fa-heart' : 'fa-regular fa-heart'; ?>"></i>
                     </button>
                 </div>
 
@@ -291,33 +279,63 @@ include 'includes/header.php';
                     <p class="desc-text"><?php echo nl2br($product['description']); ?></p>
                 </div>
 
-                <div class="product-feedback" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                    <h3 style="color: #a6825c; margin-bottom: 20px;">Đánh giá từ khách hàng</h3>
-                    <?php if (count($reviews) > 0): ?>
-                        <div class="review-list">
-                            <?php foreach ($reviews as $rev): ?>
-                                <div class="review-item" style="margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px;">
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <b><?php echo $rev['fullname'] ?: 'Khách hàng ẩn danh'; ?></b>
-                                        <span style="color: #ffc107;">
-                                            <?php for ($i = 1; $i <= 5; $i++)
-                                                echo ($i <= $rev['rating']) ? '★' : '☆'; ?>
-                                        </span>
-                                    </div>
-                                    <p style="font-size: 14px; color: #555; margin: 5px 0;"><?php echo $rev['comment']; ?></p>
-                                    <small style="color: #999;"><?php echo date('d/m/Y', strtotime($rev['created_at'])); ?></small>
-
-                                    <?php if (!empty($rev['reply'])): ?>
-                                        <div style="background: #f9f5f0; padding: 10px; border-radius: 4px; font-size: 13px; margin-top: 8px;">
-                                            <b>NTK phản hồi:</b> <?php echo $rev['reply']; ?>
-                                        </div>
-                                    <?php endif; ?>
+                <div class="product-feedback" style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <h3 style="color: #a6825c; margin-bottom: 25px;">Đánh giá và tương tác từ khách hàng</h3>
+                    
+                    <?php if ($can_user_review): ?>
+                        <div class="main-review-form" style="margin-bottom: 30px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
+                            <p style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Viết đánh giá của bạn:</p>
+                            <textarea id="main_comment_text" style="width:100%; height:70px; padding:10px; border:1px solid #ddd; outline:none; resize:none;" placeholder="Chia sẻ cảm nhận về sản phẩm..."></textarea>
+                            <div style="display:flex; justify-content: space-between; align-items:center; margin-top:10px;">
+                                <div>
+                                    <label style="font-size:13px; color:#666;">Số sao: </label>
+                                    <select id="main_rating_val" style="padding:4px 8px; border:1px solid #ddd;"><option value="5">5 ★</option><option value="4">4 ★</option><option value="3">3 ★</option><option value="2">2 ★</option><option value="1">1 ★</option></select>
                                 </div>
-                            <?php endforeach; ?>
+                                <button type="button" onclick="submitReview(0)" style="background:#2f1c00; color:#fff; border:none; padding:8px 20px; border-radius:4px; cursor:pointer; font-weight:600; font-size:13px;">Gửi Đánh Giá</button>
+                            </div>
                         </div>
                     <?php else: ?>
-                        <p style="color: #999;">Chưa có đánh giá nào cho sản phẩm này.</p>
+                        <div style="background: #fffbf0; color: #b8860b; padding: 12px 16px; border-radius: 6px; font-size: 13.5px; margin-bottom: 25px; border: 1px solid #f5e6b2;">
+                            <i class="fa-solid fa-circle-info"></i> Chỉ những khách hàng đã mua và nhận sản phẩm thành công tại NTK Fashion mới có quyền để lại đánh giá.
+                        </div>
                     <?php endif; ?>
+
+                    <div class="review-list">
+                        <?php if (empty($root_reviews)): ?>
+                            <p style="color: #999; font-size:14px;">Chưa có đánh giá nào cho sản phẩm này.</p>
+                        <?php else: ?>
+                            <?php foreach ($root_reviews as $rev): 
+                                $is_root_liked = false;
+                                if ($user_id_session) {
+                                    $st_rl = $conn->prepare("SELECT COUNT(*) FROM review_likes WHERE review_id = :rid AND user_id = :uid");
+                                    $st_rl->execute(['rid' => $rev['review_id'], 'uid' => $user_id_session]);
+                                    $is_root_liked = (intval($st_rl->fetchColumn()) > 0);
+                                }
+                            ?>
+                                <div class="review-item root-item" style="margin-bottom: 20px; border-bottom: 1px solid #f5f1eb; padding-bottom: 15px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <b><?= htmlspecialchars($rev['fullname'] ?: 'Khách hàng ẩn danh') ?></b>
+                                        <span style="color: #ffc107; font-size:13px;">
+                                            <?php for ($i = 1; $i <= 5; $i++) echo ($i <= $rev['rating']) ? '★' : '☆'; ?>
+                                            <small style="color: #999; margin-left:10px; font-family:sans-serif;"><?= date('d/m/Y', strtotime($rev['created_at'])) ?></small>
+                                        </span>
+                                    </div>
+                                    <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
+                                    
+                                    <div style="display:flex; gap:15px; align-items:center; margin-top:5px;">
+                                        <button type="button" onclick="toggleLike(<?= $rev['review_id'] ?>)" id="like-btn-<?= $rev['review_id'] ?>" style="background:none; border:none; color:<?= $is_root_liked ? '#e63946' : '#888' ?>; font-size:13px; cursor:pointer; padding:0; display:flex; align-items:center; gap:4px;"><i class="<?= $is_root_liked ? 'fa-solid' : 'fa-regular' ?> fa-thumbs-up"></i> Thích (<span class="like-count"><?= $rev['total_likes'] ?></span>)</button>
+                                        
+                                        <?php if ($user_role_session === 1): ?>
+                                            <button type="button" class="reply-trigger-btn" onclick="openReplyForm(<?= $rev['review_id'] ?>)" style="background:none; border:none; color:#a6825c; font-size:13px; cursor:pointer; padding:0; font-weight:600;"><i class="fa-regular fa-comment-dots"></i> Phản hồi</button>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="reply-form-container" id="reply-form-<?= $rev['review_id'] ?>" style="display:none; margin-top:10px;"></div>
+
+                                    <?php renderReviewReplies($conn, $rev['review_id'], $product_id, $user_id_session, $user_role_session); ?>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
@@ -551,7 +569,12 @@ include 'includes/header.php';
                 success: function (response) {
                     if (response.status === 'success') {
                         btn.addClass('liked');
+                        btn.find('i').removeClass('fa-regular').addClass('fa-solid');
                         showInlineMsg('Đã thêm vào danh sách yêu thích!', 'success');
+                    } else if (response.status === 'info') {
+                        btn.addClass('liked');
+                        btn.find('i').removeClass('fa-regular').addClass('fa-solid');
+                        showInlineMsg(response.message, 'success');
                     } else {
                         showInlineMsg(response.message, 'error');
                     }
@@ -559,6 +582,83 @@ include 'includes/header.php';
             });
         });
     });
+
+    // ============================================================
+    // LOGIC ĐIỀU KHIỂN CHUYỂN ĐỔI FORM VÀ XỬ LÝ LIKE, PHẢN HỒI
+    // ============================================================
+    function openReplyForm(reviewId) {
+        const container = document.getElementById('reply-form-' + reviewId);
+        if (container.style.display === 'block') {
+            container.style.display = 'none'; container.innerHTML = ''; return;
+        }
+        document.querySelectorAll('.reply-form-container').forEach(el => { el.style.display = 'none'; el.innerHTML = ''; });
+        
+        container.innerHTML = `
+            <div style="background:#fcfcfc; padding:10px; border:1.5px solid #e5e5e5; border-radius:4px; margin-top: 10px;">
+                <textarea id="reply_text_\${reviewId}" style="width:100%; height:60px; padding:8px; border:1px solid #ddd; outline:none; resize:none; font-size:13.5px;" placeholder="Quản trị viên nhập phản hồi hệ thống..."></textarea>
+                <div style="text-align:right; margin-top:8px;">
+                    <button type="button" onclick="submitReview(\${reviewId})" style="background:#2f1c00; color:#fff; border:none; padding:6px 16px; border-radius:3px; cursor:pointer; font-size:12px; font-weight:600;">Gửi phản hồi</button>
+                </div>
+            </div>
+        `;
+        container.style.display = 'block';
+    }
+
+    function submitReview(parentId) {
+        const productId = "<?= $product_id ?>";
+        let comment = '';
+        let rating = 5;
+
+        if (parentId === 0) {
+            comment = document.getElementById('main_comment_text').value.trim();
+            rating = document.getElementById('main_rating_val').value;
+        } else {
+            comment = document.getElementById('reply_text_' + parentId).value.trim();
+        }
+
+        if (!comment) { alert('Vui lòng nhập nội dung!'); return; }
+
+        $.ajax({
+            url: 'ajax_review.php',
+            method: 'POST',
+            data: { action: 'submit_comment', product_id: productId, parent_id: parentId > 0 ? parentId : '', comment: comment, rating: rating },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(res.message);
+                }
+            }
+        });
+    }
+
+    function toggleLike(reviewId) {
+        $.ajax({
+            url: 'ajax_review.php',
+            method: 'POST',
+            data: { action: 'toggle_like', review_id: reviewId },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status === 'success') {
+                    const btn = document.getElementById('like-btn-' + reviewId);
+                    const countSpan = btn.querySelector('.like-count');
+                    const icon = btn.querySelector('i');
+                    
+                    countSpan.textContent = res.total_likes;
+                    if (res.like_status === 'liked') {
+                        btn.style.color = '#e63946';
+                        icon.className = 'fa-solid fa-thumbs-up';
+                    } else {
+                        btn.style.color = '#888';
+                        icon.className = 'fa-regular fa-thumbs-up';
+                    }
+                } else {
+                    alert(res.message);
+                }
+            }
+        });
+    }
 </script>
 
 <?php include 'includes/footer.php'; ?>

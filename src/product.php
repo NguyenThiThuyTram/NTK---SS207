@@ -144,23 +144,12 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     @media (max-width: 768px) {
         .shop-layout {
             grid-template-columns: 1fr; /* Trên mobile quay về 1 cột */
-            gap: 30px;
-            margin-top: 50px; /* Nhích lên cả trên mobile */
+            gap: 20px;
+            margin-top: 20px; /* Nhích lên sát header */
         }
         .shop-sidebar {
-            position: relative;
-            top: 0;
+            display: none !important; /* Ẩn hoàn toàn thanh danh mục dọc/trượt ngang trên di động */
         }
-        .category-filter {
-            flex-direction: row; /* Ra mobile tự bẻ thành hàng ngang để vuốt trượt */
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 10px;
-            width: 100%;
-            gap: 20px;
-        }
-        .category-filter::-webkit-scrollbar { display: none; }
-        .sidebar-title { margin-bottom: 15px; }
     }
 </style>
 

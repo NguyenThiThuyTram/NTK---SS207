@@ -97,6 +97,47 @@
         .resend-text a:hover {
             text-decoration: underline;
         }
+
+        /* DARK MODE OVERRIDES */
+        body.dark-mode {
+            background-color: #121212 !important;
+            color: #ffffff !important;
+        }
+        body.dark-mode .otp-container {
+            background-color: #1e1e1e !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+        }
+        body.dark-mode .otp-container h2 {
+            color: #ffffff !important;
+        }
+        body.dark-mode .otp-container p {
+            color: #bbbbbb !important;
+        }
+        body.dark-mode .otp-container p b {
+            color: #ffffff !important;
+        }
+        body.dark-mode .otp-inputs input {
+            background-color: #252525 !important;
+            color: #ffffff !important;
+            border-color: #555555 !important;
+        }
+        body.dark-mode .otp-inputs input:focus {
+            border-color: #a6825c !important;
+            box-shadow: 0 0 0 3px rgba(166, 130, 92, 0.3) !important;
+        }
+        body.dark-mode .btn-verify {
+            background-color: #a6825c !important;
+            color: #121212 !important;
+        }
+        body.dark-mode .btn-verify:hover {
+            background-color: #c9a47e !important;
+        }
+        body.dark-mode .resend-text {
+            color: #bbbbbb !important;
+        }
+        body.dark-mode .resend-text a {
+            color: #e5c199 !important;
+        }
     </style>
 </head>
 <body>
@@ -124,6 +165,11 @@
     </div>
 
     <script>
+        // --- 0. Áp dụng chế độ tối từ localStorage ---
+        if (localStorage.getItem('ntk_dark') === '1') {
+            document.body.classList.add('dark-mode');
+        }
+
         const inputs = document.querySelectorAll('.otp-inputs input');
         
         inputs.forEach((input, index) => {

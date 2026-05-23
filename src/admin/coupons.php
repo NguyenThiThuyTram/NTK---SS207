@@ -13,7 +13,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     /* RESET & BASE — Font: Helvetica Neue | Color: NTK Brand */
     * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; box-sizing: border-box; }
 
-
     /* Tiêu đề: Viết hoa, đậm, chuẩn style NTK */
     .page-title { 
         font-size: 21px; 
@@ -73,7 +72,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     }
     .data-table tbody tr:hover { background: #fafaf8; }
 
-    /* Voucher Tags */
+    /* ĐÃ SỬA: Chuyển hoàn toàn border từ 'dashed' sang 'solid' để xóa bỏ nét đứt */
     .code-badge { 
         background: #f4f1ee; 
         color: #2f1c00; 
@@ -81,7 +80,9 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         border-radius: 4px; 
         font-family: 'Courier New', Courier, monospace; 
         font-weight: 700; 
-        border: 1px dashed #2f1c00; 
+        border: 1px solid #2f1c00 !important; /* Đổi thành đường viền liền nét mảnh màu thương hiệu */
+        display: inline-block;
+        letter-spacing: 0.5px;
     }
     .status-tag { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
     .tag-active { background: #eafaf1; color: #27ae60; }
@@ -150,7 +151,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                                 <a href="update_coupon.php?id=<?= $cp['coupon_id'] ?>" class="btn-icon" title="Chỉnh sửa">
                                     <i class="fa-regular fa-pen-to-square"></i>
                                 </a>
-                                <a href="delete_coupon.php?id=<?= $cp['coupon_id'] ?>" class="btn-icon btn-delete" title="Xóa" onclick="return confirm('Bee có chắc chắn muốn xóa mã <?= $cp['code'] ?> chứ?')">
+                                <a href="delete_coupon.php?id=<?= $cp['coupon_id'] ?>" class="action-btn btn-icon btn-delete" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa mã <?= $cp['code'] ?> chứ?')">
                                     <i class="fa-regular fa-trash-can"></i>
                                 </a>
                             </div>
@@ -162,7 +163,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         </table>
     </div>
 
-</div><!-- /.admin-content -->
-</main>
+</div></main>
 </body>
 </html>

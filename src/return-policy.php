@@ -3,6 +3,39 @@
 require_once 'includes/header.php';
 ?>
 
+<style>
+    /* ── DARK MODE CHO CÁC TRANG CHÍNH SÁCH ── */
+    body.dark-mode .policy-page { background-color: #0f0f0f !important; color: #ffffff !important; }
+    
+    /* Làm đen các khối nội dung */
+    body.dark-mode .policy-container, 
+    body.dark-mode .policy-content, 
+    body.dark-mode .policy-section,
+    body.dark-mode .contact-box { 
+        background-color: #1a1a1a !important; 
+        color: #e0e0e0 !important; 
+        border-color: #333 !important; 
+    }
+    
+    /* Tiêu đề nổi bật */
+    body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 { 
+        color: #ffffff !important; 
+    }
+    
+    /* Các thẻ phụ trợ */
+    body.dark-mode .faq-item { border-bottom: 1px solid #333 !important; }
+    body.dark-mode .bg-beige { background-color: #222 !important; color: #fff !important; }
+    body.dark-mode .text-primary { color: #888 !important; } /* Làm dịu màu primary */
+    body.dark-mode a { color: #74b9ff !important; }
+</style>
+
+<script>
+    // Kiểm tra và áp dụng Dark Mode từ Dashboard
+    if (localStorage.getItem('ntk_dark') === '1') {
+        document.body.classList.add('dark-mode');
+    }
+</script>
+
 <div class="policy-page">
     <div class="policy-container">
         

@@ -9,12 +9,14 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
 ?>
 </main>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
 <style>
     /* ============================================================
-       CSS CHUẨN ĐỒNG BỘ DARK MODE & FIX CĂN GIỮA ICON ICON
+       CSS CHUẨN ĐỒNG BỘ DARK MODE & FIX CĂN GIỮA ICON
     ============================================================ */
     
-    /* ÉP CĂN GIỮA MẠNG XÃ HỘI CHUẨN HIGH-FASHION CHO BEE */
+    /* ÉP CĂN GIỮA MẠNG XÃ HỘI CHUẨN HIGH-FASHION */
     .social-icons {
         display: flex !important;
         justify-content: center !important; /* Căn giữa theo chiều ngang */
@@ -35,11 +37,12 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         border-radius: 50%;
         text-decoration: none;
         transition: all 0.3s ease;
+        color: #333333 !important; /* Đặt màu mặc định cho icon */
     }
     
     .social-icons a:hover {
-        border-color: #222;
-        background-color: #222;
+        border-color: #222 !important;
+        background-color: #222 !important;
     }
     .social-icons a:hover i {
         color: #fff !important;
@@ -80,6 +83,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
     /* Icon mạng xã hội khi ở Dark Mode */
     body.dark-mode .social-icons a {
         border-color: #444 !important;
+        color: #f1c40f !important; /* Icon màu vàng khi ở chế độ tối */
     }
     body.dark-mode .social-icons a i {
         color: #f1c40f !important;
@@ -125,7 +129,8 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
             </ul>
         </div>
 
-        <div class="footer-col" style="text-align: center;"> <h3>KẾT NỐI VỚI CHÚNG TÔI</h3>
+        <div class="footer-col" style="text-align: center;"> 
+            <h3>KẾT NỐI VỚI CHÚNG TÔI</h3>
             <div class="social-icons">
                 <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
                 <a href="#"><i class="fa-brands fa-instagram"></i></a>

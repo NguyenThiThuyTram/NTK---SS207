@@ -365,6 +365,210 @@ include 'includes/header.php';
         width: 60px; 
         margin: 0 20px; 
     }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .checkout-layout {
+            flex-direction: column;
+            gap: 20px;
+        }
+        .checkout-right {
+            width: 100% !important;
+            position: static !important;
+        }
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+        .step-line {
+            width: 30px;
+            margin: 0 10px;
+        }
+        .step-indicator {
+            font-size: 11px;
+        }
+    }
+
+    /* ============================================================
+       DARK MODE OVERRIDES FOR CHECKOUT PAGE
+     ============================================================ */
+    body.dark-mode {
+        background-color: #121212 !important;
+        color: #eee !important;
+    }
+    body.dark-mode .checkout-page {
+        color: #eee !important;
+    }
+    body.dark-mode .checkout-right {
+        background-color: #1e1e1e !important;
+        border-color: #333 !important;
+        color: #eee !important;
+    }
+    body.dark-mode .step-title {
+        color: #fff !important;
+    }
+    body.dark-mode .form-group label,
+    body.dark-mode .form-col label {
+        color: #bbb !important;
+    }
+    body.dark-mode .form-group input,
+    body.dark-mode .form-group select,
+    body.dark-mode .form-col input {
+        background-color: #252525 !important;
+        border-color: #333 !important;
+        color: #fff !important;
+    }
+    body.dark-mode .form-group input:focus,
+    body.dark-mode .form-col input:focus {
+        border-color: #a6825c !important;
+    }
+    body.dark-mode #api_province,
+    body.dark-mode #api_district,
+    body.dark-mode #api_ward {
+        background-color: #252525 !important;
+        border-color: #333 !important;
+        color: #fff !important;
+    }
+    body.dark-mode #addr-radio-list label,
+    body.dark-mode #addr-label-manual {
+        background-color: #1e1e1e !important;
+        border-color: #333 !important;
+        color: #eee !important;
+    }
+    body.dark-mode #addr-radio-list label:has(input[type="radio"]:checked),
+    body.dark-mode #addr-label-manual:has(input[type="radio"]:checked) {
+        background-color: #2a251e !important;
+        border-color: #a6825c !important;
+    }
+    body.dark-mode #manual-addr-form {
+        background-color: #1a1a1a !important;
+        border-color: #333 !important;
+    }
+    body.dark-mode .step-indicator {
+        color: #777 !important;
+    }
+    body.dark-mode .step-indicator.active {
+        color: #eee !important;
+    }
+    body.dark-mode .step-line {
+        background-color: #333 !important;
+    }
+    body.dark-mode .method-box {
+        background-color: #1e1e1e !important;
+        border-color: #333 !important;
+        color: #eee !important;
+    }
+    body.dark-mode .method-box:has(input[type="radio"]:checked) {
+        background-color: rgba(76, 175, 80, 0.1) !important;
+        border-color: #4caf50 !important;
+    }
+    body.dark-mode .method-name {
+        color: #fff !important;
+    }
+    body.dark-mode .method-desc {
+        color: #aaa !important;
+    }
+    body.dark-mode .method-price {
+        color: #fff !important;
+    }
+    body.dark-mode .qr-payment-info {
+        background-color: #1e1e1e !important;
+        border-color: #333 !important;
+    }
+    body.dark-mode .qr-payment-info h4 {
+        color: #fff !important;
+    }
+    body.dark-mode .qr-payment-info p {
+        color: #ccc !important;
+    }
+    body.dark-mode .summary-title {
+        color: #fff !important;
+    }
+    body.dark-mode .sum-item-name {
+        color: #fff !important;
+    }
+    body.dark-mode .sum-item-variant {
+        color: #aaa !important;
+    }
+    body.dark-mode .sum-item-price {
+        color: #fff !important;
+    }
+    body.dark-mode .sum-row {
+        color: #ccc !important;
+    }
+    body.dark-mode .sum-total-row {
+        color: #fff !important;
+        border-top-color: #333 !important;
+    }
+    body.dark-mode .sum-wallet-box {
+        border-top-color: #333 !important;
+        border-bottom-color: #333 !important;
+    }
+    body.dark-mode .wallet-title {
+        color: #aaa !important;
+    }
+    body.dark-mode .wallet-balance {
+        color: #fff !important;
+    }
+    body.dark-mode .wallet-checkbox {
+        color: #eee !important;
+    }
+    body.dark-mode .coupon-box {
+        border-bottom-color: #333 !important;
+    }
+    body.dark-mode .coupon-title {
+        color: #aaa !important;
+    }
+    body.dark-mode .coupon-suggest-item {
+        background-color: #1a1a1a !important;
+        border-color: #444 !important;
+    }
+    body.dark-mode .coupon-suggest-item:hover {
+        background-color: #252525 !important;
+        border-color: #a6825c !important;
+    }
+    body.dark-mode .coupon-suggest-item.best-pick {
+        border-color: #a6825c !important;
+        background-color: #231f1a !important;
+    }
+    body.dark-mode .csi-code {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .csi-desc {
+        color: #999 !important;
+    }
+    body.dark-mode .coupon-input-row input {
+        background-color: #252525 !important;
+        border-color: #333 !important;
+        color: #fff !important;
+    }
+    body.dark-mode .coupon-input-row button {
+        background-color: #a6825c !important;
+        color: #121212 !important;
+    }
+    body.dark-mode .voucher-modal {
+        background-color: #1e1e1e !important;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important;
+    }
+    body.dark-mode .vm-big-discount {
+        background-color: #252525 !important;
+    }
+    body.dark-mode .vm-discount-val {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .vm-code-box {
+        background-color: #231f1a !important;
+        border-color: #c0a878 !important;
+    }
+    body.dark-mode .vm-code {
+        color: #e5c199 !important;
+    }
+    body.dark-mode .vm-detail-list li {
+        border-bottom-color: #252525 !important;
+    }
+    body.dark-mode .vm-detail-list .vdl-val {
+        color: #fff !important;
+    }
 </style>
 
 <div class="checkout-page">

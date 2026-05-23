@@ -63,22 +63,22 @@ ul {
     object-fit: contain;
 }
 
-.navbar ul {
+.navbar > ul {
     display: flex;
     gap: 40px;
 }
 
-.navbar ul li a {
+.navbar > ul > li > a {
     font-weight: 500;
     font-size: 16px;
     padding-bottom: 5px;
 }
 
-.navbar ul li a:hover {
+.navbar > ul > li > a:hover {
     color: var(--primary-color);
 }
 
-.navbar ul li a.active {
+.navbar > ul > li > a.active {
     border-bottom: 2px solid var(--primary-color);
     font-weight: 700;
 }
@@ -2111,5 +2111,180 @@ footer {
 
     .cart-title {
         font-size: 22px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE HEADER & SUBMENU STYLES
+============================================================ */
+
+/* Helper classes */
+.mobile-only {
+    display: none !important;
+}
+
+/* Category dropdown submenu (Desktop default) */
+.navbar ul li {
+    position: relative;
+}
+
+.navbar ul li.has-submenu:hover .submenu {
+    display: block;
+}
+
+.submenu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 200px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    z-index: 1010;
+    padding: 10px 0;
+    border-radius: 4px;
+}
+
+.submenu li {
+    width: 100%;
+}
+
+.submenu li a {
+    display: block;
+    padding: 8px 20px !important;
+    font-size: 14.5px !important;
+    font-weight: 500 !important;
+    border-bottom: none !important;
+    transition: background 0.2s, color 0.2s;
+}
+
+.submenu li a:hover {
+    background: #faf7f2;
+    color: var(--primary-color) !important;
+}
+
+body.dark-mode .submenu {
+    background: #1e1e1e !important;
+    border-color: #333 !important;
+}
+
+body.dark-mode .submenu li a:hover {
+    background: #252525 !important;
+    color: #f1c40f !important;
+}
+
+.submenu-toggle-icon {
+    font-size: 11px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* Responsive styles (Mobile & Tablet) */
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+    
+    .mobile-only {
+        display: block !important;
+    }
+
+    .mobile-nav-toggle {
+        display: inline-flex !important;
+    }
+
+    /* Navbar as slide down menu drawer */
+    .navbar {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: #ffffff;
+        border-bottom: 2.5px solid var(--primary-color);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.08);
+        z-index: 999;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .navbar.mobile-active {
+        display: block !important;
+    }
+
+    .navbar ul {
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+        padding: 15px 25px;
+    }
+
+    .navbar ul li {
+        width: 100%;
+        border-bottom: 1.5px solid #f9f9f9;
+    }
+
+    .navbar ul li:last-child {
+        border-bottom: none;
+    }
+
+    .navbar ul li a {
+        display: block;
+        padding: 12px 0;
+        font-size: 15px;
+        font-weight: 600;
+        border-bottom: none !important;
+        color: #333;
+    }
+
+    /* Submenu inside mobile menu (always expanded and clean) */
+    .submenu {
+        display: block;
+        position: static;
+        width: 100%;
+        border: none;
+        box-shadow: none;
+        padding: 0 0 10px 15px;
+        background: none;
+        border-left: 2px solid var(--primary-color);
+        border-radius: 0;
+    }
+
+    .submenu li a {
+        padding: 8px 10px !important;
+        font-size: 14px !important;
+        color: #666;
+    }
+
+    body.dark-mode .navbar {
+        background: #1a1a1a !important;
+        border-bottom-color: #f1c40f !important;
+    }
+
+    body.dark-mode .navbar ul li {
+        border-bottom-color: #252525 !important;
+    }
+
+    body.dark-mode .navbar ul li a {
+        color: #eee;
+    }
+
+    body.dark-mode .submenu {
+        border-left-color: #f1c40f !important;
+    }
+
+    body.dark-mode .submenu li a {
+        color: #aaa;
+    }
+
+    /* Căn chỉnh header icons nhỏ gọn trên Mobile */
+    .header-icons {
+        gap: 12px;
+        font-size: 18px;
+    }
+
+    .header-container {
+        width: 92%;
     }
 }

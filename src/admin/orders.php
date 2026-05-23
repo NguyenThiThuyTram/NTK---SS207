@@ -127,15 +127,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         outline: none;
         background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 12px center;
     }
-    .filter-select {
-        padding: 10px 16px;
-        border: 1px solid #e5e5e5;
-        border-radius: 6px;
-        font-size: 14px;
-        outline: none;
-        background: #fff;
-        color: #333;
-    }
 
     /* Table */
     .table-container {
@@ -212,6 +203,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         text-decoration: none;
     }
     .action-btn:hover { color: #111; }
+
+
 </style>
 
 <div class="page-header">
@@ -235,7 +228,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     <form action="" method="GET" style="display:flex; flex:1; gap:16px;">
         <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
         <input type="text" name="search" class="search-input" placeholder="Tìm theo mã đơn, tên khách hàng..." value="<?= htmlspecialchars($search) ?>">
-
         <button type="submit" style="display:none;"></button>
     </form>
 </div>
@@ -271,9 +263,9 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                                     if ($img): 
                                         $img_src = (strpos($img, 'http') === 0) ? $img : '../' . $img;
                                 ?>
-                                    <img src="<?= htmlspecialchars($img_src) ?>" class="product-img" onerror="this.outerHTML='<div class=\'product-img\' style=\'background:#f5f1eb;display:flex;align-items:center;justify-content:center;color:#ccc;\'><i class=\'fa-solid fa-box\'></i></div>'">
+                                    <img src="<?= htmlspecialchars($img_src) ?>" class="product-img" onerror="this.outerHTML='<div class=\'product-img\' style=\'background:#fafaf8;display:flex;align-items:center;justify-content:center;color:#ccc;\'><i class=\'fa-solid fa-box\'></i></div>'">
                                 <?php else: ?>
-                                    <div class="product-img" style="background:#f5f1eb;display:flex;align-items:center;justify-content:center;color:#ccc;"><i class="fa-solid fa-box"></i></div>
+                                    <div class="product-img" style="background:#fafaf8;display:flex;align-items:center;justify-content:center;color:#ccc;"><i class="fa-solid fa-box"></i></div>
                                 <?php endif; ?>
                                 <span style="max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= htmlspecialchars($o['first_product_name']) ?>">
                                     <?= htmlspecialchars($o['first_product_name'] ?? 'Không rõ') ?>

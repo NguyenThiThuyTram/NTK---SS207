@@ -15,10 +15,8 @@ if (empty($userMessage)) {
     exit;
 }
 
-// ==========================================
-// ĐẠI CA DÁN API KEY CỦA GEMINI VÀO ĐÂY NHÉ:
-$apiKey = 'AIzaSyBXwQjYyVqnzidwLHyOHA27xcjbtB6hWxI'; 
-// ==========================================
+require_once __DIR__ . '/../api_key.php';
+$apiKey = $GEMINI_API_KEY;
 
 // Cấu hình gửi lên server Google Gemini
 $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;

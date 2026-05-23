@@ -65,15 +65,20 @@ $stmt = $conn->prepare("
 $stmt->execute();
 $recent_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Mapping trạng thái đơn hàng
+// Mapping trạng thái đơn hàng phù hợp hệ thống
 function getOrderStatusLabel(int $status): array {
     $map = [
-        0 => ['label' => 'Chờ xử lý',  'class' => 'status-pending'],
-        1 => ['label' => 'Đang giao',   'class' => 'status-shipping'],
-        2 => ['label' => 'Đã giao',     'class' => 'status-delivered'],
-        3 => ['label' => 'Hoàn thành',  'class' => 'status-done'],
-        4 => ['label' => 'Đã hủy',      'class' => 'status-cancelled'],
-        5 => ['label' => 'Trả hàng',    'class' => 'status-returned'],
+        0 => ['label' => 'Chờ thanh toán', 'class' => 'status-pending'],
+        1 => ['label' => 'Chờ lấy hàng',   'class' => 'status-shipping'],
+        2 => ['label' => 'Đang giao hàng', 'class' => 'status-shipping'],
+        3 => ['label' => 'Hoàn thành',    'class' => 'status-delivered'],
+        4 => ['label' => 'Đã hủy',        'class' => 'status-cancelled'],
+        5 => ['label' => 'Yêu cầu trả hàng','class' => 'status-returned'],
+        6 => ['label' => 'Đang hoàn trả',  'class' => 'status-returned'],
+        7 => ['label' => 'Đã hoàn tiền',   'class' => 'status-delivered'],
+        8 => ['label' => 'Chờ duyệt hủy',  'class' => 'status-pending'],
+        9 => ['label' => 'Giao thất bại',  'class' => 'status-cancelled'],
+        10 => ['label' => 'Đang hoàn về kho','class' => 'status-pending'],
     ];
     return $map[$status] ?? ['label' => 'Không rõ', 'class' => 'status-pending'];
 }
@@ -82,12 +87,9 @@ function getOrderStatusLabel(int $status): array {
 include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
 
-<!-- ============================================================
-     DASHBOARD CONTENT
-============================================================ -->
 <style>
     /* ── Font & Base ─────────────────────────────────────── */
-    * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+    * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; box-sizing: border-box; }
 
     /* ── Page header ─────────────────────────────────────── */
     .page-header { margin-bottom: 28px; }
@@ -247,36 +249,36 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         background: currentColor;
         opacity: 0.7;
     }
-    .status-pending   { background: #fff8e6; color: #d48806; }
-    .status-shipping  { background: #fff3e0; color: #e67e22; }
-    .status-delivered { background: #e8f5e9; color: #27ae60; }
-    .status-done      { background: #1a1a2e; color: #ffffff; }
-    .status-done::before { background: #fff; }
-    .status-cancelled { background: #fdf0ef; color: #e74c3c; }
-    .status-returned  { background: #f3f0ff; color: #8e44ad; }
+    
+    .status-pending   { background: #3d2d18; color: #f39c12; }
+    .status-shipping  { background: #182d3d; color: #3498db; }
+    .status-delivered { background: #183d25; color: #2ecc71; }
+    .status-done      { background: #ffffff; color: #121212; }
+    .status-done::before { background: #121212; }
+    .status-cancelled { background: #3d1a1a; color: #ff4d4d; }
+    .status-returned  { background: #331a3d; color: #9b59b6; }
 
     /* Action link */
     .action-link {
         font-size: 13px;
         font-weight: 500;
-        color: #1a1a2e;
+        color: #2f1c00;
         text-decoration: none;
         padding: 5px 0;
         border-bottom: 1.5px solid transparent;
         transition: border-color 0.15s;
     }
-    .action-link:hover { border-color: #1a1a2e; }
+    .action-link:hover { border-color: #2f1c00; }
+
+
 </style>
 
-<!-- Page Header -->
 <div class="page-header">
     <div class="page-title">Trang Chủ</div>
     <div class="page-subtitle">Tổng quan hoạt động kinh doanh</div>
 </div>
 
-<!-- Stat Cards -->
 <div class="stats-grid">
-    <!-- Tổng đơn hàng -->
     <div class="stat-card">
         <div class="stat-card-top">
             <div class="stat-icon"><i class="fa-solid fa-cart-shopping"></i></div>
@@ -286,7 +288,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         <div class="stat-label">Tổng đơn hàng</div>
     </div>
 
-    <!-- Doanh thu -->
     <div class="stat-card">
         <div class="stat-card-top">
             <div class="stat-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
@@ -296,7 +297,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         <div class="stat-label">Doanh thu</div>
     </div>
 
-    <!-- Sản phẩm -->
     <div class="stat-card">
         <div class="stat-card-top">
             <div class="stat-icon"><i class="fa-solid fa-box-open"></i></div>
@@ -306,7 +306,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         <div class="stat-label">Sản phẩm</div>
     </div>
 
-    <!-- Khách hàng -->
     <div class="stat-card">
         <div class="stat-card-top">
             <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
@@ -317,7 +316,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     </div>
 </div>
 
-<!-- Recent Orders Table -->
 <div class="section-card">
     <div class="section-header">
         <div class="section-title">Đơn hàng gần đây</div>
@@ -366,7 +364,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             <?php endif; ?>
         </tbody>
     </table>
-</div><!-- /.admin-content -->
-</main>
+</div></main>
 </body>
 </html>
