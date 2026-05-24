@@ -18,6 +18,14 @@ if ($isEdit) {
     }
 }
 
+$variants = [];
+if ($isEdit) {
+    $stmt_var = $conn->prepare("SELECT * FROM product_variants WHERE product_id = ? ORDER BY variant_id ASC");
+    $stmt_var->execute([$id]);
+    $variants = $stmt_var->fetchAll(PDO::FETCH_ASSOC);
+}
+
+
 $error = '';
 $success = '';
 
@@ -27,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = $_POST['description'] ?? '';
     $category_id = $_POST['category_id'] ?? '';
     $status = (int)($_POST['status'] ?? 0);
+    
+    $seo_title = $_POST['seo_title'] ?? '';
+    $seo_description = $_POST['seo_description'] ?? '';
     
     // Handle image upload
     $image_url = $isEdit ? $prod['image'] : '';
@@ -40,25 +51,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if ($isEdit) {
-        $stmt = $conn->prepare("UPDATE products SET name=?, description=?, category_id=?, status=?, image=? WHERE product_id=?");
-        $stmt->execute([$name, $description, $category_id, $status, $image_url, $id]);
-        $success = "Cập nhật sản phẩm thành công!";
-        $prod = ['name'=>$name, 'description'=>$description, 'category_id'=>$category_id, 'status'=>$status, 'image'=>$image_url, 'product_id'=>$id];
-    } else {
-        // Auto generate product_id
-        $stmt = $conn->query("SELECT product_id FROM products ORDER BY product_id DESC LIMIT 1");
-        $lastProd = $stmt->fetch();
-        if ($lastProd) {
-            $num = (int)substr($lastProd['product_id'], 1) + 1;
-            $newId = 'C' . str_pad($num, 2, '0', STR_PAD_LEFT);
+    try {
+        $conn->beginTransaction();
+        
+        if (!$isEdit) {
+            // Auto generate product_id
+            $stmt = $conn->query("SELECT product_id FROM products ORDER BY product_id DESC LIMIT 1");
+            $lastProd = $stmt->fetch();
+            if ($lastProd) {
+                $num = (int)substr($lastProd['product_id'], 1) + 1;
+                $newId = 'C' . str_pad($num, 2, '0', STR_PAD_LEFT);
+            } else {
+                $newId = 'C01';
+            }
+            $idToUse = $newId;
+            $stmt = $conn->prepare("INSERT INTO products (product_id, name, description, category_id, status, image, seo_title, seo_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$newId, $name, $description, $category_id, $status, $image_url, $seo_title, $seo_description]);
         } else {
-            $newId = 'C01';
+            $idToUse = $id;
+            $stmt = $conn->prepare("UPDATE products SET name=?, description=?, category_id=?, status=?, image=?, seo_title=?, seo_description=? WHERE product_id=?");
+            $stmt->execute([$name, $description, $category_id, $status, $image_url, $seo_title, $seo_description, $id]);
         }
-        $stmt = $conn->prepare("INSERT INTO products (product_id, name, description, category_id, status, image) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$newId, $name, $description, $category_id, $status, $image_url]);
-        header("Location: products.php");
-        exit;
+
+        // Process Variants
+        $v_id = $_POST['v_id'] ?? [];
+        $v_sku = $_POST['v_sku'] ?? [];
+        $v_color = $_POST['v_color'] ?? [];
+        $v_size = $_POST['v_size'] ?? [];
+        $v_price = $_POST['v_price'] ?? [];
+        $v_stock = $_POST['v_stock'] ?? [];
+
+        $maxNumStmt = $conn->query("SELECT MAX(CAST(SUBSTRING(variant_id, 2) AS UNSIGNED)) as max_id FROM product_variants");
+        $maxIdRow = $maxNumStmt->fetch();
+        $currentMaxVar = (int)$maxIdRow['max_id'];
+
+        for ($i = 0; $i < count($v_color); $i++) {
+            $cv_id = $v_id[$i] ?? '';
+            $cv_sku = $v_sku[$i] ?? '';
+            $cv_color = $v_color[$i] ?? '';
+            $cv_size = $v_size[$i] ?? '';
+            $cv_price = (float)($v_price[$i] ?? 0);
+            $cv_stock = (int)($v_stock[$i] ?? 0);
+            
+            if (trim($cv_color) === '') continue;
+
+            if ($cv_id) {
+                $ustmt = $conn->prepare("UPDATE product_variants SET sku=?, color=?, size=?, stock=?, original_price=?, sale_price=? WHERE variant_id=? AND product_id=?");
+                $ustmt->execute([$cv_sku, $cv_color, $cv_size, $cv_stock, $cv_price, $cv_price, $cv_id, $idToUse]);
+            } else {
+                $currentMaxVar++;
+                $newVarId = 'V' . str_pad($currentMaxVar, 3, '0', STR_PAD_LEFT);
+                $istmt = $conn->prepare("INSERT INTO product_variants (variant_id, product_id, sku, color, size, stock, original_price, sale_price, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)");
+                $istmt->execute([$newVarId, $idToUse, $cv_sku, $cv_color, $cv_size, $cv_stock, $cv_price, $cv_price]);
+            }
+        }
+        
+        $conn->commit();
+        
+        if ($isEdit) {
+            $success = "Cập nhật sản phẩm thành công!";
+            $prod = ['name'=>$name, 'description'=>$description, 'category_id'=>$category_id, 'status'=>$status, 'image'=>$image_url, 'product_id'=>$id, 'seo_title'=>$seo_title, 'seo_description'=>$seo_description];
+            // Reload variants
+            $stmt_var = $conn->prepare("SELECT * FROM product_variants WHERE product_id = ? ORDER BY variant_id ASC");
+            $stmt_var->execute([$id]);
+            $variants = $stmt_var->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            header("Location: products.php");
+            exit;
+        }
+    } catch (Exception $e) {
+        $conn->rollBack();
+        $error = "Lỗi hệ thống: " . $e->getMessage();
     }
 }
 
@@ -312,15 +375,13 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <div class="upload-hint">PNG, JPG (tối đa 5MB)</div>
                     <input type="file" name="image" style="display: none;" id="file-upload" accept="image/png, image/jpeg">
                 </div>
-            </div>
-
-            <!-- Phân loại sản phẩm -->
+                <!-- Phân loại sản phẩm -->
             <div class="panel">
                 <div class="panel-title">
                     Phân loại sản phẩm
-                    <button type="button" class="btn-add-variant"><i class="fa-solid fa-plus"></i> Thêm biến thể</button>
+                    <button type="button" class="btn-add-variant" onclick="addVariantRow()"><i class="fa-solid fa-plus"></i> Thêm biến thể</button>
                 </div>
-                <table class="variant-table">
+                <table class="variant-table" id="variantTable">
                     <thead>
                         <tr>
                             <th>Màu sắc</th>
@@ -328,63 +389,33 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             <th>Giá</th>
                             <th>Tồn kho</th>
                             <th>SKU</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><input type="text" class="form-control" placeholder="Đỏ, Xanh..."></td>
-                            <td><input type="text" class="form-control" placeholder="S, M, L..."></td>
-                            <td><input type="text" class="form-control" placeholder="500000"></td>
-                            <td><input type="number" class="form-control" placeholder="100"></td>
-                            <td><input type="text" class="form-control" placeholder="SKU-001"></td>
-                        </tr>
+                        <?php if (empty($variants)): ?>
+                            <tr>
+                                <td><input type="hidden" name="v_id[]" value=""><input type="text" name="v_color[]" class="form-control" placeholder="Mặc định" required></td>
+                                <td><input type="text" name="v_size[]" class="form-control" placeholder="Freesize" required></td>
+                                <td><input type="text" name="v_price[]" class="form-control" placeholder="150000" required></td>
+                                <td><input type="number" name="v_stock[]" class="form-control" placeholder="100" required></td>
+                                <td><input type="text" name="v_sku[]" class="form-control" placeholder="SKU-01"></td>
+                                <td><button type="button" class="btn-link" onclick="this.closest('tr').remove()" style="color:red;"><i class="fa-solid fa-trash"></i></button></td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($variants as $v): ?>
+                            <tr>
+                                <td><input type="hidden" name="v_id[]" value="<?= htmlspecialchars($v['variant_id']) ?>"><input type="text" name="v_color[]" class="form-control" value="<?= htmlspecialchars($v['color']) ?>" required></td>
+                                <td><input type="text" name="v_size[]" class="form-control" value="<?= htmlspecialchars($v['size']) ?>" required></td>
+                                <td><input type="text" name="v_price[]" class="form-control" value="<?= (int)$v['original_price'] ?>" required></td>
+                                <td><input type="number" name="v_stock[]" class="form-control" value="<?= (int)$v['stock'] ?>" required></td>
+                                <td><input type="text" name="v_sku[]" class="form-control" value="<?= htmlspecialchars($v['sku'] ?? '') ?>"></td>
+                                <td><button type="button" class="btn-link" onclick="this.closest('tr').remove()" style="color:red;"><i class="fa-solid fa-trash"></i></button></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
-            </div>
-
-            <!-- Giá sản phẩm -->
-            <div class="panel">
-                <div class="panel-title">Giá sản phẩm</div>
-                <div class="form-row" style="margin-bottom:0;">
-                    <div class="form-col">
-                        <label class="form-label">Giá gốc</label>
-                        <input type="text" class="form-control" placeholder="500000">
-                    </div>
-                    <div class="form-col">
-                        <label class="form-label">Giá khuyến mãi</label>
-                        <input type="text" class="form-control" placeholder="450000">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kho hàng -->
-            <div class="panel">
-                <div class="panel-title">Kho hàng</div>
-                <div class="form-row" style="margin-bottom:0;">
-                    <div class="form-col">
-                        <label class="form-label">Số lượng tồn kho</label>
-                        <input type="number" class="form-control" placeholder="100">
-                    </div>
-                    <div class="form-col">
-                        <label class="form-label">SKU</label>
-                        <input type="text" class="form-control" placeholder="SKU-001">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vận chuyển -->
-            <div class="panel">
-                <div class="panel-title">Vận chuyển</div>
-                <div class="form-row" style="margin-bottom:0;">
-                    <div class="form-col">
-                        <label class="form-label">Cân nặng (gram)</label>
-                        <input type="number" class="form-control" placeholder="500">
-                    </div>
-                    <div class="form-col">
-                        <label class="form-label">Kích thước (cm)</label>
-                        <input type="text" class="form-control" placeholder="30 x 20 x 5">
-                    </div>
-                </div>
             </div>
 
             <!-- SEO -->
@@ -392,13 +423,17 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <div class="panel-title">SEO</div>
                 <div class="form-group">
                     <label class="form-label">Meta Title</label>
-                    <input type="text" class="form-control" placeholder="Nhập tiêu đề SEO">
+                    <input type="text" class="form-control" name="seo_title" placeholder="Nhập tiêu đề SEO" value="<?= htmlspecialchars($prod['seo_title'] ?? '') ?>">
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
                     <label class="form-label">Meta Description</label>
-                    <textarea class="form-control" rows="3" placeholder="Nhập mô tả SEO"></textarea>
+                    <textarea class="form-control" name="seo_description" rows="3" placeholder="Nhập mô tả SEO"><?= htmlspecialchars($prod['seo_description'] ?? '') ?></textarea>
                 </div>
             </div>
+
+        </div>
+
+
 
         </div>
 
@@ -444,6 +479,20 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     nameInput.addEventListener('input', function() {
         prevTitle.textContent = this.value || 'Tên sản phẩm';
     });
+    
+    function addVariantRow() {
+        const tbody = document.querySelector('#variantTable tbody');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="hidden" name="v_id[]" value=""><input type="text" name="v_color[]" class="form-control" placeholder="Màu sắc" required></td>
+            <td><input type="text" name="v_size[]" class="form-control" placeholder="Size" required></td>
+            <td><input type="text" name="v_price[]" class="form-control" placeholder="Giá" required></td>
+            <td><input type="number" name="v_stock[]" class="form-control" placeholder="Tồn kho" required></td>
+            <td><input type="text" name="v_sku[]" class="form-control" placeholder="SKU"></td>
+            <td><button type="button" class="btn-link" onclick="this.closest('tr').remove()" style="color:red;"><i class="fa-solid fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(tr);
+    }
 </script>
 
 </div><!-- /.admin-content -->
