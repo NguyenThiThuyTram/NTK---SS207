@@ -10,32 +10,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $redirect_to = isset($_POST['redirect_to']) ? $_POST['redirect_to'] : '../index.php';
 
     try {
-        $sql = "SELECT * FROM users WHERE email = :email";
+        $sql = "SELECT * FROM users WHERE email = :email AND password = :password";
         $stmt = $conn->prepare($sql);
         $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $password);
         $stmt->execute();
 
         $user = null;
         if ($stmt->rowCount() > 0) {
-            $potential_user = $stmt->fetch(PDO::FETCH_ASSOC);
-            $plain_password = $_POST['password'] ?? '';
-            $authenticated = false;
-
-            if (strlen($potential_user['password']) === 32) {
-                // Legacy MD5 Check
-                if ($potential_user['password'] === md5($plain_password)) {
-                    $authenticated = true;
-                }
-            } else {
-                // Modern BCRYPT Check
-                if (password_verify($plain_password, $potential_user['password'])) {
-                    $authenticated = true;
-                }
-            }
-
-            if ($authenticated) {
-                $user = $potential_user;
-            }
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
         }
 
         if ($user) {

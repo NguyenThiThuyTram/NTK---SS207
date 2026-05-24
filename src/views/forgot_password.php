@@ -27,22 +27,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         try {
             // Check if the user exists
-            $stmt = $conn->prepare("SELECT user_id, fullname FROM users WHERE email = :email");
+            $stmt = $conn->prepare("SELECT user_id, password, fullname FROM users WHERE email = :email");
             $stmt->execute(['email' => $email]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user) {
-                // Generate token and expiry
-                $token = bin2hex(random_bytes(32));
-                $expiry = date('Y-m-d H:i:s', time() + 1800); // 30 minutes
-
-                // Save to DB
-                $upd = $conn->prepare("UPDATE users SET reset_token = :token, reset_token_expiry = :expiry WHERE email = :email");
-                $upd->execute([
-                    'token' => $token,
-                    'expiry' => $expiry,
-                    'email' => $email
-                ]);
+                $user_id = $user['user_id'];
+                
+                // Generate a stateless token containing user_id, expiry, and signature
+                $expiry = time() + 1800; // 30 minutes
+                $secret_key = "NTK_FASHION_SECRET_KEY_2026";
+                $signature = hash_hmac('sha256', $user_id . '|' . $expiry, $secret_key . $user['password']);
+                $token = base64_encode($user_id . '|' . $expiry . '|' . $signature);
 
                 // Construct dynamic URL (enforcing HTTPS on production)
                 $protocol = 'http';
@@ -52,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $protocol = 'https';
                 }
                 $host = $_SERVER['HTTP_HOST'] ?? 'ntkfashion.me';
-                $reset_link = "$protocol://$host/src/views/reset_password.php?token=$token";
+                $reset_link = "$protocol://$host/src/views/reset_password.php?token=" . urlencode($token);
 
                 // Dispatch Email using PHPMailer SMTP Gmail setup
                 $mail = new PHPMailer(true);
@@ -63,9 +59,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     $mail->Host       = 'smtp.gmail.com';
                     $mail->SMTPAuth   = true;
-                    // Synchronized to match the exact credentials from registerController.php (including trailing CRLF)
                     $mail->Username   = 'tpkhai108@gmail.com'; 
-                    $mail->Password   = "nswc oznx scfx clae\r\n"; 
+                    $mail->Password   = 'nswcoznxscfxclae'; 
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
                     $mail->CharSet    = 'UTF-8';

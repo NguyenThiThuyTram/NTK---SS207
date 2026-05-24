@@ -8,29 +8,51 @@ $token = $_GET['token'] ?? $_POST['token'] ?? '';
 $message = '';
 $message_type = '';
 $show_form = false;
+$user_id = '';
 
 if (empty($token)) {
     $message = "Liên kết này không hợp lệ hoặc đã hết hạn.";
     $message_type = "error";
 } else {
-    try {
-        // Verify token and expiry
-        $stmt = $conn->prepare("SELECT user_id FROM users WHERE reset_token = :token AND reset_token_expiry > :now");
-        $stmt->execute([
-            'token' => $token,
-            'now' => date('Y-m-d H:i:s')
-        ]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$user) {
+    $decoded = base64_decode($token);
+    $parts = explode('|', $decoded);
+    if (count($parts) !== 3) {
+        $message = "Liên kết này không hợp lệ hoặc đã hết hạn.";
+        $message_type = "error";
+    } else {
+        list($token_user_id, $expiry, $signature) = $parts;
+        
+        if (time() > $expiry) {
             $message = "Liên kết này không hợp lệ hoặc đã hết hạn.";
             $message_type = "error";
         } else {
-            $show_form = true;
+            try {
+                // Fetch the user's CURRENT password hash from the DB
+                $stmt = $conn->prepare("SELECT password FROM users WHERE user_id = :user_id");
+                $stmt->execute(['user_id' => $token_user_id]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$user) {
+                    $message = "Liên kết này không hợp lệ hoặc đã hết hạn.";
+                    $message_type = "error";
+                } else {
+                    // Re-calculate the expected signature using the exact same secret key and current DB password hash
+                    $secret_key = "NTK_FASHION_SECRET_KEY_2026";
+                    $expected_signature = hash_hmac('sha256', $token_user_id . '|' . $expiry, $secret_key . $user['password']);
+
+                    if ($signature !== $expected_signature) {
+                        $message = "Liên kết này không hợp lệ hoặc đã hết hạn.";
+                        $message_type = "error";
+                    } else {
+                        $show_form = true;
+                        $user_id = $token_user_id; // Set for use during form processing
+                    }
+                }
+            } catch (PDOException $e) {
+                $message = "Lỗi hệ thống: " . $e->getMessage();
+                $message_type = "error";
+            }
         }
-    } catch (PDOException $e) {
-        $message = "Lỗi hệ thống: " . $e->getMessage();
-        $message_type = "error";
     }
 }
 
@@ -46,14 +68,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $show_form) {
         $message_type = "error";
     } else {
         try {
-            // Hash password using BCRYPT
-            $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
+            // Hash the new password using md5() (no BCRYPT/password_hash)
+            $hashed_password = md5($new_password);
 
-            // Update database and clear token details to prevent replay attacks
-            $stmt = $conn->prepare("UPDATE users SET password = :password, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = :token");
+            // Update the password column in the DB
+            $stmt = $conn->prepare("UPDATE users SET password = :password WHERE user_id = :user_id");
             $stmt->execute([
                 'password' => $hashed_password,
-                'token' => $token
+                'user_id' => $user_id
             ]);
 
             $_SESSION['login_success_msg'] = "Đặt lại mật khẩu thành công! Vui lòng đăng nhập.";
