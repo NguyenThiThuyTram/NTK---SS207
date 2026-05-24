@@ -178,7 +178,7 @@ $total_unread = count(array_filter($notifications, function($n) { return !empty(
 
 // Giới hạn hiển thị top 20 thông báo mới nhất trong dropdown
 $notifications = array_slice($notifications, 0, 20);
-$notif_count = $total_unread > 0 ? $total_unread : count($notifications);
+$notif_count = $total_unread;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
