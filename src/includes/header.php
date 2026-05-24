@@ -2,7 +2,9 @@
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../config/database.php';
 
-$_protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$_is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+             (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+$_protocol = $_is_https ? 'https' : 'http';
 $_host = $_SERVER['HTTP_HOST'];
 $_src_dir = str_replace('\\', '/', realpath(__DIR__ . '/../'));
 $_doc_root = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
