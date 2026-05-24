@@ -85,8 +85,8 @@ if ($action === 'submit_comment') {
         ]);
 
         // Cộng điểm thưởng nếu là đánh giá gốc
+        $reward_points = 0;
         if (empty($parent_id)) {
-            $reward_points = 0;
             if (!empty($comment)) $reward_points += 100;
             if (!empty($review_image)) $reward_points += 100;
             
@@ -95,7 +95,7 @@ if ($action === 'submit_comment') {
             }
         }
 
-        echo json_encode(['status' => 'success', 'success' => true, 'message' => 'Gửi dữ liệu thành công!']);
+        echo json_encode(['status' => 'success', 'success' => true, 'points_earned' => $reward_points, 'message' => 'Gửi dữ liệu thành công!']);
     } catch (PDOException $e) {
         echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
     }

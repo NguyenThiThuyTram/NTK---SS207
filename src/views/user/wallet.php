@@ -19,6 +19,11 @@ if (isset($conn) && $conn !== null && $user_id) {
         $balance_result = $stmt_balance->fetch(PDO::FETCH_ASSOC);
         $current_balance = $balance_result['balance'] ?? 0;
 
+        // Lấy số điểm Loyalty
+        $stmt_points = $conn->prepare("SELECT current_points FROM users WHERE user_id = :uid");
+        $stmt_points->execute(['uid' => $user_id]);
+        $current_points = intval($stmt_points->fetchColumn());
+
         // 2. Lấy lịch sử giao dịch (JOIN 2 bảng Users và Wallet_Transactions theo đúng lệnh đại ca)
         $stmt_tx = $conn->prepare("
             SELECT wt.amount, wt.transaction_type, wt.description, wt.created_at 
@@ -147,6 +152,43 @@ if (!function_exists('formatVND')) {
         border-radius: 8px;
         font-size: 15px;
     }
+
+    /* Điểm Loyalty */
+    .loyalty-section {
+        background-color: #fcfcfc;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    .loyalty-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .loyalty-points {
+        font-size: 24px;
+        font-weight: 700;
+        color: #b8860b;
+    }
+    .redeem-form input {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 150px;
+        outline: none;
+    }
+    .redeem-btn {
+        background-color: #2f1c00;
+        color: white;
+        border: none;
+        padding: 9px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+    .redeem-btn:hover { background-color: #4a2c00; }
 </style>
 
 <div class="wallet-wrapper">
@@ -156,6 +198,20 @@ if (!function_exists('formatVND')) {
         <div class="balance-label">Số dư hiện tại</div>
         <div class="balance-amount"><?= formatVND($current_balance) ?></div>
         <div class="balance-desc">Số dư từ hoàn tiền đơn hàng có thể sử dụng để thanh toán trực tiếp khi mua sắm.</div>
+    </div>
+
+    <div class="loyalty-section">
+        <div class="loyalty-header">
+            <span style="font-size:16px; font-weight:600;">Điểm Loyalty của bạn</span>
+            <span class="loyalty-points"><?= number_format($current_points, 0, ',', '.') ?> điểm</span>
+        </div>
+        <p style="font-size:14px; color:#666; margin-bottom:15px;">Đổi điểm thành tiền vào ví để mua sắm (Tỷ lệ: 1 điểm = 100đ).</p>
+        
+        <form class="redeem-form" id="redeemForm">
+            <input type="number" id="redeemAmount" min="1" max="<?= $current_points ?>" placeholder="Nhập số điểm..." required>
+            <button type="button" class="redeem-btn" onclick="redeemPoints()">Đổi tiền ngay</button>
+        </form>
+        <div id="redeemMsg" style="margin-top:10px; font-size:13px; display:none;"></div>
     </div>
 
     <div class="tx-section-title">Lịch sử giao dịch</div>
@@ -183,3 +239,39 @@ if (!function_exists('formatVND')) {
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+function redeemPoints() {
+    var amount = parseInt(document.getElementById('redeemAmount').value);
+    var maxPoints = <?= $current_points ?>;
+    var msgDiv = document.getElementById('redeemMsg');
+
+    if (!amount || amount <= 0) {
+        msgDiv.style.display = 'block'; msgDiv.style.color = '#c0392b'; msgDiv.textContent = 'Vui lòng nhập số điểm hợp lệ.'; return;
+    }
+    if (amount > maxPoints) {
+        msgDiv.style.display = 'block'; msgDiv.style.color = '#c0392b'; msgDiv.textContent = 'Bạn không đủ điểm.'; return;
+    }
+
+    $.ajax({
+        url: 'ajax_redeem.php',
+        method: 'POST',
+        data: { points: amount },
+        dataType: 'json',
+        success: function(res) {
+            msgDiv.style.display = 'block';
+            if (res.status === 'success') {
+                msgDiv.style.color = '#28a745';
+                msgDiv.textContent = res.message;
+                setTimeout(function() { window.location.reload(); }, 1500);
+            } else {
+                msgDiv.style.color = '#c0392b';
+                msgDiv.textContent = res.message;
+            }
+        },
+        error: function() {
+            msgDiv.style.display = 'block'; msgDiv.style.color = '#c0392b'; msgDiv.textContent = 'Lỗi kết nối!';
+        }
+    });
+}
+</script>
