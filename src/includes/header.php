@@ -51,326 +51,43 @@ try {
             color: #f5f5f5 !important;
         }
 
-        /* Elements and Texts */
-        body.dark-mode p, 
-        body.dark-mode span, 
-        body.dark-mode li, 
-        body.dark-mode td, 
-        body.dark-mode th, 
-        body.dark-mode label,
-        body.dark-mode legend,
-        body.dark-mode input,
-        body.dark-mode select,
-        body.dark-mode textarea { 
-            color: #e0e0e0 !important; 
-        }
-        
-        body.dark-mode h1, 
-        body.dark-mode h2, 
-        body.dark-mode h3, 
-        body.dark-mode h4,
-        body.dark-mode h5,
-        body.dark-mode h6,
-        body.dark-mode strong,
-        body.dark-mode b { 
-            color: #ffffff !important; 
-        }
+        body.dark-mode p, body.dark-mode span, body.dark-mode li, body.dark-mode td, body.dark-mode th, body.dark-mode label, body.dark-mode legend, body.dark-mode input, body.dark-mode select, body.dark-mode textarea { color: #e0e0e0 !important; }
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, body.dark-mode h6, body.dark-mode strong, body.dark-mode b { color: #ffffff !important; }
+        body.dark-mode a { color: #ffffff !important; }
+        body.dark-mode a:hover { color: #f1c40f !important; }
+        body.dark-mode header, body.dark-mode .main-header, body.dark-mode .search-bar-container { background: #1a1a1a !important; background-color: #1a1a1a !important; border-bottom-color: #333333 !important; }
+        body.dark-mode .logo img, body.dark-mode #mainLogo { filter: brightness(0) invert(1) !important; }
+        body.dark-mode footer, body.dark-mode .main-footer { background: #1a1a1a !important; background-color: #1a1a1a !important; border-top-color: #333333 !important; }
+        body.dark-mode .section, body.dark-mode section, body.dark-mode .policy-page { background: #121212 !important; background-color: #121212 !important; }
 
-        body.dark-mode a {
-            color: #ffffff !important;
-        }
-        body.dark-mode a:hover {
-            color: #f1c40f !important;
-        }
-
-        /* Header, Footer, and Backgrounds */
-        body.dark-mode header,
-        body.dark-mode .main-header,
-        body.dark-mode .search-bar-container { 
-            background: #1a1a1a !important; 
-            background-color: #1a1a1a !important; 
-            border-bottom-color: #333333 !important; 
-        }
-        
-        body.dark-mode footer, 
-        body.dark-mode .main-footer { 
-            background: #1a1a1a !important; 
-            background-color: #1a1a1a !important; 
-            border-top-color: #333333 !important; 
-        }
-
-        body.dark-mode .section, 
-        body.dark-mode section,
-        body.dark-mode .policy-page { 
-            background: #121212 !important; 
-            background-color: #121212 !important; 
-        }
-
-        /* Light Cards and Boxes */
-        body.dark-mode .product-card,
-        body.dark-mode .cart-left,
-        body.dark-mode .order-summary-box,
-        body.dark-mode .process-step,
-        body.dark-mode .payment-card,
-        body.dark-mode .contact-box,
-        body.dark-mode .checkout-box,
-        body.dark-mode .billing-box,
-        body.dark-mode .cart-item,
-        body.dark-mode .address-card,
-        body.dark-mode .coupon-card,
-        body.dark-mode .notification-card,
-        body.dark-mode .profile-card,
-        body.dark-mode .wallet-card,
-        body.dark-mode .review-card,
-        body.dark-mode .review-item,
-        body.dark-mode .detail-box,
-        body.dark-mode .order-box {
-            background: #1e1e1e !important;
-            background-color: #1e1e1e !important;
-            border-color: #333333 !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
-            color: #ffffff !important;
-        }
-
-        /* Special Cart and Forms */
-        body.dark-mode .cart-select-all-bar,
-        body.dark-mode .cart-table-header {
-            background: #1a1a1a !important;
-            border-bottom-color: #333333 !important;
-        }
-        body.dark-mode .cart-custom-checkbox {
-            background: #252525 !important;
-            border-color: #555555 !important;
-        }
-        body.dark-mode .cart-checkbox-label input[type="checkbox"]:checked+.cart-custom-checkbox {
-            background: #a6825c !important;
-            border-color: #a6825c !important;
-        }
-        body.dark-mode .order-warning {
-            background: #2a2211 !important;
-            border-color: #554422 !important;
-            color: #f1c40f !important;
-        }
-        body.dark-mode .order-warning i {
-            color: #f1c40f !important;
-        }
-
-        /* Form Controls */
-        body.dark-mode input[type="text"],
-        body.dark-mode input[type="email"],
-        body.dark-mode input[type="tel"],
-        body.dark-mode input[type="password"],
-        body.dark-mode input[type="number"],
-        body.dark-mode select,
-        body.dark-mode textarea {
-            background-color: #252525 !important;
-            border-color: #333333 !important;
-            color: #ffffff !important;
-        }
-        body.dark-mode input::placeholder,
-        body.dark-mode textarea::placeholder {
-            color: #888888 !important;
-        }
-        
-        /* Tables */
-        body.dark-mode table,
-        body.dark-mode .shipping-table {
-            background-color: #121212 !important;
-            border-color: #333333 !important;
-        }
-        body.dark-mode th {
-            background-color: #1a1a1a !important;
-            color: #a6825c !important;
-            border-color: #333333 !important;
-        }
-        body.dark-mode td {
-            background-color: #121212 !important;
-            color: #eeeeee !important;
-            border-color: #333333 !important;
-        }
-        body.dark-mode tr:hover,
-        body.dark-mode tbody tr:hover {
-            background-color: #1a1a1a !important;
-        }
-
-        /* Buttons & Badges */
-        body.dark-mode .btn-cat,
-        body.dark-mode .btn-secondary {
-            background: #252525 !important;
-            border-color: #555555 !important;
-            color: #ffffff !important;
-        }
-        body.dark-mode .btn-cat:hover,
-        body.dark-mode .btn-cat.active,
-        body.dark-mode .btn-secondary:hover {
-            background: #a6825c !important;
-            color: #121212 !important;
-            border-color: #a6825c !important;
-        }
-        body.dark-mode .btn-primary,
-        body.dark-mode .submit-btn,
-        body.dark-mode .checkout-btn {
-            background: #a6825c !important;
-            color: #121212 !important;
-        }
-        body.dark-mode .btn-primary:hover,
-        body.dark-mode .submit-btn:hover,
-        body.dark-mode .checkout-btn:hover {
-            background: #c9a47e !important;
-        }
-
-        /* Navigation specifics */
-        body.dark-mode .navbar a, 
-        body.dark-mode .header-icons a { 
-            color: #f5f5f5 !important; 
-        }
-        body.dark-mode .navbar a:hover, 
-        body.dark-mode .navbar a.active { 
-            color: #f1c40f !important; 
-        }
-        body.dark-mode .navbar a.active {
-            border-bottom-color: #f1c40f !important;
-        }
-        body.dark-mode .submenu {
-            background-color: #1a1a1a !important;
-            border-color: #333333 !important;
-        }
-        body.dark-mode .submenu li a:hover {
-            background-color: #252525 !important;
-            color: #f1c40f !important;
-        }
-
-        /* Social Icons */
-        body.dark-mode .social-icons i {
-            border-color: #333333 !important;
-            color: #ffffff !important;
-        }
-        body.dark-mode .social-icons i:hover {
-            background-color: #a6825c !important;
-            color: #121212 !important;
-            border-color: #a6825c !important;
-        }
+        body.dark-mode .product-card, body.dark-mode .cart-left, body.dark-mode .order-summary-box, body.dark-mode .process-step, body.dark-mode .payment-card, body.dark-mode .contact-box, body.dark-mode .checkout-box, body.dark-mode .billing-box, body.dark-mode .cart-item, body.dark-mode .address-card, body.dark-mode .coupon-card, body.dark-mode .notification-card, body.dark-mode .profile-card, body.dark-mode .wallet-card, body.dark-mode .review-card, body.dark-mode .review-item, body.dark-mode .detail-box, body.dark-mode .order-box { background: #1e1e1e !important; background-color: #1e1e1e !important; border-color: #333333 !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important; color: #ffffff !important; }
+        body.dark-mode input[type="text"], body.dark-mode input[type="email"], body.dark-mode input[type="tel"], body.dark-mode input[type="password"], body.dark-mode input[type="number"], body.dark-mode select, body.dark-mode textarea { background-color: #252525 !important; border-color: #333333 !important; color: #ffffff !important; }
+        body.dark-mode th { background-color: #1a1a1a !important; color: #a6825c !important; border-color: #333333 !important; }
+        body.dark-mode td { background-color: #121212 !important; color: #eeeeee !important; border-color: #333333 !important; }
+        body.dark-mode .navbar a, body.dark-mode .header-icons a { color: #f5f5f5 !important; }
+        body.dark-mode .navbar a:hover, body.dark-mode .navbar a.active { color: #f1c40f !important; }
+        body.dark-mode .navbar a.active { border-bottom-color: #f1c40f !important; }
 
         .dm-user-toggle { background: none; border: none; cursor: pointer; font-size: 18px; color: inherit; display: inline-flex; align-items: center; padding: 0 8px; }
         .search-bar-container { display: none; background: #ffffff; border-bottom: 1px solid #eee; padding: 15px 0; position: absolute; width: 100%; left: 0; top: 70px; z-index: 999; }
         body.dark-mode .search-bar-container { background: #1a1a1a !important; border-bottom: 1px solid #333 !important; }
         
-        /* Styles for Image Search button and loading modal */
-        .image-search-btn, .search-btn {
-            background: none !important;
-            border: none !important;
-            cursor: pointer;
-            outline: none;
-            padding: 0 10px;
-            color: #2f1c00;
-            font-size: 18px;
-            transition: color 0.3s, transform 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .image-search-btn:hover, .search-btn:hover {
-            color: #8a6d51;
-            transform: scale(1.1);
-        }
-        body.dark-mode .image-search-btn, body.dark-mode .search-btn {
-            color: #f5f5f5 !important;
-        }
-        body.dark-mode .image-search-btn:hover, body.dark-mode .search-btn:hover {
-            color: #f1c40f !important;
-        }
-        body.dark-mode .search-form {
-            border-bottom-color: #f5f5f5 !important;
-        }
-        body.dark-mode .search-form input {
-            color: #ffffff !important;
-        }
+        .image-search-btn, .search-btn { background: none !important; border: none !important; cursor: pointer; outline: none; padding: 0 10px; color: #2f1c00; font-size: 18px; transition: color 0.3s, transform 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+        .image-search-btn:hover, .search-btn:hover { color: #8a6d51; transform: scale(1.1); }
+        body.dark-mode .image-search-btn, body.dark-mode .search-btn { color: #f5f5f5 !important; }
+        body.dark-mode .image-search-btn:hover, body.dark-mode .search-btn:hover { color: #f1c40f !important; }
         
-        .image-search-modal {
-            position: fixed;
-            z-index: 10000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.3s ease-out;
-        }
-        .image-search-modal-content {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        body.dark-mode .image-search-modal-content {
-            background-color: #1a1a1a;
-            color: #ffffff;
-            border: 1px solid #333;
-        }
-        .loader-spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border-left-color: #2f1c00;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px auto;
-        }
-        body.dark-mode .loader-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #f1c40f;
-        }
-        #imageSearchStatus {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 15px;
-            color: #2f1c00;
-        }
-        body.dark-mode #imageSearchStatus {
-            color: #ffffff;
-        }
-        .image-preview-container {
-            margin-top: 15px;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ddd;
-            max-height: 200px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #f9f9f9;
-        }
-        body.dark-mode .image-preview-container {
-            border-color: #333;
-            background: #121212;
-        }
-        #imageSearchPreview {
-            max-width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes scaleUp {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .image-search-modal { position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; }
+        .image-search-modal-content { background-color: #ffffff; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+        body.dark-mode .image-search-modal-content { background-color: #1a1a1a; color: #ffffff; border: 1px solid #333; }
+        .loader-spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 50px; height: 50px; border-radius: 50%; border-left-color: #2f1c00; animation: spin 1s linear infinite; margin: 0 auto 20px auto; }
+        body.dark-mode .loader-spinner { border: 4px solid rgba(255, 255, 255, 0.1); border-left-color: #f1c40f; }
+        #imageSearchStatus { font-size: 16px; font-weight: 500; margin-bottom: 15px; color: #2f1c00; }
+        body.dark-mode #imageSearchStatus { color: #ffffff; }
+        .image-preview-container { margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; max-height: 200px; display: flex; justify-content: center; align-items: center; background: #f9f9f9; }
+        body.dark-mode .image-preview-container { border-color: #333; background: #121212; }
+        #imageSearchPreview { max-width: 100%; max-height: 200px; object-fit: contain; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 
@@ -411,7 +128,6 @@ try {
         <div id="searchBar" class="search-bar-container" style="display:none;">
             <form action="<?= $_BASE ?>/search.php" method="GET" class="search-form">
                 <input type="text" name="q" placeholder="Tìm kiếm..." class="search-input" required>
-                <!-- Nút tìm kiếm bằng hình ảnh -->
                 <button type="button" class="image-search-btn" onclick="triggerImageSearch()" title="Tìm kiếm bằng hình ảnh">
                     <i class="fa-solid fa-camera"></i>
                 </button>
@@ -420,7 +136,6 @@ try {
             <input type="file" id="imageSearchInput" accept="image/*" style="display: none;" onchange="handleImageSearch(this)">
         </div>
 
-        <!-- Modal Loading Tìm kiếm hình ảnh -->
         <div id="imageSearchModal" class="image-search-modal" style="display: none;">
             <div class="image-search-modal-content">
                 <div class="loader-spinner"></div>
@@ -450,7 +165,6 @@ try {
             });
         }
 
-        // Đồng bộ tức thời khi đổi dark mode ở tab khác
         window.addEventListener('storage', function(e) {
             if (e.key === 'ntk_dark') {
                 const isDark = e.newValue === '1';
@@ -473,16 +187,10 @@ try {
             const previewContainer = document.querySelector('.image-preview-container');
             const previewImg = document.getElementById('imageSearchPreview');
             
-            // Reset modal state
             statusText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang đọc hình ảnh...';
-            statusText.style.color = '';
             previewContainer.style.display = 'none';
-            previewImg.src = '';
-            
-            // Show modal
             modal.style.display = 'flex';
             
-            // Show preview image
             const reader = new FileReader();
             reader.onload = function(e) {
                 previewImg.src = e.target.result;
@@ -490,35 +198,59 @@ try {
             };
             reader.readAsDataURL(file);
             
-            // Prepare form data
             const formData = new FormData();
             formData.append('image', file);
-            
-            // Change status
             statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI đang phân tích hình ảnh...';
             
-            // Fetch API
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
             fetch('<?= $_BASE ?>/api_image_search.php', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                signal: controller.signal
             })
             .then(response => response.json())
             .then(data => {
+                clearTimeout(timeoutId);
                 if (data.success) {
                     statusText.style.color = '#27ae60';
-                    statusText.innerHTML = '<i class="fa-solid fa-circle-check"></i> Phân tích thành công! Từ khóa: "<strong>' + data.keyword + '</strong>".<br><small style="color: #666;">Đang tìm sản phẩm tương tự...</small>';
                     
-                    // Redirect after 1.5 seconds
+                    // SỬA TẠI ĐÂY: Nếu API chạy ở chế độ fallback sản phẩm, đổi luôn từ khóa redirect thành 'áo thun'
+                    const query = data.is_fallback ? 'áo thun' : (data.keyword ? data.keyword : 'áo thun');
+                    const desc = data.is_fallback ? 'Hệ thống tự động gợi ý các mẫu Áo thun mới nhất do không tìm thấy sản phẩm trùng khớp.' : (data.description || '');
+                    
+                    statusText.innerHTML = '<i class="fa-solid fa-circle-check"></i> Phân tích xong! Từ khóa: "<strong>' + query + '</strong>".<br><small style="color: #666;">Đang tìm sản phẩm...</small>';
+                    
                     setTimeout(() => {
-                        window.location.href = '<?= $_BASE ?>/search.php?q=' + encodeURIComponent(data.keyword);
-                    }, 1500);
+                        const searchUrl = new URL('<?= $_BASE ?>/search.php', window.location.origin);
+                        searchUrl.searchParams.set('q', query);
+                        searchUrl.searchParams.set('image_search', '1');
+                        searchUrl.searchParams.set('image_desc', desc);
+                        if(data.is_fallback) searchUrl.searchParams.set('fallback', '1');
+                        window.location.href = searchUrl.toString();
+                    }, 1200);
                 } else {
                     showImageSearchError(data.message || 'Có lỗi xảy ra khi phân tích ảnh.');
                 }
             })
             .catch(error => {
-                console.error('Error searching image:', error);
-                showImageSearchError('Không thể kết nối tới máy chủ. Vui lòng thử lại.');
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    statusText.style.color = '#f39c12';
+                    statusText.innerHTML = '<i class="fa-solid fa-hourglass-end"></i> Phân tích quá lâu, đang tìm sản phẩm tương tự...';
+                    
+                    setTimeout(() => {
+                        const searchUrl = new URL('<?= $_BASE ?>/search.php', window.location.origin);
+                        searchUrl.searchParams.set('q', 'áo thun'); // SỬA TẠI ĐÂY: Quá hạn ép thẳng về 'áo thun' thay vì 'thời trang'
+                        searchUrl.searchParams.set('image_search', '1');
+                        searchUrl.searchParams.set('fallback', '1');
+                        searchUrl.searchParams.set('image_desc', 'Hệ thống tự động gợi ý danh mục áo thun do phản hồi từ AI quá hạn.');
+                        window.location.href = searchUrl.toString();
+                    }, 1500);
+                } else {
+                    showImageSearchError('Không thể kết nối tới máy chủ.');
+                }
             });
         }
 
@@ -530,7 +262,7 @@ try {
 
         function closeImageSearchModal() {
             document.getElementById('imageSearchModal').style.display = 'none';
-            document.getElementById('imageSearchInput').value = ''; // Reset file input
+            document.getElementById('imageSearchInput').value = '';
         }
     </script>
     <main class="main-content">

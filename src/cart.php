@@ -33,9 +33,153 @@ $cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $total_items = count($cart_items);
 ?>
 
+<style>
+/* ============================================================
+   BỘ LỌC ĐÈ MÀU DARK MODE CHO TRANG GIỎ HÀNG NTK FASHION
+   ============================================================ */
+body.dark-mode {
+    background-color: #121212 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .cart-page,
+body.dark-mode .cart-wrapper,
+body.dark-mode .cart-layout {
+    background: #121212 !important;
+    color: #ffffff !important;
+}
+
+/* Tiêu đề chính và Breadcrumb */
+body.dark-mode .cart-title {
+    color: #ffffff !important;
+    text-shadow: 0 0 1px rgba(255,255,255,0.2);
+}
+body.dark-mode .cart-breadcrumb span,
+body.dark-mode .cart-breadcrumb a {
+    color: #cccccc !important;
+}
+
+/* KHỐI BÊN TRÁI: DANH SÁCH SẢN PHẨM */
+body.dark-mode .cart-left {
+    background: #1e1e1e !important;
+    border: 1px solid #2a2a2a !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+}
+
+/* Thanh chọn tất cả & Header cột */
+body.dark-mode .cart-select-all-bar,
+body.dark-mode .cart-table-header {
+    background: #1a1a1a !important;
+    border-bottom: 1px solid #2a2a2a !important;
+    color: #ffffff !important;
+}
+body.dark-mode .select-all-text,
+body.dark-mode .cart-table-header span {
+    color: #ffffff !important;
+}
+
+/* Các dòng sản phẩm */
+body.dark-mode .cart-item {
+    background: #1e1e1e !important;
+    border-bottom: 1px solid #2a2a2a !important;
+}
+body.dark-mode .cart-item-name {
+    color: #ffffff !important;
+}
+body.dark-mode .cart-item-name:hover {
+    color: #f1c40f !important;
+}
+body.dark-mode .cart-item-variant {
+    color: #aaaaaa !important;
+}
+
+/* Giá tiền */
+body.dark-mode .cart-item-price,
+body.dark-mode .cart-item-total {
+    color: #ffffff !important;
+}
+
+/* Bộ điều khiển số lượng (Qty Control) */
+body.dark-mode .qty-control {
+    border-color: #333333 !important;
+    background: #252525 !important;
+}
+body.dark-mode .qty-btn {
+    background: #333333 !important;
+    color: #ffffff !important;
+    border-color: #444444 !important;
+}
+body.dark-mode .qty-input {
+    background: #252525 !important;
+    color: #ffffff !important;
+    border-color: #333333 !important;
+}
+
+/* Nút xóa */
+body.dark-mode .cart-item-remove {
+    color: #e74c3c !important;
+}
+body.dark-mode .cart-item-remove:hover {
+    color: #c0392b !important;
+}
+
+/* KHỐI BÊN PHẢI: TỔNG ĐƠN HÀNG */
+body.dark-mode .cart-right .order-summary-box {
+    background: #1e1e1e !important;
+    border: 1px solid #2a2a2a !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+}
+body.dark-mode .order-summary-title {
+    color: #ffffff !important;
+    border-bottom-color: #2a2a2a !important;
+}
+body.dark-mode .order-detail-row {
+    color: #dddddd !important;
+}
+body.dark-mode .od-label,
+body.dark-mode .od-value {
+    color: #eeeeee !important;
+}
+body.dark-mode .order-divider {
+    border-top: 1px solid #2a2a2a !important;
+}
+body.dark-mode .order-total-row {
+    color: #ffffff !important;
+}
+body.dark-mode .ot-value {
+    color: #ffffff !important; /* Hiển thị rõ số tiền tổng */
+}
+
+/* Section Voucher */
+body.dark-mode .coupon-label {
+    color: #ffffff !important;
+}
+body.dark-mode .coupon-input {
+    background: #252525 !important;
+    border-color: #333333 !important;
+    color: #ffffff !important;
+}
+
+/* Đồng bộ trạng thái Checkbox tùy biến */
+body.dark-mode .cart-custom-checkbox {
+    border-color: #444444 !important;
+    background: #252525 !important;
+}
+body.dark-mode .cart-checkbox-label input:checked ~ .cart-custom-checkbox {
+    background-color: #a6825c !important;
+    border-color: #a6825c !important;
+}
+
+/* Cảnh báo chưa chọn đồ */
+body.dark-mode .order-warning {
+    background: #2c2519 !important;
+    border-color: #52432a !important;
+    color: #f1c40f !important;
+}
+</style>
+
 <div class="cart-page">
     <div class="cart-wrapper">
-        <!-- Breadcrumb -->
         <nav class="cart-breadcrumb">
             <a href="index.php">Trang chủ</a>
             <span class="bc-sep"><i class="fa-solid fa-chevron-right"></i></span>
@@ -45,11 +189,9 @@ $total_items = count($cart_items);
         <h1 class="cart-title">Giỏ hàng của bạn</h1>
 
         <div class="cart-layout">
-            <!-- Cột trái: Danh sách sản phẩm -->
             <div class="cart-left">
                 <?php if ($total_items > 0): ?>
 
-                    <!-- Thanh chọn tất cả -->
                     <div class="cart-select-all-bar">
                         <label class="cart-checkbox-label" id="select-all-label">
                             <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll(this)">
@@ -60,7 +202,6 @@ $total_items = count($cart_items);
                         <span class="cart-no-select-notice" id="no-select-notice">Chưa chọn sản phẩm nào</span>
                     </div>
 
-                    <!-- Header cột -->
                     <div class="cart-table-header">
                         <span class="col-product">SẢN PHẨM</span>
                         <span class="col-price">GIÁ</span>
@@ -68,7 +209,6 @@ $total_items = count($cart_items);
                         <span class="col-total">TỔNG</span>
                     </div>
 
-                    <!-- Danh sách sản phẩm -->
                     <div id="cart-items-list">
                         <?php foreach ($cart_items as $item):
                             $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
@@ -127,7 +267,6 @@ $total_items = count($cart_items);
                         <?php endforeach; ?>
                     </div>
 
-                    <!-- Nút tiếp tục mua sắm -->
                     <div class="cart-continue">
                         <a href="product.php" class="btn-continue">
                             <i class="fa-solid fa-arrow-left"></i> Tiếp tục mua sắm
@@ -135,7 +274,6 @@ $total_items = count($cart_items);
                     </div>
 
                 <?php else: ?>
-                    <!-- Giỏ hàng trống -->
                     <div class="cart-empty">
                         <i class="fa-solid fa-bag-shopping cart-empty-icon"></i>
                         <h3>Giỏ hàng của bạn đang trống</h3>
@@ -148,18 +286,15 @@ $total_items = count($cart_items);
                 <?php endif; ?>
             </div>
 
-            <!-- Cột phải: Tổng đơn hàng -->
             <div class="cart-right">
                 <div class="order-summary-box">
                     <h2 class="order-summary-title">Tổng đơn hàng</h2>
 
-                    <!-- Cảnh báo chưa chọn -->
                     <div class="order-warning" id="order-warning">
                         <i class="fa-solid fa-circle-exclamation"></i>
                         Vui lòng chọn sản phẩm để thanh toán
                     </div>
 
-                    <!-- Chi tiết giá -->
                     <div class="order-detail-row">
                         <span class="od-label">Giá tạm tính (<span id="summary-count">0</span> sản phẩm)</span>
                         <span class="od-value" id="summary-subtotal">0đ</span>
@@ -176,7 +311,6 @@ $total_items = count($cart_items);
                         <span class="ot-value" id="summary-total">0đ</span>
                     </div>
 
-                    <!-- Nhập mã giảm giá -->
                     <div class="coupon-section">
                         <label class="coupon-label">
                             <i class="fa-solid fa-tag"></i> Mã giảm giá
@@ -188,7 +322,6 @@ $total_items = count($cart_items);
                         <p class="coupon-msg" id="coupon-msg"></p>
                     </div>
 
-                    <!-- Nút thanh toán -->
                     <button class="btn-checkout" id="btn-checkout" onclick="goCheckout()" disabled>
                         Tiến hành thanh toán
                     </button>
@@ -253,17 +386,16 @@ $total_items = count($cart_items);
 
         if (selectedItems > 0) {
             warning.style.display = 'none';
-            noNotice.style.display = 'none';
+            if (noNotice) noNotice.style.display = 'none';
             btnCheckout.disabled = false;
             btnCheckout.classList.add('active');
         } else {
             warning.style.display = 'flex';
-            noNotice.style.display = 'block';
+            if (noNotice) noNotice.style.display = 'block';
             btnCheckout.disabled = true;
             btnCheckout.classList.remove('active');
         }
 
-        // Cập nhật checkbox select-all
         updateSelectAllState();
     }
 
@@ -284,7 +416,6 @@ $total_items = count($cart_items);
             box.checked = cb.checked;
             var cartId = box.closest('.cart-item').dataset.cartId;
             cartData[cartId].selected = cb.checked ? 1 : 0;
-            // Cập nhật DB
             updateSelectDB(cartId, cb.checked ? 1 : 0);
         });
         updateSummary();
@@ -321,13 +452,11 @@ $total_items = count($cart_items);
         cartData[cartId].qty = newQty;
         document.getElementById('qty-' + cartId).value = newQty;
 
-        // Cập nhật tổng dòng
         var lineTotal = cartData[cartId].price * newQty;
         document.getElementById('total-' + cartId).textContent = formatVND(lineTotal);
 
         updateSummary();
 
-        // Gửi lên server
         $.ajax({
             url: 'ajax_cart.php',
             method: 'POST',
@@ -371,7 +500,6 @@ $total_items = count($cart_items);
                         delete cartData[cartId];
                         updateSummary();
 
-                        // Kiểm tra nếu giỏ hàng trống
                         if (Object.keys(cartData).length === 0) {
                             location.reload();
                         }
@@ -408,7 +536,6 @@ $total_items = count($cart_items);
                     msg.textContent = '✓ Áp dụng thành công! Giảm ' + formatVND(res.discount);
                     msg.className = 'coupon-msg success';
                     updateSummary();
-                    // Lưu coupon vào session để checkout tự điền
                     $.ajax({
                         url: 'api/save_coupon_session.php',
                         method: 'POST',
@@ -419,7 +546,6 @@ $total_items = count($cart_items);
                     msg.textContent = '✗ ' + res.message;
                     msg.className = 'coupon-msg error';
                     updateSummary();
-                    // Xóa coupon session
                     $.ajax({ url: 'api/save_coupon_session.php?clear=1', method: 'GET' });
                 }
             },
@@ -440,8 +566,6 @@ $total_items = count($cart_items);
             showToast('Vui lòng chọn ít nhất một sản phẩm!', 'warning');
             return;
         }
-        // Chuyển hướng sang trang thanh toán
-        // Coupon đã được lưu vào session qua applyCoupon() → checkout tự đọc
         window.location.href = 'checkout.php';
     }
 
@@ -477,11 +601,6 @@ $total_items = count($cart_items);
             }
         });
     }
-
-    // ===================== KHỞI TẠO =====================
-    $(document).ready(function () {
-        updateSummary();
-    });
 </script>
 
 <?php include 'includes/footer.php'; ?>

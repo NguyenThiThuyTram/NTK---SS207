@@ -217,6 +217,161 @@ $date_placed = date('Y-m-d', strtotime($order['order_date']));
     padding-top: 10px;
     margin-top: 5px;
 }
+
+/* ════════════════════════════════════════════════════════
+   DARK MODE STYLING FOR ORDER DETAIL
+   ════════════════════════════════════════════════════════ */
+body.dark-mode .od-container {
+    background-color: #181818 !important;
+    color: #eeeeee !important;
+}
+body.dark-mode .od-header {
+    border-bottom-color: #2a2a2a !important;
+    color: #eeeeee !important;
+}
+body.dark-mode .od-header a {
+    color: #cccccc !important;
+}
+body.dark-mode .od-header a:hover {
+    color: #e5c199 !important;
+}
+body.dark-mode .od-status-bar::before {
+    background: #2a2a2a !important;
+}
+body.dark-mode .od-step-icon {
+    background: #252525 !important;
+    border-color: #3a3a3a !important;
+    color: #888888 !important;
+}
+body.dark-mode .od-step.active .od-step-icon {
+    border-color: #4cd137 !important;
+    color: #4cd137 !important;
+}
+body.dark-mode .od-step-label {
+    color: #cccccc !important;
+}
+body.dark-mode .od-step-date {
+    color: #777777 !important;
+}
+body.dark-mode .od-info-card {
+    background-color: #1e1e1e !important;
+    border-color: #2a2a2a !important;
+    color: #eeeeee !important;
+}
+body.dark-mode .od-info-card h4 {
+    color: #ffffff !important;
+    border-bottom-color: #2a2a2a !important;
+}
+body.dark-mode .od-info-row {
+    color: #cccccc !important;
+}
+body.dark-mode .od-info-row strong {
+    color: #ffffff !important;
+}
+body.dark-mode .od-products {
+    background-color: #181818 !important;
+    border-color: #2a2a2a !important;
+}
+body.dark-mode .od-products h4 {
+    color: #ffffff !important;
+    border-bottom-color: #2a2a2a !important;
+}
+body.dark-mode .od-item {
+    border-bottom-color: #2a2a2a !important;
+}
+body.dark-mode .od-item-img {
+    border-color: #333333 !important;
+    background-color: #252525 !important;
+}
+body.dark-mode .od-item-name {
+    color: #ffffff !important;
+}
+body.dark-mode .od-item-variant {
+    color: #aaaaaa !important;
+}
+body.dark-mode .od-summary {
+    border-top-color: #2a2a2a !important;
+    color: #cccccc !important;
+}
+body.dark-mode .od-summary-row {
+    color: #cccccc !important;
+}
+body.dark-mode .od-summary-row.total {
+    color: #e5c199 !important;
+    border-top-color: #2a2a2a !important;
+}
+body.dark-mode .od-action-btn {
+    background-color: #252525 !important;
+    border-color: #555555 !important;
+    color: #dddddd !important;
+}
+body.dark-mode .od-action-btn:hover {
+    background-color: #333333 !important;
+    border-color: #ffffff !important;
+    color: #ffffff !important;
+}
+body.dark-mode .od-btn-primary {
+    background-color: #a6825c !important;
+    color: #121212 !important;
+    border-color: #a6825c !important;
+}
+body.dark-mode .od-btn-primary:hover {
+    background-color: #c9a47e !important;
+    border-color: #c9a47e !important;
+}
+body.dark-mode .od-btn-teal {
+    background-color: #16a085 !important;
+    color: #ffffff !important;
+    border-color: #16a085 !important;
+}
+body.dark-mode .od-btn-teal:hover {
+    background-color: #1abc9c !important;
+    border-color: #1abc9c !important;
+}
+body.dark-mode .od-btn-danger {
+    background-color: #c0392b !important;
+    color: #ffffff !important;
+    border-color: #c0392b !important;
+}
+body.dark-mode .od-btn-danger:hover {
+    background-color: #e74c3c !important;
+    border-color: #e74c3c !important;
+}
+body.dark-mode #review-modal-detail,
+body.dark-mode #return-modal-detail {
+    background: rgba(0, 0, 0, 0.75) !important;
+}
+body.dark-mode #review-modal-detail > div,
+body.dark-mode #return-modal-detail > div {
+    background-color: #1e1e1e !important;
+    color: #eeeeee !important;
+}
+body.dark-mode #review-modal-detail h3,
+body.dark-mode #return-modal-detail h3,
+body.dark-mode #review-modal-detail label,
+body.dark-mode #return-modal-detail label {
+    color: #ffffff !important;
+}
+body.dark-mode #review-modal-detail p,
+body.dark-mode #return-modal-detail p {
+    color: #cccccc !important;
+}
+body.dark-mode #review-modal-detail input,
+body.dark-mode #review-modal-detail select,
+body.dark-mode #review-modal-detail textarea,
+body.dark-mode #return-modal-detail input,
+body.dark-mode #return-modal-detail select,
+body.dark-mode #return-modal-detail textarea {
+    background-color: #252525 !important;
+    border-color: #333333 !important;
+    color: #ffffff !important;
+}
+body.dark-mode #review-modal-detail input::placeholder,
+body.dark-mode #review-modal-detail textarea::placeholder,
+body.dark-mode #return-modal-detail input::placeholder,
+body.dark-mode #return-modal-detail textarea::placeholder {
+    color: #888888 !important;
+}
 </style>
 
 <div class="od-container">

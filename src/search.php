@@ -7,7 +7,6 @@ require_once 'config/database.php';
 // ==========================================
 $categories = [];
 try {
-    // Lấy category_id (VD: CAT01) và name (VD: Áo thun)
     $stmt_cat = $conn->query("SELECT category_id, name FROM categories");
     $categories = $stmt_cat->fetchAll(PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
@@ -18,13 +17,25 @@ try {
 // 2. BẮT CÁC THAM SỐ LỌC TỪ URL VÀ XỬ LÝ SQL
 // ==========================================
 $keyword = isset($_GET['q']) ? trim($_GET['q']) : '';
+$image_search = isset($_GET['image_search']) && $_GET['image_search'] === '1';
+$image_description = isset($_GET['image_desc']) ? trim($_GET['image_desc']) : '';
+$fallback_mode = (isset($_GET['fallback']) && $_GET['fallback'] === '1') || ($keyword === 'thời trang'); 
 $price_filter = isset($_GET['price']) ? $_GET['price'] : '';
 $sort_filter = isset($_GET['sort']) ? $_GET['sort'] : 'default';
 $cat_filter = isset($_GET['category']) ? $_GET['category'] : []; 
 
-$products = [];
+// SỬA LOGIC TỪ KHÓA TẠI ĐÂY: Nếu từ khóa là "thời trang", ép cứng nó chuyển sang tìm "áo thun" để kích hoạt fallback
+if ($image_search && ($keyword === 'thời trang' || empty($keyword))) {
+    $keyword = 'áo thun';
+    $fallback_mode = true;
+    if (empty($image_description)) {
+        $image_description = 'Hệ thống tự động gợi ý danh mục Áo thun bán chạy.';
+    }
+}
 
-// SQL Gốc: Kết nối Products và Product_Variants
+$products = [];
+$fallback_products = [];
+
 $sql = "
     SELECT 
         p.product_id, p.name, p.image, p.rating, p.sold_count,
@@ -37,13 +48,11 @@ $sql = "
 
 $params = [];
 
-// Lọc: Từ khóa
 if ($keyword !== '') {
-    $sql .= " AND p.name LIKE :keyword ";
+    $sql .= " AND (p.name LIKE :keyword OR p.description LIKE :keyword) ";
     $params['keyword'] = '%' . $keyword . '%';
 }
 
-// Lọc: Danh mục (Checkbox nhiều lựa chọn)
 if (!empty($cat_filter)) {
     $cat_placeholders = [];
     foreach($cat_filter as $index => $cat_id) {
@@ -56,7 +65,6 @@ if (!empty($cat_filter)) {
 
 $sql .= " GROUP BY p.product_id ";
 
-// Lọc: Khoảng Giá (Dưới 200, 200-500, Trên 500)
 $actual_price = "MIN(COALESCE(NULLIF(pv.sale_price, 0), pv.original_price))";
 $having_clauses = [];
 
@@ -72,14 +80,12 @@ if (!empty($having_clauses)) {
     $sql .= " HAVING " . implode(' AND ', $having_clauses);
 }
 
-// Lọc: Sắp xếp
 if ($sort_filter === 'asc') {
     $sql .= " ORDER BY $actual_price ASC ";
 } elseif ($sort_filter === 'desc') {
     $sql .= " ORDER BY $actual_price DESC ";
 }
 
-// Thực thi truy vấn
 try {
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
@@ -89,82 +95,100 @@ try {
 }
 
 $count = count($products);
+
+// SỬA LẠI ĐOẠN HIỂN THỊ DỮ LIỆU DỰ PHÒNG: Nếu kết quả rỗng, lấy sản phẩm có tên liên quan đến áo thun
+if ($count === 0 && $image_search) {
+    try {
+        $stmt = $conn->prepare(
+            "SELECT p.product_id, p.name, p.image, p.rating, p.sold_count, MIN(pv.original_price) as original_price, MIN(pv.sale_price) as sale_price
+             FROM products p
+             LEFT JOIN product_variants pv ON p.product_id = pv.product_id
+             WHERE p.status = 1 AND (p.name LIKE '%áo thun%' OR p.description LIKE '%áo thun%')
+             GROUP BY p.product_id
+             ORDER BY p.sold_count DESC
+             LIMIT 4"
+        );
+        $stmt->execute();
+        $fallback_products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Nếu ngặt nghèo trong DB không có sản phẩm nào tên chứa chữ áo thun, mới lấy 4 sản phẩm bán chạy nhất
+        if (empty($fallback_products)) {
+            $stmt_backup = $conn->query("SELECT p.product_id, p.name, p.image, p.rating, p.sold_count, MIN(pv.original_price) as original_price, MIN(pv.sale_price) as sale_price FROM products p LEFT JOIN product_variants pv ON p.product_id = pv.product_id WHERE p.status = 1 GROUP BY p.product_id ORDER BY p.sold_count DESC LIMIT 4");
+            $fallback_products = $stmt_backup->fetchAll(PDO::FETCH_ASSOC);
+        }
+        $fallback_mode = true;
+    } catch (PDOException $e) {
+        $fallback_products = [];
+    }
+}
 ?>
 
 <style>
-    .search-page-container {
-        width: 90%;
-        max-width: 1400px;
-        margin: 40px auto;
-    }
+    .search-page-container { width: 90%; max-width: 1400px; margin: 40px auto; }
     .search-header h2 { font-size: 24px; font-weight: normal; margin-bottom: 5px; }
     .search-header p { color: #666; font-size: 14px; margin-bottom: 30px; }
-    
-    /* Layout 2 Cột */
-    .search-layout {
-        display: flex;
-        gap: 40px;
-        align-items: flex-start;
-    }
-    
-    /* Cột Trái: Bộ Lọc */
+    .search-layout { display: flex; gap: 40px; align-items: flex-start; }
     .sidebar-filter { width: 250px; flex-shrink: 0; }
     .filter-group { margin-bottom: 30px; }
     .filter-group h3 { font-size: 14px; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 10px;}
     .filter-group label { display: block; margin-bottom: 12px; font-size: 14px; cursor: pointer; color: #444; }
     .filter-group input[type="checkbox"], .filter-group input[type="radio"] { margin-right: 8px; }
     .sort-select { width: 100%; padding: 10px; border: 1px solid #e5e5e5; outline: none; background: #fff; cursor: pointer;}
-    
-    /* Cột Phải: Lưới Sản Phẩm */
-    .product-grid {
-        flex: 1;
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 25px;
-    }
-    .product-card {
-        position: relative; cursor: pointer; transition: transform 0.3s;
-        border: 1px solid #e5e5e5; padding-bottom: 15px; background: #fff;
-    }
+    .product-grid { flex: 1; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 25px; }
+    .product-card { position: relative; cursor: pointer; transition: transform 0.3s; border: 1px solid #e5e5e5; padding-bottom: 15px; background: #fff; }
     .product-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-color: #ccc; }
     .product-card img { width: 100%; height: 300px; object-fit: cover; background-color: #f9f9f9; }
-    
     .product-info { padding: 0 15px; margin-top: 15px; }
     .product-name { font-size: 14px; font-weight: normal; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #333;}
     .product-meta { font-size: 12px; color: #888; margin-bottom: 8px; }
     .product-meta .rating { color: #f39c12; margin-right: 10px; }
-    
     .product-price { font-size: 14px; }
     .current-price { color: #111; font-weight: bold; margin-right: 10px; }
     .old-price { color: #999; text-decoration: line-through; font-size: 13px; }
-    
-    .sale-badge {
-        position: absolute; top: 10px; left: 10px;
-        background-color: #d32f2f; color: white;
-        font-size: 12px; padding: 3px 8px; font-weight: bold; z-index: 2;
-    }
+    .sale-badge { position: absolute; top: 10px; left: 10px; background-color: #d32f2f; color: white; font-size: 12px; padding: 3px 8px; font-weight: bold; z-index: 2; }
+
+    /* DARK MODE STYLING */
+    body.dark-mode .search-page-container { color: #eeeeee; }
+    body.dark-mode .search-header h2 { color: #ffffff; }
+    body.dark-mode .search-header p { color: #cccccc; }
+    body.dark-mode .sidebar-filter { background-color: #1e1e1e; border-radius: 8px; padding: 20px; }
+    body.dark-mode .filter-group h3 { color: #ffffff; border-bottom-color: #2a2a2a; }
+    body.dark-mode .filter-group label { color: #cccccc; }
+    body.dark-mode .filter-group input[type="radio"], body.dark-mode .filter-group input[type="checkbox"] { accent-color: #a6825c; }
+    body.dark-mode .sort-select { background-color: #252525 !important; border-color: #333333 !important; color: #ffffff !important; }
+    body.dark-mode .product-card { background-color: #1e1e1e; border-color: #2a2a2a; }
+    body.dark-mode .product-name { color: #ffffff; }
+    body.dark-mode .current-price { color: #e5c199; }
+    body.dark-mode .image-search-summary { background-color: #2a2a1f !important; border-color: #4a4a30 !important; color: #cccccc !important; }
+    body.dark-mode .image-search-summary h3 { color: #ffffff !important; }
 </style>
 
 <div class="search-page-container">
     <div class="search-header">
         <h2><?php echo $keyword !== '' ? 'Kết quả tìm kiếm: "' . htmlspecialchars($keyword) . '"' : 'Tất cả sản phẩm'; ?></h2>
-        <p>Tìm thấy <?php echo $count; ?> sản phẩm phù hợp</p>
+        <p>
+            <?php if ($image_search): ?>
+                Gợi ý sản phẩm dựa trên ảnh của bạn<?php if ($keyword !== ''): ?> (từ khóa: "<?= htmlspecialchars($keyword) ?>")<?php endif; ?>.
+            <?php else: ?>
+                Tìm thấy <?php echo $count; ?> sản phẩm phù hợp.
+            <?php endif; ?>
+        </p>
     </div>
 
     <div class="search-layout">
-        
         <aside class="sidebar-filter">
             <form action="search.php" method="GET" id="filterForm">
-                
                 <?php if($keyword !== ''): ?>
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($keyword); ?>">
+                <?php endif; ?>
+                <?php if ($image_search): ?>
+                    <input type="hidden" name="image_search" value="1">
+                    <input type="hidden" name="image_desc" value="<?php echo htmlspecialchars($image_description); ?>">
                 <?php endif; ?>
 
                 <div class="filter-group">
                     <h3>DANH MỤC</h3>
-                    <?php if(empty($categories)): ?>
-                        <p style="font-size: 13px; color: #888;">Chưa có danh mục</p>
-                    <?php else: ?>
+                    <?php if(!empty($categories)): ?>
                         <?php foreach($categories as $cat): ?>
                             <label>
                                 <input type="checkbox" name="category[]" value="<?php echo $cat['category_id']; ?>" onchange="this.form.submit()" <?php if(in_array($cat['category_id'], $cat_filter)) echo 'checked'; ?>> 
@@ -176,18 +200,9 @@ $count = count($products);
 
                 <div class="filter-group">
                     <h3>KHOẢNG GIÁ</h3>
-                    <label>
-                        <input type="radio" name="price" value="under_200" onchange="this.form.submit()" <?php if($price_filter=='under_200') echo 'checked'; ?>> 
-                        Dưới 200.000đ
-                    </label>
-                    <label>
-                        <input type="radio" name="price" value="200_500" onchange="this.form.submit()" <?php if($price_filter=='200_500') echo 'checked'; ?>> 
-                        200.000đ - 500.000đ
-                    </label>
-                    <label>
-                        <input type="radio" name="price" value="over_500" onchange="this.form.submit()" <?php if($price_filter=='over_500') echo 'checked'; ?>> 
-                        Trên 500.000đ
-                    </label>
+                    <label><input type="radio" name="price" value="under_200" onchange="this.form.submit()" <?php if($price_filter=='under_200') echo 'checked'; ?>> Dưới 200.000đ</label>
+                    <label><input type="radio" name="price" value="200_500" onchange="this.form.submit()" <?php if($price_filter=='200_500') echo 'checked'; ?>> 200.000đ - 500.000đ</label>
+                    <label><input type="radio" name="price" value="over_500" onchange="this.form.submit()" <?php if($price_filter=='over_500') echo 'checked'; ?>> Trên 500.000đ</label>
                 </div>
 
                 <div class="filter-group">
@@ -202,41 +217,60 @@ $count = count($products);
         </aside>
 
         <main class="product-grid">
-            <?php if ($count > 0): ?>
-                <?php foreach ($products as $p): ?>
-                    <div class="product-card">
-                        <a href="product_detail.php?id=<?php echo $p['product_id']; ?>" style="text-decoration: none; color: inherit; display: block; height: 100%;">
-                        <?php 
-                            $gia_goc = isset($p['original_price']) ? $p['original_price'] : 0; 
-                            $gia_sale = isset($p['sale_price']) ? $p['sale_price'] : 0;
-                        ?>
-                        
-                        <?php if($gia_sale > 0 && $gia_sale < $gia_goc): ?>
-                            <div class="sale-badge">SALE</div>
-                        <?php endif; ?>
-                        
-                        <img src="<?php echo htmlspecialchars($p['image']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
-                        
-                        <div class="product-info">
-                            <h4 class="product-name"><?php echo htmlspecialchars($p['name']); ?></h4>
-                            <div class="product-meta">
-                                <span class="rating">⭐ <?php echo !empty($p['rating']) ? $p['rating'] : '5.0'; ?></span>
-                                <span class="sold">Đã bán <?php echo !empty($p['sold_count']) ? $p['sold_count'] : '0'; ?></span>
-                            </div>
-                            
-                            <div class="product-price">
-                                <?php if($gia_sale > 0 && $gia_sale < $gia_goc): ?>
-                                    <span class="current-price"><?php echo number_format($gia_sale, 0, ',', '.'); ?> VNĐ</span>
-                                    <span class="old-price"><?php echo number_format($gia_goc, 0, ',', '.'); ?> VNĐ</span>
+            <?php if ($image_search): ?>
+                <div class="image-search-summary" style="grid-column:1 / -1; background:#fff8e9; border:1px solid #f2dcb4; border-radius:8px; padding:18px; margin-bottom:20px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+                        <div>
+                            <h3 style="margin:0 0 6px; font-size:17px; color:#333;">Gợi ý từ ảnh</h3>
+                            <p style="margin:0; color:#5b4a20; font-size:14px; line-height:1.5;">
+                                <?php if ($fallback_mode): ?>
+                                    <i class="fa-solid fa-hourglass-end"></i> Đang hiển thị các mẫu Áo thun mới nhất của cửa hàng.
                                 <?php else: ?>
-                                    <span class="current-price"><?php echo number_format($gia_goc, 0, ',', '.'); ?> VNĐ</span>
+                                    <?= $image_description ? htmlspecialchars($image_description) : 'Hệ thống đã phân tích ảnh và đưa ra những sản phẩm tương tự.' ?>
                                 <?php endif; ?>
-                            </div>
+                            </p>
                         </div>
-                        </a>
+                        <span style="background:#fff3cd; color:#7a5000; padding:8px 12px; border-radius:20px; font-weight:600; font-size:13px;">Từ khóa: <?= htmlspecialchars($keyword) ?></span>
                     </div>
-                <?php endforeach; ?>
-            <?php else: ?>
+                </div>
+            <?php endif; ?>
+
+            <?php 
+            $renderList = $count > 0 ? $products : $fallback_products; 
+            if (!empty($renderList)):
+                foreach ($renderList as $p): 
+            ?>
+                <div class="product-card">
+                    <a href="product_detail.php?id=<?php echo $p['product_id']; ?>" style="text-decoration: none; color: inherit; display: block; height: 100%;">
+                    <?php 
+                        $gia_goc = $p['original_price'] ?? 0; 
+                        $gia_sale = $p['sale_price'] ?? 0;
+                    ?>
+                    <?php if($gia_sale > 0 && $gia_sale < $gia_goc): ?>
+                        <div class="sale-badge">SALE</div>
+                    <?php endif; ?>
+                    <img src="<?php echo htmlspecialchars($p['image']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
+                    <div class="product-info">
+                        <h4 class="product-name"><?php echo htmlspecialchars($p['name']); ?></h4>
+                        <div class="product-meta">
+                            <span class="rating">⭐ <?php echo !empty($p['rating']) ? $p['rating'] : '5.0'; ?></span>
+                            <span class="sold">Đã bán <?php echo !empty($p['sold_count']) ? $p['sold_count'] : '0'; ?></span>
+                        </div>
+                        <div class="product-price">
+                            <?php if($gia_sale > 0 && $gia_sale < $gia_goc): ?>
+                                <span class="current-price"><?php echo number_format($gia_sale, 0, ',', '.'); ?> VNĐ</span>
+                                <span class="old-price"><?php echo number_format($gia_goc, 0, ',', '.'); ?> VNĐ</span>
+                            <?php else: ?>
+                                <span class="current-price"><?php echo number_format($gia_goc, 0, ',', '.'); ?> VNĐ</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    </a>
+                </div>
+            <?php 
+                endforeach; 
+            else: 
+            ?>
                 <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: #f9f9f9; border: 1px dashed #ccc;">
                     <p style="font-size: 16px; color: #666;">Không tìm thấy sản phẩm nào phù hợp với bộ lọc của bạn.</p>
                 </div>

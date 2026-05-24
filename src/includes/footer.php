@@ -54,6 +54,12 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         border-top: 1px solid #333;
         color: #ddd !important;
     }
+
+    body.dark-mode .footer-logo {
+        filter: brightness(0) invert(1) !important;
+        border: 2px solid #ffffff !important;
+        border-radius: 50%;
+    }
     
     /* Ép màu cho các tiêu đề H3 */
     body.dark-mode .footer-col h3 {

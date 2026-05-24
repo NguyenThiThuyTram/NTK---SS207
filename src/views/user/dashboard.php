@@ -150,6 +150,23 @@ $view = isset($_GET['view']) ? $_GET['view'] : 'hoso';
     body.dark-mode .menu-section-title {
         color: #666666 !important;
     }
+    body.dark-mode .dashboard-wrap {
+        background-color: #121212 !important;
+    }
+    body.dark-mode .dashboard-content {
+        background-color: #121212 !important;
+        color: #eeeeee !important;
+    }
+
+    /* Headings in dashboard */
+    body.dark-mode .dashboard-content h1,
+    body.dark-mode .dashboard-content h2,
+    body.dark-mode .dashboard-content h3,
+    body.dark-mode .dashboard-content h4,
+    body.dark-mode .dashboard-content h5,
+    body.dark-mode .dashboard-content h6 {
+        color: #ffffff !important;
+    }
 
     /* Subpage Containers */
     body.dark-mode .profile-container,

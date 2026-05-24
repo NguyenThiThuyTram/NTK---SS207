@@ -58,9 +58,16 @@ ul {
     align-items: center;
 }
 
-.logo img {
-    height: 45px;
-    object-fit: contain;
+.logo img,
+.footer-logo {
+    height: 40px;
+    width: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.footer-logo {
+    margin-bottom: 25px;
 }
 
 .navbar > ul {
