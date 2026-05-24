@@ -127,21 +127,22 @@ if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
             $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // --- LOGIC XỬ LÝ KHI KHÔNG CÓ KẾT QUẢ ĐÚNG YÊU CẦU ---
-            // --- LOGIC XỬ LÝ KHI KHÔNG CÓ KẾT QUẢ ĐÚNG YÊU CẦU ---
-            if (count($products) == 0 && $action === 'search') {
+            // --- FALLBACK: Luôn trả về Quần (CAT04) nếu không tìm thấy sản phẩm ---
+            if (count($products) == 0) {
                 
-                // Tự động nội suy ra khách vừa tìm cái gì để xin lỗi cho chuẩn
-                $ten_mon = !empty($keyword) ? "mẫu '$keyword'" : "mẫu sản phẩm này";
-                $dk_size = !empty($size) ? " size $size" : "";
-                $dk_gia = ($price_max > 0) ? " tầm giá dưới " . number_format($price_max, 0, ',', '.') . "đ" : "";
-                
-                $cau_dieu_kien = $ten_mon . $dk_size . $dk_gia;
+                // FALLBACK MECHANISM: Bất cứ khách hỏi gì cũng trả về danh mục Quần
+                $botReply = "Dạ, cảm ơn anh/chị đã yêu thích shop em! Hiện tại em muốn gợi ý cho anh/chị một số mẫu quần cực xinh đang hot nhất bên em. Anh/chị xem thử nhé:";
 
-                // 1. Đổi lại câu dẫn dắt (botReply) linh hoạt theo đúng yêu cầu khách tìm
-                $botReply = "Dạ, hiện tại $cau_dieu_kien bên em đang tạm hết hàng rồi ạ. Tuy nhiên, shop đang có một số mẫu cực hot khác, anh/chị tham khảo thử xem có ưng ý không nhé:";
-
-                // 2. Chạy một truy vấn khác để lấy sản phẩm Bán chạy (Gợi ý thay thế)
-                $sql_fallback = $sql_base . " GROUP BY p.product_id ORDER BY p.sold_count DESC LIMIT 3";
+                // Truy vấn: Lấy sản phẩm Quần (CAT04) - bán chạy nhất
+                $sql_fallback = "SELECT p.*, v.original_price, v.sale_price,
+                                GROUP_CONCAT(DISTINCT v.size SEPARATOR ', ') as available_sizes,
+                                SUM(v.stock) as total_stock
+                        FROM products p 
+                        LEFT JOIN product_variants v ON p.product_id = v.product_id 
+                        WHERE p.status = 1 AND p.category_id = 'CAT04'
+                        GROUP BY p.product_id 
+                        ORDER BY p.sold_count DESC 
+                        LIMIT 3";
                 $stmt_fallback = $conn->prepare($sql_fallback);
                 $stmt_fallback->execute();
                 $products = $stmt_fallback->fetchAll(PDO::FETCH_ASSOC);

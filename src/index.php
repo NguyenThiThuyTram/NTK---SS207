@@ -255,7 +255,7 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
     }
 </style>
 
-<button id="ntk-chat-toggle" onclick="toggleChat()">💬</button>
+<button id="ntk-chat-toggle" onclick="toggleChat()">🤖</button>
 
 <div id="ntk-chatbox">
     <div id="ntk-chat-header" onclick="toggleChat()">
