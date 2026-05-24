@@ -45,12 +45,12 @@ try {
 $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
 while ($row = $stmt->fetch()) {
     $eid = 'new_order_' . $row['order_id'];
-    $link = '../admin/order_detail.php?id=' . $row['order_id'];
+    $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-cart-plus', 'color' => '#27ae60', // Thay đổi sang màu xanh
         'label' => 'Đơn hàng mới: #' . $row['order_id'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', strtotime($row['order_date'])),
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -61,12 +61,12 @@ $stmt = $conn->query("SELECT order_id, order_date, return_requested_at FROM orde
 while ($row = $stmt->fetch()) {
     $time = !empty($row['return_requested_at']) ? strtotime($row['return_requested_at']) : strtotime($row['order_date']);
     $eid = 'return_' . $row['order_id'];
-    $link = '../admin/order_detail.php?id=' . $row['order_id'];
+    $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => $time,
         'icon' => 'fa-rotate-left', 'color' => '#e67e22',
         'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', $time),
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -77,12 +77,12 @@ $stmt = $conn->query("SELECT order_id, order_date, cancel_requested_at, order_st
 while ($row = $stmt->fetch()) {
     $time = !empty($row['cancel_requested_at']) ? strtotime($row['cancel_requested_at']) : strtotime($row['order_date']);
     $eid = 'cancel_' . $row['order_id'];
-    $link = '../admin/order_detail.php?id=' . $row['order_id'];
+    $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => $time,
         'icon' => 'fa-ban', 'color' => '#e74c3c',
         'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', $time),
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -92,12 +92,12 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE payment_status = 1 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
 while ($row = $stmt->fetch()) {
     $eid = 'paid_' . $row['order_id'];
-    $link = '../admin/order_detail.php?id=' . $row['order_id'];
+    $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-circle-check', 'color' => '#27ae60',
         'label' => 'Đã thanh toán: #' . $row['order_id'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', strtotime($row['order_date'])),
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -107,12 +107,12 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock > 0 AND pv.stock <= 10");
 while ($row = $stmt->fetch()) {
     $eid = 'low_stock_' . $row['variant_id'];
-    $link = '../admin/inventory.php?search=' . urlencode($row['name']);
+    $link = 'inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
         'time' => time(), 
         'icon' => 'fa-box-open', 'color' => '#d48806',
         'label' => 'Sắp hết hàng: ' . $row['name'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => 'Tồn kho thấp',
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -122,12 +122,12 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock = 0");
 while ($row = $stmt->fetch()) {
     $eid = 'out_stock_' . $row['variant_id'];
-    $link = '../admin/inventory.php?search=' . urlencode($row['name']);
+    $link = 'inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
         'time' => time() - 3600, // Đẩy xuống một chút
         'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
         'label' => 'Hết hàng: ' . $row['name'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => 'Kho rỗng',
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -137,12 +137,12 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT coupon_id, code, end_date FROM coupons WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL 3 DAY AND status = 1");
 while ($row = $stmt->fetch()) {
     $eid = 'exp_coupon_' . $row['coupon_id'];
-    $link = '../admin/view_coupon.php?id=' . $row['coupon_id'];
+    $link = 'view_coupon.php?id=' . $row['coupon_id'];
     $notifications[] = [
         'time' => strtotime($row['end_date']),
         'icon' => 'fa-ticket', 'color' => '#9b59b6',
         'label' => 'Voucher sắp hết hạn: ' . $row['code'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => 'Hết hạn: ' . date('d/m', strtotime($row['end_date'])),
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -152,12 +152,12 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT user_id, fullname, created_at FROM users WHERE created_at >= NOW() - INTERVAL 7 DAY AND role = 0 ORDER BY created_at DESC");
 while ($row = $stmt->fetch()) {
     $eid = 'new_user_' . $row['user_id'];
-    $link = '../admin/account_detail.php?id=' . $row['user_id'];
+    $link = 'account_detail.php?id=' . $row['user_id'];
     $notifications[] = [
         'time' => strtotime($row['created_at']),
         'icon' => 'fa-user-plus', 'color' => '#2980b9',
         'label' => 'Thành viên mới: ' . $row['fullname'],
-        'link' => '../controllers/read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', strtotime($row['created_at'])),
         'is_unread' => !isset($read_logs[$eid])
     ];
@@ -178,7 +178,7 @@ $total_unread = count(array_filter($notifications, function($n) { return !empty(
 
 // Giới hạn hiển thị top 20 thông báo mới nhất trong dropdown
 $notifications = array_slice($notifications, 0, 20);
-$notif_count = $total_unread > 0 ? $total_unread : count($notifications);
+$notif_count = $total_unread;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
