@@ -1,4 +1,5 @@
 <?php
+require_once 'auth_check.php';
 /**
  * admin_order_action.php
  * Xử lý tất cả hành động Admin đối với đơn hàng:

@@ -1,7 +1,5 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once 'auth_check.php';
 
 // 1. Kiểm tra quyền Admin (Bỏ comment để kích hoạt bảo mật)
 // if (!isset($_SESSION['role']) || $_SESSION['role'] != 1) { header("Location: ../views/login.php"); exit; }

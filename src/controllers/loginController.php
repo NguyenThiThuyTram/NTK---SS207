@@ -30,6 +30,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['user_id'] = $user['user_id'];
             $_SESSION['fullname'] = $user['fullname'];
             $_SESSION['role'] = $user['role'];
+            if ($user['role'] == 1) {
+                $_SESSION['admin_logged_in'] = true;
+            }
 
             // Task 2: Auto-Execute Post-Login Add to Cart
             if (isset($_SESSION['pending_cart_action'])) {
@@ -88,6 +91,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // Task 1: Check if the redirect URL exists
                 $redirect_to = $_SESSION['redirect_url'];
                 unset($_SESSION['redirect_url']);
+            } elseif ($user['role'] == 1 && ($redirect_to === '../index.php' || strpos($redirect_to, 'login.php') !== false)) {
+                // If it's an admin and they don't have a specific page redirection request, redirect to admin home page
+                $redirect_to = '../admin/index.php';
             }
             
             // LUỒNG LOGIC: Báo thành công và văng về ĐÚNG TRANG CŨ

@@ -1385,7 +1385,7 @@ $notif_count = count($notifications);
                 <div class="admin-info-email"><?= htmlspecialchars($_SESSION['username'] ?? 'admin@ntk.vn') ?></div>
             </div>
         </div>
-        <a href="../views/logout.php" class="btn-logout">
+        <a href="logout.php" class="btn-logout">
             <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
         </a>
     </div>

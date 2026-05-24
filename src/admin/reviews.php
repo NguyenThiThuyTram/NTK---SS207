@@ -1,5 +1,5 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+require_once 'auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 
 // Xử lý khi Admin bấm nút Gửi câu trả lời từ giao diện quản trị này

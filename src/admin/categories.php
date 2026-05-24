@@ -1,4 +1,5 @@
 <?php
+require_once 'auth_check.php';
 // ── Kiểm tra session & quyền admin ──────────────────────────────────
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
