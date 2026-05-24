@@ -51,3 +51,5 @@
 
 2026-05-23 19:34:51 - Curl Error: Operation timed out after 20007 milliseconds with 1555 out of 1555 bytes received
 2026-05-24 04:10:40 - Curl Error: Operation timed out after 20000 milliseconds with 1555 out of 1555 bytes received
+2026-05-24 11:07:09 - Primary Timeout/Error (Code 28): Operation timed out after 4999 milliseconds with 1555 out of 1555 bytes received - Triggering fallback
+2026-05-24 11:07:09 - Fallback Parse Failed, using DEFAULT: áo thun
