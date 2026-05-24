@@ -88,13 +88,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     ob_end_clean();
                 } catch (Exception $e) {
                     $smtp_log = ob_get_clean();
-                    $log_dir = dirname(__DIR__) . '/admin';
-                    if (!is_dir($log_dir)) {
-                        mkdir($log_dir, 0755, true);
-                    }
-                    $log_file = $log_dir . '/mail_error.log';
-                    $error_message = date('[Y-m-d H:i:s] ') . "Mail error: " . $e->getMessage() . "\n" . $mail->ErrorInfo . "\n" . "SMTP Log:\n" . $smtp_log . "\n-------------------------\n";
-                    file_put_contents($log_file, $error_message, FILE_APPEND);
+                    // TẠM THỜI IN THẲNG LỖI RA MÀN HÌNH ĐỂ BẮT BỆNH
+                    die("<div style='background:#fff; padding:20px; color:red; text-align:left;'>
+                            <h3>LỖI GỬI MAIL:</h3>
+                            <b>Lỗi hệ thống:</b> " . $e->getMessage() . "<br>
+                            <b>Chi tiết PHPMailer:</b> " . $mail->ErrorInfo . "<br>
+                            <b>Log máy chủ trả về:</b> <pre>" . htmlspecialchars($smtp_log) . "</pre>
+                         </div>");
                 }
             }
         } catch (PDOException $e) {
