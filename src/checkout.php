@@ -61,13 +61,18 @@ foreach ($checkout_items as $item) {
 
 $shipping_fee = 35000; // Cố định 35k như yêu cầu
 
-// 3. LẤY SỐ DƯ VÍ THẬT TỪ DATABASE
-$stmt_wallet = $conn->prepare("SELECT wallet_balance FROM users WHERE user_id = :uid");
+require_once 'includes/loyalty_utils.php';
+
+// 3. LẤY SỐ DƯ VÍ, ĐIỂM VÀ HẠNG TỪ DATABASE
+$stmt_wallet = $conn->prepare("SELECT wallet_balance, current_points, tier FROM users WHERE user_id = :uid");
 $stmt_wallet->execute(['uid' => $user_id]);
 $user_data = $stmt_wallet->fetch(PDO::FETCH_ASSOC);
 
-// Gán số dư ví thật (nếu không có thì mặc định là 0)
+// Gán dữ liệu (nếu không có thì mặc định là 0)
 $wallet_balance = $user_data['wallet_balance'] ?? 0;
+$current_points = $user_data['current_points'] ?? 0;
+$tier = $user_data['tier'] ?? 'Member';
+$tier_discount_percent = getTierDiscount($tier);
 
 // 4. Đọc coupon đã áp dụng từ giỏ hàng (nếu có)
 $cart_coupon = $_SESSION['cart_coupon'] ?? null;
@@ -810,13 +815,28 @@ include 'includes/header.php';
                 <?php endforeach; ?>
             </div>
 
-            <div class="sum-wallet-box">
+            <div class="sum-wallet-box" style="margin-top: 15px;">
                 <div class="wallet-title">Ví nội bộ của bạn</div>
                 <div class="wallet-balance">Số dư: <?php echo number_format($wallet_balance, 0, ',', '.'); ?> VNĐ</div>
                 
                 <label class="wallet-checkbox">
                     <input type="checkbox" id="use_wallet_cb" onchange="calculateTotal()" <?php echo ($wallet_balance <= 0) ? 'disabled' : ''; ?>>
                     Sử dụng ví nội bộ cho đơn hàng này
+                </label>
+            </div>
+
+            <div class="sum-wallet-box" style="margin-top: 0; padding-top: 0; border-top: none;">
+                <div class="wallet-title">Hạng thành viên: <strong style="color:#d4af37;"><?php echo htmlspecialchars($tier); ?></strong></div>
+                <?php if ($tier_discount_percent > 0): ?>
+                <div style="font-size:12px; color:#2e7d32; margin-bottom:10px;">Giảm tự động <?php echo $tier_discount_percent; ?>% giá trị đơn hàng</div>
+                <?php endif; ?>
+
+                <div class="wallet-title">Điểm Loyalty</div>
+                <div class="wallet-balance"><?php echo number_format($current_points, 0, ',', '.'); ?> Điểm (Quy đổi: <?php echo number_format($current_points * 100, 0, ',', '.'); ?> VNĐ)</div>
+                
+                <label class="wallet-checkbox">
+                    <input type="checkbox" id="use_points_cb" onchange="calculateTotal()" <?php echo ($current_points <= 0) ? 'disabled' : ''; ?>>
+                    Dùng điểm Loyalty
                 </label>
             </div>
 
@@ -901,6 +921,16 @@ include 'includes/header.php';
             <div class="sum-row" id="coupon_discount_row" style="display: none; color: #2e7d32;">
                 <span>Giảm giá (mã):</span>
                 <span id="ui_coupon_discount">-0 VNĐ</span>
+            </div>
+
+            <div class="sum-row" id="tier_discount_row" style="display: none; color: #2e7d32;">
+                <span>Chiết khấu hạng (<?php echo $tier_discount_percent; ?>%):</span>
+                <span id="ui_tier_discount">-0 VNĐ</span>
+            </div>
+            
+            <div class="sum-row" id="points_discount_row" style="display: none; color: #e67e22;">
+                <span>Dùng điểm Loyalty:</span>
+                <span id="ui_points_discount">-0 VNĐ</span>
             </div>
             
             <div class="sum-row" id="wallet_discount_row" style="display: none; color: #d32f2f;">
@@ -1155,12 +1185,23 @@ include 'includes/header.php';
     function calculateTotal() {
         const subtotal = parseInt(document.getElementById('ui_subtotal').getAttribute('data-val'));
         const shipping = parseInt(document.getElementById('ui_shipping').getAttribute('data-val'));
+        
         const useWallet = document.getElementById('use_wallet_cb').checked;
+        const usePoints = document.getElementById('use_points_cb') ? document.getElementById('use_points_cb').checked : false;
+        
         const walletRow = document.getElementById('wallet_discount_row');
         const uiWalletUsed = document.getElementById('ui_wallet_used');
         const uiTotal = document.getElementById('ui_total');
         const qrTotal = document.getElementById('qr-total-amount');
         const inputWalletUsed = document.getElementById('input_wallet_used');
+        
+        const tierPercent = <?php echo $tier_discount_percent; ?>;
+        const tierRow = document.getElementById('tier_discount_row');
+        const uiTierDiscount = document.getElementById('ui_tier_discount');
+        
+        const maxPointsValue = <?php echo $current_points * 100; ?>;
+        const pointsRow = document.getElementById('points_discount_row');
+        const uiPointsDiscount = document.getElementById('ui_points_discount');
 
         // Giảm giá coupon
         const couponDiscount = activeCoupon ? activeCoupon.discount_amount : 0;
@@ -1173,19 +1214,65 @@ include 'includes/header.php';
             couponRow.style.display = 'none';
         }
 
-        let totalAfterCoupon = Math.max(0, subtotal + shipping - couponDiscount);
+        // Chiết khấu hạng (tính trên subtotal)
+        let tierDiscount = Math.round(subtotal * (tierPercent / 100));
+        if (tierDiscount > 0) {
+            tierRow.style.display = 'flex';
+            uiTierDiscount.innerText = '-' + tierDiscount.toLocaleString('vi-VN') + ' VNĐ';
+        } else {
+            tierRow.style.display = 'none';
+        }
 
+        // Tính tiền sau giảm giá mã và hạng
+        let totalAfterDiscount = Math.max(0, subtotal + shipping - couponDiscount - tierDiscount);
+
+        // Giảm điểm Loyalty
+        let pointsDiscount = 0;
+        if (usePoints) {
+            pointsDiscount = Math.min(maxPointsValue, totalAfterDiscount);
+            pointsRow.style.display = 'flex';
+            uiPointsDiscount.innerText = '-' + pointsDiscount.toLocaleString('vi-VN') + ' VNĐ';
+        } else {
+            pointsRow.style.display = 'none';
+        }
+        
+        totalAfterDiscount = totalAfterDiscount - pointsDiscount;
+
+        // Giảm ví hoàn tiền
         let walletUsedAmount = 0;
         if (useWallet) {
-            walletUsedAmount = Math.min(walletBalance, totalAfterCoupon);
+            walletUsedAmount = Math.min(walletBalance, totalAfterDiscount);
             walletRow.style.display = 'flex';
             uiWalletUsed.innerText = '-' + walletUsedAmount.toLocaleString('vi-VN') + ' VNĐ';
-        } else { walletRow.style.display = 'none'; }
+        } else { 
+            walletRow.style.display = 'none'; 
+        }
 
-        let finalTotal = totalAfterCoupon - walletUsedAmount;
+        let finalTotal = totalAfterDiscount - walletUsedAmount;
         uiTotal.innerText = finalTotal.toLocaleString('vi-VN') + ' VNĐ';
         if(qrTotal) qrTotal.innerText = finalTotal.toLocaleString('vi-VN');
         inputWalletUsed.value = walletUsedAmount;
+        
+        // Cập nhật input ẩn cho points (nếu cần xử lý lúc submit)
+        let inpPoints = document.getElementById('input_points_used');
+        if (!inpPoints) {
+            inpPoints = document.createElement('input');
+            inpPoints.type = 'hidden';
+            inpPoints.name = 'points_discount';
+            inpPoints.id = 'input_points_used';
+            document.querySelector('#step-3').appendChild(inpPoints);
+        }
+        inpPoints.value = pointsDiscount;
+        
+        let inpTier = document.getElementById('input_tier_discount');
+        if (!inpTier) {
+            inpTier = document.createElement('input');
+            inpTier.type = 'hidden';
+            inpTier.name = 'tier_discount';
+            inpTier.id = 'input_tier_discount';
+            document.querySelector('#step-3').appendChild(inpTier);
+        }
+        inpTier.value = tierDiscount;
     }
 
     // ── GỌI API ĐỊA CHỈ (esgoo.net) ────────────────────────

@@ -30,6 +30,11 @@ $sqls = [
     "ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL" => "users.password",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255) DEFAULT NULL" => "users.reset_token",
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry DATETIME DEFAULT NULL" => "users.reset_token_expiry",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS current_points INT(11) DEFAULT 0" => "users.current_points",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS accumulated_points INT(11) DEFAULT 0" => "users.accumulated_points",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS tier VARCHAR(20) DEFAULT 'Member'" => "users.tier",
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_pinned TINYINT(1) DEFAULT 0" => "reviews.is_pinned",
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS reward_coupon_id CHAR(5) DEFAULT NULL" => "reviews.reward_coupon_id",
     "CREATE TABLE IF NOT EXISTS notifications (
         noti_id INT(11) NOT NULL AUTO_INCREMENT,
         user_id CHAR(5) DEFAULT NULL,

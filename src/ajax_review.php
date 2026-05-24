@@ -1,6 +1,7 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once 'config/database.php';
+require_once 'includes/loyalty_utils.php';
 
 header('Content-Type: application/json');
 
@@ -82,6 +83,18 @@ if ($action === 'submit_comment') {
             'text'   => $comment,
             'img'    => $review_image,
         ]);
+
+        // Cộng điểm thưởng nếu là đánh giá gốc
+        if (empty($parent_id)) {
+            $reward_points = 0;
+            if (!empty($comment)) $reward_points += 100;
+            if (!empty($review_image)) $reward_points += 100;
+            
+            if ($reward_points > 0) {
+                addLoyaltyPoints($conn, $user_id, $reward_points, "đánh giá sản phẩm");
+            }
+        }
+
         echo json_encode(['status' => 'success', 'success' => true, 'message' => 'Gửi dữ liệu thành công!']);
     } catch (PDOException $e) {
         echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);
