@@ -312,7 +312,11 @@ try {
                                 onclick="document.getElementById('return-modal-<?= $order['order_id'] ?>').style.display='flex'">
                                 <i class="fa-solid fa-rotate-left" style="margin-right:5px;"></i> Trả hàng
                             </button>
-                            <a href="../../product.php" class="btn btn-primary">MUA LẠI</a>
+                            <a href="../../controllers/buy_again.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-primary">MUA LẠI</a>
+
+                        <?php elseif ($st === 4): ?>
+                            <!-- Đã hủy: Mua lại -->
+                            <a href="../../controllers/buy_again.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="btn btn-primary">MUA LẠI</a>
 
                         <?php endif; ?>
                     </div>

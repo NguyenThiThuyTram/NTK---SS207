@@ -689,7 +689,12 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                     onclick="document.getElementById('return-modal-detail').style.display='flex'">
                     <i class="fa-solid fa-rotate-left"></i> Trả hàng
                 </button>
-                <a href="../../product.php" class="od-action-btn od-btn-primary">
+                <a href="../../controllers/buy_again.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="od-action-btn od-btn-primary">
+                    Mua lại
+                </a>
+            <?php elseif ($os === 4): ?>
+                <!-- Đã hủy: Mua lại -->
+                <a href="../../controllers/buy_again.php?id=<?= htmlspecialchars($order['order_id']) ?>" class="od-action-btn od-btn-primary">
                     Mua lại
                 </a>
             <?php endif; ?>
