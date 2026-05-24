@@ -12,8 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quantity = $_POST['quantity'];
     $end_date = $_POST['end_date'];
 
-    // 2. TỰ SINH ID: Dùng tiền tố CP + chuỗi thời gian duy nhất
-    $new_id = "CP" . date('His') . rand(10, 99); 
+    // 2. TỰ SINH ID: Dùng tiền tố CP + số ngẫu nhiên để đảm bảo vừa đúng 5 ký tự char(5)
+    $new_id = "CP" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT); 
 
     try {
         // 3. Chèn vào database
