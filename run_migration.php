@@ -26,6 +26,7 @@ $sqls = [
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_note VARCHAR(500) DEFAULT NULL" => "orders.admin_note",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(100) DEFAULT NULL" => "orders.tracking_number",
     "ALTER TABLE order_returns ADD COLUMN IF NOT EXISTS admin_note VARCHAR(500) DEFAULT NULL" => "order_returns.admin_note",
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS parent_id INT(11) DEFAULT NULL" => "reviews.parent_id",
     "CREATE TABLE IF NOT EXISTS notifications (
         noti_id INT(11) NOT NULL AUTO_INCREMENT,
         user_id CHAR(5) DEFAULT NULL,
@@ -39,6 +40,14 @@ $sqls = [
         KEY idx_noti_user (user_id),
         KEY idx_noti_order (related_order_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE notifications",
+    "CREATE TABLE IF NOT EXISTS review_likes (
+        like_id INT(11) NOT NULL AUTO_INCREMENT,
+        review_id VARCHAR(11) NOT NULL,
+        user_id CHAR(5) NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (like_id),
+        UNIQUE KEY unique_user_review_like (user_id, review_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE review_likes"
 ];
 
 foreach ($sqls as $sql => $desc) {
