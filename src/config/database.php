@@ -1,4 +1,6 @@
 <?php
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+
 $host     = getenv('DB_HOST') ?: 'localhost';
 $username = getenv('DB_USER') ?: 'root';
 $password = getenv('DB_PASS') ?: '';
