@@ -78,13 +78,34 @@ if (
         if ($order) {
 
             if ($order['payment_status'] == 0) {
+                $order_id = $order['order_id'];
 
                 $upd = $conn->prepare("
                     UPDATE orders 
                     SET payment_status = 1, order_status = 1 
                     WHERE order_id = :oid
                 ");
-                $upd->execute(['oid' => $order['order_id']]);
+                $upd->execute(['oid' => $order_id]);
+
+                // Tạo thông báo cho admin
+                try {
+                    $stmt_admin = $conn->prepare("SELECT user_id FROM users WHERE role = 1 LIMIT 1");
+                    $stmt_admin->execute();
+                    $admin = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+                    if ($admin) {
+                        $check = $conn->prepare("SELECT COUNT(*) FROM notifications WHERE related_order_id = :oid AND type = 'payment_success'");
+                        $check->execute(['oid' => $order_id]);
+                        if ($check->fetchColumn() == 0) {
+                            $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'payment_success', :title, :msg, :oid)")
+                                 ->execute([
+                                     'uid'   => $admin['user_id'],
+                                     'title' => 'Khách đã thanh toán: #' . $order_id,
+                                     'msg'   => "Đơn hàng #{$order_id} đã được thanh toán thành công qua PayOS.",
+                                     'oid'   => $order_id
+                                 ]);
+                        }
+                    }
+                } catch (PDOException $e) {}
 
                 file_put_contents(
                     __DIR__ . "/log.txt",

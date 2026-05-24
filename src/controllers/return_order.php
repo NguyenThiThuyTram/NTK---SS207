@@ -87,6 +87,20 @@ try {
                  'msg'   => "Yêu cầu trả hàng cho đơn hàng #{$order_id} đã được gửi thành công. Admin sẽ xem xét và phản hồi trong vòng 24 giờ.",
                  'oid'   => $order_id
              ]);
+             
+        // Tạo thông báo cho ADMIN
+        $stmt_admin = $conn->prepare("SELECT user_id FROM users WHERE role = 1 LIMIT 1");
+        $stmt_admin->execute();
+        $admin = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+        if ($admin) {
+            $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'return_request', :title, :msg, :oid)")
+                 ->execute([
+                     'uid'   => $admin['user_id'],
+                     'title' => 'Yêu cầu trả hàng: #' . $order_id,
+                     'msg'   => "Khách hàng yêu cầu trả hàng cho đơn #{$order_id}. Lý do: {$reason}",
+                     'oid'   => $order_id
+                 ]);
+        }
     } catch (PDOException $e) {}
 
     $conn->commit();

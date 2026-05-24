@@ -56,6 +56,27 @@ if ($is_online && !$is_paid && isset($_GET['status']) && $_GET['status'] === 'PA
         // Cập nhật DB (Phòng trường hợp webhook bị trễ hoặc thất bại)
         $conn->prepare("UPDATE orders SET payment_status = 1, order_status = 1 WHERE order_id = :oid")
              ->execute(['oid' => $order_id]);
+             
+        // Tạo thông báo cho admin
+        try {
+            $stmt_admin = $conn->prepare("SELECT user_id FROM users WHERE role = 1 LIMIT 1");
+            $stmt_admin->execute();
+            $admin = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+            if ($admin) {
+                // Kiểm tra xem đã có thông báo payment_success cho order này chưa (tránh webhook trùng)
+                $check = $conn->prepare("SELECT COUNT(*) FROM notifications WHERE related_order_id = :oid AND type = 'payment_success'");
+                $check->execute(['oid' => $order_id]);
+                if ($check->fetchColumn() == 0) {
+                    $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'payment_success', :title, :msg, :oid)")
+                         ->execute([
+                             'uid'   => $admin['user_id'],
+                             'title' => 'Khách đã thanh toán: #' . $order_id,
+                             'msg'   => "Đơn hàng #{$order_id} đã được thanh toán thành công qua PayOS.",
+                             'oid'   => $order_id
+                         ]);
+                }
+            }
+        } catch (PDOException $e) {}
     }
 }
 

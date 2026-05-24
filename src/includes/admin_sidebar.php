@@ -19,82 +19,50 @@ $current_page_title = $page_titles[$admin_current_page] ?? '';
 require_once __DIR__ . '/../config/database.php';
 $notifications = [];
 
-// 1. Đơn hàng mới (order_status = 0 hoặc 1, trong 24h)
-$stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE order_status IN (0, 1) AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $notifications[] = [
-        'time' => strtotime($row['order_date']),
-        'icon' => 'fa-cart-plus', 'color' => '#27ae60', // Thay đổi sang màu xanh
-        'label' => 'Đơn hàng mới: #' . $row['order_id'],
-        'link' => 'order_detail.php?id=' . $row['order_id'],
-        'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => true
-    ];
-}
-
-/*
-// 1b. Thông báo từ bảng notifications (new_order type - từ process_checkout)
-$admin_user_id = $_SESSION['user_id'] ?? 0;
+// 1. Lấy thông báo từ bảng notifications (liên quan đến đơn hàng)
 try {
-    $stmt_noti = $conn->prepare("SELECT title, message, related_order_id, created_at FROM notifications WHERE user_id = :uid AND type = 'new_order' AND created_at >= NOW() - INTERVAL 48 HOUR AND is_read = 0 ORDER BY created_at DESC");
-    $stmt_noti->execute(['uid' => $admin_user_id]);
+    $stmt_noti = $conn->query("SELECT noti_id, type, title, message, related_order_id, created_at, is_read FROM notifications ORDER BY created_at DESC LIMIT 50");
     while ($row = $stmt_noti->fetch()) {
+        $icon = 'fa-bell';
+        $color = '#555';
+        $link = 'order_detail.php?id=' . $row['related_order_id'];
+        
+        switch ($row['type']) {
+            case 'new_order':
+                $icon = 'fa-cart-plus'; $color = '#27ae60'; // Xanh lá
+                break;
+            case 'order_cancelled':
+            case 'cancel_request':
+                $icon = 'fa-ban'; $color = '#e74c3c'; // Đỏ
+                break;
+            case 'return_request':
+                $icon = 'fa-rotate-left'; $color = '#e67e22'; // Cam
+                break;
+            case 'payment_success':
+                $icon = 'fa-circle-check'; $color = '#27ae60';
+                break;
+            default:
+                if (strpos($row['title'], 'hủy') !== false) {
+                    $icon = 'fa-ban'; $color = '#e74c3c';
+                }
+                break;
+        }
+
+        $read_link = '../controllers/read_notification.php?id=' . $row['noti_id'] . '&redirect=' . urlencode($link);
+
         $notifications[] = [
-            'time'     => strtotime($row['created_at']),
-            'icon'     => 'fa-bell', 'color' => '#ee4d2d',
-            'label'    => $row['title'] ?: ('Đơn hàng mới: #' . $row['related_order_id']),
-            'link'     => 'order_detail.php?id=' . $row['related_order_id'],
+            'id' => $row['noti_id'],
+            'time' => strtotime($row['created_at']),
+            'icon' => $icon, 'color' => $color,
+            'label' => $row['title'],
+            'link' => $read_link,
             'time_str' => date('H:i d/m', strtotime($row['created_at'])),
-            'is_unread' => true
+            'is_unread' => ($row['is_read'] == 0)
         ];
     }
-} catch (PDOException $e) {
-    // Ignore error if table notifications does not exist yet
-}
-*/
+} catch (PDOException $e) {}
 
-// 2. Yêu cầu trả hàng (order_status = 5)
-$stmt = $conn->query("SELECT order_id, order_date, return_requested_at FROM orders WHERE order_status = 5 ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $time = !empty($row['return_requested_at']) ? strtotime($row['return_requested_at']) : strtotime($row['order_date']);
-    $notifications[] = [
-        'time' => $time,
-        'icon' => 'fa-rotate-left', 'color' => '#e67e22',
-        'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
-        'link' => 'order_detail.php?id=' . $row['order_id'],
-        'time_str' => date('H:i d/m', $time),
-        'is_unread' => true
-    ];
-}
-
-// 2b. Khách hàng hủy đơn (order_status = 4 hoặc 8)
-$stmt = $conn->query("SELECT order_id, order_date, cancel_requested_at, order_status FROM orders WHERE order_status IN (4, 8) AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $time = !empty($row['cancel_requested_at']) ? strtotime($row['cancel_requested_at']) : strtotime($row['order_date']);
-    $notifications[] = [
-        'time' => $time,
-        'icon' => 'fa-ban', 'color' => '#e74c3c',
-        'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
-        'link' => 'order_detail.php?id=' . $row['order_id'],
-        'time_str' => date('H:i d/m', $time),
-        'is_unread' => ((int)$row['order_status'] === 8) // Nếu chờ duyệt thì unread
-    ];
-}
-
-// 3. Thanh toán thành công (payment_status = 1, trong 24h)
-$stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE payment_status = 1 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $notifications[] = [
-        'time' => strtotime($row['order_date']),
-        'icon' => 'fa-circle-check', 'color' => '#27ae60',
-        'label' => 'Đã thanh toán: #' . $row['order_id'],
-        'link' => 'order_detail.php?id=' . $row['order_id'],
-        'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => ((int)$row['order_status'] === 0)
-    ];
-}
-
-// 4. Sắp hết hàng (stock <= 10)
+// 2. Sắp hết hàng (stock <= 10) - Động
 $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock > 0 AND pv.stock <= 10");
 while ($row = $stmt->fetch()) {
     $notifications[] = [
@@ -107,11 +75,11 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
-// 5. Hết hàng
+// 3. Hết hàng - Động
 $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock = 0");
 while ($row = $stmt->fetch()) {
     $notifications[] = [
-        'time' => time() - 3600, // Đẩy xuống một chút
+        'time' => time() - 3600,
         'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
         'label' => 'Hết hàng: ' . $row['name'],
         'link' => 'inventory.php?search=' . urlencode($row['name']),
@@ -120,7 +88,7 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
-// 6. Voucher sắp hết hạn
+// 4. Voucher sắp hết hạn - Động
 $stmt = $conn->query("SELECT coupon_id, code, end_date FROM coupons WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL 3 DAY AND status = 1");
 while ($row = $stmt->fetch()) {
     $notifications[] = [
@@ -133,22 +101,9 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
-// 7. User mới
-$stmt = $conn->query("SELECT user_id, fullname, created_at FROM users WHERE created_at >= NOW() - INTERVAL 7 DAY AND role = 0 ORDER BY created_at DESC");
-while ($row = $stmt->fetch()) {
-    $notifications[] = [
-        'time' => strtotime($row['created_at']),
-        'icon' => 'fa-user-plus', 'color' => '#2980b9',
-        'label' => 'Thành viên mới: ' . $row['fullname'],
-        'link' => 'account_detail.php?id=' . $row['user_id'],
-        'time_str' => date('H:i d/m', strtotime($row['created_at'])),
-        'is_unread' => false
-    ];
-}
-
-// 8. Đếm thống kê chính xác toàn bộ trước khi cắt (slice)
-$count_new_orders = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'cart') !== false || ($n['icon'] == 'fa-bell' && strpos($n['label'], 'Đơn hàng mới') !== false); }));
-$count_warnings   = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'exclamation') !== false || strpos($n['icon'], 'ban') !== false; }));
+// 8. Đếm thống kê chính xác (Từ Array)
+$count_new_orders = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'cart') !== false; }));
+$count_warnings   = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'exclamation') !== false || strpos($n['icon'], 'ban') !== false || strpos($n['icon'], 'rotate-left') !== false; }));
 $count_products   = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'ticket') !== false || strpos($n['icon'], 'box') !== false; }));
 
 // Sort notifications by time descending
@@ -1489,14 +1444,19 @@ $notif_count = $total_unread > 0 ? $total_unread : count($notifications);
                     </div>
                     <?php else: ?>
                     <?php foreach ($notifications as $index => $n): ?>
-                    <a href="<?= htmlspecialchars($n['link']) ?>" class="notif-fs-item animate-in" style="--delay: <?= $index * 0.05 ?>s; <?= !empty($n['is_unread']) ? 'background: rgba(166,130,92,0.03);' : '' ?>">
+                    <a href="<?= htmlspecialchars($n['link']) ?>" class="notif-fs-item animate-in <?= !empty($n['is_unread']) ? 'unread-noti' : '' ?>" style="--delay: <?= $index * 0.05 ?>s; <?= !empty($n['is_unread']) ? 'background: rgba(166,130,92,0.05); border-left: 3px solid #e74c3c;' : 'opacity: 0.8;' ?>">
                         <div class="notif-fs-icon-wrap" style="background:<?= $n['color'] ?>18; color:<?= $n['color'] ?>; box-shadow: 0 0 15px <?= $n['color'] ?>15;">
                             <i class="fa-solid <?= $n['icon'] ?>"></i>
                         </div>
-                        <div class="notif-fs-body-content">
-                            <div class="notif-fs-label" <?= !empty($n['is_unread']) ? 'style="font-weight: 700; color: #111;"' : 'style="font-weight: 400; color: #555;"' ?>><?= htmlspecialchars($n['label']) ?></div>
+                        <div class="notif-fs-body-content" style="position: relative;">
+                            <div class="notif-fs-label" <?= !empty($n['is_unread']) ? 'style="font-weight: 800; color: #000;"' : 'style="font-weight: 400; color: #555;"' ?>>
+                                <?= htmlspecialchars($n['label']) ?>
+                                <?php if (!empty($n['is_unread'])): ?>
+                                    <span style="display:inline-block; width:8px; height:8px; background:#e74c3c; border-radius:50%; margin-left:5px; vertical-align:middle;"></span>
+                                <?php endif; ?>
+                            </div>
                             <?php if (isset($n['time_str'])): ?>
-                            <div class="notif-fs-time" <?= !empty($n['is_unread']) ? 'style="font-weight: 500;"' : '' ?>><i class="fa-regular fa-clock"></i> <?= htmlspecialchars($n['time_str']) ?></div>
+                            <div class="notif-fs-time" <?= !empty($n['is_unread']) ? 'style="font-weight: 600; color: #333;"' : '' ?>><i class="fa-regular fa-clock"></i> <?= htmlspecialchars($n['time_str']) ?></div>
                             <?php endif; ?>
                         </div>
                         <div class="notif-fs-action">

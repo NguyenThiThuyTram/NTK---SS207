@@ -84,8 +84,18 @@ try {
             $msg_noti .= " Số tiền " . number_format($refund_amount, 0, ',', '.') . " VNĐ sẽ được hoàn vào ví của bạn trong 1-3 ngày làm việc.";
         }
         try {
+            // Cho user
             $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'order_cancelled', :title, :msg, :oid)")
                  ->execute(['uid' => $user_id, 'title' => 'Đơn hàng đã hủy', 'msg' => $msg_noti, 'oid' => $order_id]);
+            
+            // Cho admin
+            $stmt_admin = $conn->prepare("SELECT user_id FROM users WHERE role = 1 LIMIT 1");
+            $stmt_admin->execute();
+            $admin = $stmt_admin->fetch(PDO::FETCH_ASSOC);
+            if ($admin) {
+                $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'order_cancelled', :title, :msg, :oid)")
+                     ->execute(['uid' => $admin['user_id'], 'title' => 'Đơn hàng bị hủy: #' . $order_id, 'msg' => "Khách hàng đã tự hủy đơn hàng #{$order_id}. Lý do: {$reason}", 'oid' => $order_id]);
+            }
         } catch (PDOException $e) {}
 
         $conn->commit();
