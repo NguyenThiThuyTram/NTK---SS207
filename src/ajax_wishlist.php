@@ -7,7 +7,10 @@ $user_id = $_SESSION['user_id'] ?? null;
 $product_id = $_POST['product_id'] ?? null;
 
 if (!$user_id) {
-    echo json_encode(['status' => 'error', 'message' => 'Vui lòng đăng nhập để yêu thích!']);
+    if ($product_id) {
+        $_SESSION['redirect_url'] = '../product_detail.php?id=' . $product_id;
+    }
+    echo json_encode(['status' => 'not_logged_in', 'redirect_url' => 'views/login.php']);
     exit;
 }
 

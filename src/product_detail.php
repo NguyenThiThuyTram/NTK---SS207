@@ -1,4 +1,7 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // 1. Kết nối Database
 require_once 'config/database.php';
 
@@ -427,6 +430,11 @@ include 'includes/header.php';
                 if (fb) fb.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
+
+        <?php if (isset($_SESSION['cart_success_msg'])): ?>
+        showInlineMsg("<?php echo htmlspecialchars($_SESSION['cart_success_msg'], ENT_QUOTES, 'UTF-8'); ?>", "success");
+        <?php unset($_SESSION['cart_success_msg']); ?>
+        <?php endif; ?>
     });
 
     function findVariant(color, size) {
@@ -564,8 +572,7 @@ include 'includes/header.php';
                         updateCartCount();
                     }
                 } else if (result === 'not_logged_in') {
-                    showInlineMsg('Vui lòng đăng nhập để thêm vào giỏ hàng!', 'error');
-                    setTimeout(function () { window.location.href = 'views/login.php'; }, 1500);
+                    window.location.href = 'views/login.php';
                 } else if (result === 'out_of_stock') {
                     showInlineMsg('Sản phẩm đã hết hàng!', 'error');
                 } else {
@@ -624,6 +631,8 @@ include 'includes/header.php';
                         btn.addClass('liked');
                         btn.find('i').removeClass('fa-regular').addClass('fa-solid');
                         showInlineMsg(response.message, 'success');
+                    } else if (response.status === 'not_logged_in') {
+                        window.location.href = response.redirect_url;
                     } else {
                         showInlineMsg(response.message, 'error');
                     }

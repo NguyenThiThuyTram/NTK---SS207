@@ -32,6 +32,30 @@ if ($action === 'get_count') {
 if ($action === 'add_to_cart') {
     // 1. Nếu muốn ép đăng nhập mới cho thêm vào giỏ, hãy bật đoạn này:
     if (!$user_id) {
+        $variant_id = trim($_POST['variant_id'] ?? '');
+        $quantity = intval($_POST['quantity'] ?? 1);
+        if ($quantity < 1) {
+            $quantity = 1;
+        }
+
+        if ($variant_id) {
+            $st = $conn->prepare("SELECT product_id, color, size FROM product_variants WHERE variant_id = :vid AND is_active = 1");
+            $st->execute(['vid' => $variant_id]);
+            $variant = $st->fetch(PDO::FETCH_ASSOC);
+
+            if ($variant) {
+                $_SESSION['pending_cart_action'] = [
+                    'product_id' => $variant['product_id'],
+                    'variant_id' => $variant_id,
+                    'quantity' => $quantity,
+                    'options' => [
+                        'color' => $variant['color'],
+                        'size' => $variant['size']
+                    ],
+                    'return_url' => '../product_detail.php?id=' . $variant['product_id']
+                ];
+            }
+        }
         echo 'not_logged_in';
         exit;
     }
