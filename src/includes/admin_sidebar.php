@@ -45,7 +45,7 @@ try {
 $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
 while ($row = $stmt->fetch()) {
     $eid = 'new_order_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
+    $link = '../admin/order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-cart-plus', 'color' => '#27ae60', // Thay đổi sang màu xanh
@@ -61,7 +61,7 @@ $stmt = $conn->query("SELECT order_id, order_date, return_requested_at FROM orde
 while ($row = $stmt->fetch()) {
     $time = !empty($row['return_requested_at']) ? strtotime($row['return_requested_at']) : strtotime($row['order_date']);
     $eid = 'return_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
+    $link = '../admin/order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => $time,
         'icon' => 'fa-rotate-left', 'color' => '#e67e22',
@@ -77,7 +77,7 @@ $stmt = $conn->query("SELECT order_id, order_date, cancel_requested_at, order_st
 while ($row = $stmt->fetch()) {
     $time = !empty($row['cancel_requested_at']) ? strtotime($row['cancel_requested_at']) : strtotime($row['order_date']);
     $eid = 'cancel_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
+    $link = '../admin/order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => $time,
         'icon' => 'fa-ban', 'color' => '#e74c3c',
@@ -92,7 +92,7 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE payment_status = 1 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
 while ($row = $stmt->fetch()) {
     $eid = 'paid_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
+    $link = '../admin/order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-circle-check', 'color' => '#27ae60',
@@ -107,7 +107,7 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock > 0 AND pv.stock <= 10");
 while ($row = $stmt->fetch()) {
     $eid = 'low_stock_' . $row['variant_id'];
-    $link = 'inventory.php?search=' . urlencode($row['name']);
+    $link = '../admin/inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
         'time' => time(), 
         'icon' => 'fa-box-open', 'color' => '#d48806',
@@ -122,7 +122,7 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock = 0");
 while ($row = $stmt->fetch()) {
     $eid = 'out_stock_' . $row['variant_id'];
-    $link = 'inventory.php?search=' . urlencode($row['name']);
+    $link = '../admin/inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
         'time' => time() - 3600, // Đẩy xuống một chút
         'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
@@ -137,7 +137,7 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT coupon_id, code, end_date FROM coupons WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL 3 DAY AND status = 1");
 while ($row = $stmt->fetch()) {
     $eid = 'exp_coupon_' . $row['coupon_id'];
-    $link = 'view_coupon.php?id=' . $row['coupon_id'];
+    $link = '../admin/view_coupon.php?id=' . $row['coupon_id'];
     $notifications[] = [
         'time' => strtotime($row['end_date']),
         'icon' => 'fa-ticket', 'color' => '#9b59b6',
@@ -152,7 +152,7 @@ while ($row = $stmt->fetch()) {
 $stmt = $conn->query("SELECT user_id, fullname, created_at FROM users WHERE created_at >= NOW() - INTERVAL 7 DAY AND role = 0 ORDER BY created_at DESC");
 while ($row = $stmt->fetch()) {
     $eid = 'new_user_' . $row['user_id'];
-    $link = 'account_detail.php?id=' . $row['user_id'];
+    $link = '../admin/account_detail.php?id=' . $row['user_id'];
     $notifications[] = [
         'time' => strtotime($row['created_at']),
         'icon' => 'fa-user-plus', 'color' => '#2980b9',
@@ -164,9 +164,9 @@ while ($row = $stmt->fetch()) {
 }
 
 // 8. Đếm thống kê chính xác toàn bộ trước khi cắt (slice)
-$count_new_orders = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'cart') !== false || ($n['icon'] == 'fa-bell' && strpos($n['label'], 'Đơn hàng mới') !== false); }));
-$count_warnings   = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'exclamation') !== false || strpos($n['icon'], 'ban') !== false; }));
-$count_products   = count(array_filter($notifications, function($n) { return strpos($n['icon'], 'ticket') !== false || strpos($n['icon'], 'box') !== false; }));
+$count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && (strpos($n['icon'], 'cart') !== false || ($n['icon'] == 'fa-bell' && strpos($n['label'], 'Đơn hàng mới') !== false)); }));
+$count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && (strpos($n['icon'], 'exclamation') !== false || strpos($n['icon'], 'ban') !== false); }));
+$count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && (strpos($n['icon'], 'ticket') !== false || strpos($n['icon'], 'box') !== false); }));
 
 // Sort notifications by time descending
 usort($notifications, function($a, $b) {

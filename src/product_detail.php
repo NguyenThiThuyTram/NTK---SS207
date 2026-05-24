@@ -158,14 +158,219 @@ include 'includes/header.php';
     .btn-wishlist.liked { border-color: #e63946 !important; }
     .btn-wishlist.liked i { color: #e63946 !important; }
     
-    body.dark-mode .breadcrumb a { color: #aaa; }
-    body.dark-mode .breadcrumb a:hover { color: #fff; }
-    body.dark-mode .btn-option { background-color: #1e1e1e !important; border-color: #444444 !important; color: #ffffff !important; }
-    body.dark-mode .btn-option:hover { border-color: #888888 !important; }
-    body.dark-mode .btn-option.active { background-color: #1e1e1e !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
-    body.dark-mode .btn-wishlist { background-color: #1e1e1e !important; border-color: #444444 !important; color: #ffffff !important; }
-    body.dark-mode .btn-wishlist.liked { border-color: #e63946 !important; }
-    body.dark-mode .btn-wishlist.liked i { color: #e63946 !important; }
+    /* ===== DARK MODE - ĐỒNG BỘ ĐEN HẾT ===== */
+    body.dark-mode {
+        background-color: #0a0a0a !important;
+        color: #ffffff !important;
+    }
+    
+    body.dark-mode main,
+    body.dark-mode .container {
+        background-color: #0a0a0a !important;
+        color: #ffffff !important;
+    }
+    
+    body.dark-mode .breadcrumb { color: #aaa !important; }
+    body.dark-mode .breadcrumb a { color: #aaa !important; }
+    body.dark-mode .breadcrumb a:hover { color: #fff !important; }
+    body.dark-mode .breadcrumb b { color: #ffffff !important; }
+    
+    /* Title & Meta */
+    body.dark-mode .detail-title { color: #ffffff !important; }
+    body.dark-mode .detail-meta { color: #dddddd !important; }
+    body.dark-mode .rating-text { color: #dddddd !important; }
+    body.dark-mode .sold-count { color: #dddddd !important; }
+    
+    /* Price Box */
+    body.dark-mode .detail-price-box {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333333 !important;
+    }
+    body.dark-mode .detail-sale-price { color: #ffffff !important; }
+    body.dark-mode .detail-old-price { color: #999 !important; }
+    body.dark-mode .discount-tag { background-color: #e63946 !important; color: #ffffff !important; }
+    
+    /* Options */
+    body.dark-mode .option-label { color: #ffffff !important; }
+    body.dark-mode .btn-option { background-color: #1a1a1a !important; border-color: #333333 !important; color: #ffffff !important; }
+    body.dark-mode .btn-option:hover { border-color: #666 !important; }
+    body.dark-mode .btn-option.active { background-color: #1a1a1a !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+    
+    /* Stock Info */
+    body.dark-mode .stock-info { color: #aaa !important; }
+    
+    /* Quantity Selector */
+    body.dark-mode .quantity-selector {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .quantity-selector input { 
+        background-color: #1a1a1a !important; 
+        color: #ffffff !important; 
+        border-color: #333333 !important; 
+    }
+    body.dark-mode .qty-btn {
+        background-color: transparent !important;
+        color: #ffffff !important;
+        border-color: #333333 !important;
+    }
+    
+    /* Buttons */
+    body.dark-mode .btn-add-to-cart { background-color: #2f1c00 !important; color: #ffffff !important; }
+    body.dark-mode .btn-buy-now { background-color: #444444 !important; color: #ffffff !important; }
+    body.dark-mode .btn-wishlist { background-color: #1a1a1a !important; border-color: #333333 !important; color: #ffffff !important; }
+    
+    /* Description */
+    body.dark-mode .desc-text { color: #dddddd !important; }
+    
+    /* Feedback Section */
+    body.dark-mode .product-feedback { 
+        border-top-color: #333333 !important;
+        background-color: #0a0a0a !important;
+    }
+    body.dark-mode .product-feedback h3 { color: #f1c40f !important; }
+    
+    /* Review Form */
+    body.dark-mode .main-review-form {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333333 !important;
+    }
+    body.dark-mode .main-review-form p { color: #ffffff !important; }
+    body.dark-mode .main-review-form label { color: #dddddd !important; }
+    body.dark-mode .main-review-form textarea {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .main-review-form textarea::placeholder { color: #666 !important; }
+    body.dark-mode .main-review-form select {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .main-review-form select option {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .main-review-form input[type="file"] {
+        background-color: #1a1a1a !important;
+        color: #aaa !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .main-review-form button {
+        background-color: #2f1c00 !important;
+        color: #ffffff !important;
+    }
+    
+    /* No Review Info Box */
+    body.dark-mode div[style*="background: #fffbf0"] {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+        color: #ffeb7f !important;
+    }
+    
+    /* Review List */
+    body.dark-mode .review-list { color: #ffffff !important; }
+    body.dark-mode .review-list p { color: #dddddd !important; }
+    
+    /* Review Item */
+    body.dark-mode .review-item {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .review-item b { color: #ffffff !important; }
+    body.dark-mode .review-item small { color: #999 !important; }
+    body.dark-mode .review-item p { color: #dddddd !important; }
+    body.dark-mode .review-item span { color: #ffc107 !important; }
+    body.dark-mode .review-item img { border-color: #333333 !important; }
+    
+    /* Reply Items */
+    body.dark-mode .reply-item {
+        background-color: #1a1a1a !important;
+        border-left-color: #a6825c !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .review-replies-list { 
+        border-left-color: #333333 !important; 
+    }
+    
+    /* Reply Form */
+    body.dark-mode .reply-form-container {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333333 !important;
+    }
+    body.dark-mode .reply-form-container textarea {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+        border-color: #333333 !important;
+    }
+    body.dark-mode .reply-form-container textarea::placeholder { color: #666 !important; }
+    body.dark-mode .reply-form-container button {
+        background-color: #2f1c00 !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode .reply-form-container div[style*="background"] {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+    }
+    
+    /* Like/Reply Buttons */
+    body.dark-mode .reply-trigger-btn { color: #f1c40f !important; }
+    
+    /* Related Products */
+    body.dark-mode .section-title { color: #ffffff !important; }
+    body.dark-mode .product-card { background-color: #1a1a1a !important; }
+    body.dark-mode .product-info { color: #ffffff !important; }
+    body.dark-mode .product-name { color: #ffffff !important; }
+    body.dark-mode .product-meta { color: #dddddd !important; }
+    body.dark-mode .price { color: #ffc107 !important; }
+    
+    /* Inline Message */
+    body.dark-mode #cart-inline-msg {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+        color: #ffffff !important;
+    }
+    
+    /* All text elements in dark mode */
+    body.dark-mode h1 { color: #ffffff !important; }
+    body.dark-mode h2 { color: #ffffff !important; }
+    body.dark-mode h3 { color: #ffffff !important; }
+    body.dark-mode h4 { color: #ffffff !important; }
+    body.dark-mode p { color: #dddddd !important; }
+    
+    /* Override ALL inline background styles in dark mode */
+    body.dark-mode div[style*="background: #fffbf0"],
+    body.dark-mode div[style*="background:#fcfcfc"],
+    body.dark-mode div[style*="background:#fafafa"],
+    body.dark-mode div[style*="background:#f9f5f0"],
+    body.dark-mode div[style*="background:#fcfcfc"] {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+        color: #ffffff !important;
+    }
+    
+    body.dark-mode .review-info-box {
+        background-color: #1a1a1a !important;
+        border-color: #333333 !important;
+        color: #ffeb7f !important;
+    }
+    
+    body.dark-mode .reply-form-box,
+    body.dark-mode textarea {
+        background-color: #1a1a1a !important;
+        color: #ffffff !important;
+        border-color: #333333 !important;
+    }
+    
+    body.dark-mode textarea::placeholder {
+        color: #666 !important;
+    }
+    
+    body.dark-mode .admin-label {
+        background-color: #2f1c00 !important;
+        color: #ffffff !important;
+    }
 </style>
 
 <main class="container">

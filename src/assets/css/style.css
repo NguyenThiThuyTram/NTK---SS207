@@ -2295,3 +2295,161 @@ body.dark-mode .submenu li a:hover {
         width: 92%;
     }
 }
+
+/* ===== DARK MODE - PRODUCT DETAIL PAGE ===== */
+body.dark-mode {
+    background-color: #0a0a0a !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .product-detail-container {
+    color: #ffffff !important;
+}
+
+body.dark-mode .main-image img,
+body.dark-mode .main-detail-img {
+    border-color: #333333 !important;
+}
+
+body.dark-mode .detail-title {
+    color: #ffffff !important;
+}
+
+body.dark-mode .detail-meta {
+    color: #dddddd !important;
+}
+
+body.dark-mode .detail-price-box {
+    background-color: #1a1a1a !important;
+    border: 1px solid #333333 !important;
+}
+
+body.dark-mode .detail-sale-price {
+    color: #ffffff !important;
+}
+
+body.dark-mode .detail-old-price {
+    color: #999999 !important;
+}
+
+body.dark-mode .detail-discount {
+    background-color: #e63946 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .option-label {
+    color: #ffffff !important;
+}
+
+body.dark-mode .btn-option {
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .quantity-selector {
+    border-color: #333333 !important;
+    background-color: #1a1a1a !important;
+}
+
+body.dark-mode .qty-btn {
+    color: #ffffff !important;
+    border-color: #333333 !important;
+    background-color: transparent !important;
+}
+
+body.dark-mode .qty-input {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border-color: #333333 !important;
+}
+
+body.dark-mode .btn-add-cart,
+body.dark-mode .btn-add-to-cart {
+    background-color: #2f1c00 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .btn-buy-now {
+    background-color: #444444 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .btn-wishlist {
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .detail-policy {
+    border-color: #333333 !important;
+    color: #dddddd !important;
+}
+
+body.dark-mode .review-item {
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
+    color: #ffffff !important;
+}
+
+body.dark-mode .review-header {
+    color: #ffffff !important;
+}
+
+body.dark-mode .review-stars {
+    color: #ffc107 !important;
+}
+
+body.dark-mode .review-comment {
+    color: #dddddd !important;
+}
+
+body.dark-mode .review-date {
+    color: #999999 !important;
+}
+
+body.dark-mode .product-feedback {
+    border-color: #333333 !important;
+    background-color: #0a0a0a !important;
+}
+
+body.dark-mode .product-feedback h3 {
+    color: #f1c40f !important;
+}
+
+body.dark-mode main.container,
+body.dark-mode .container {
+    background-color: #0a0a0a !important;
+    color: #ffffff !important;
+}
+
+/* Override ALL inline styles with white backgrounds */
+body.dark-mode [style*="background: #fff"],
+body.dark-mode [style*="background:#fff"],
+body.dark-mode [style*="background: #f"],
+body.dark-mode div[style*="background"] {
+    background-color: #1a1a1a !important;
+    border-color: #333333 !important;
+}
+
+/* Text in dark mode */
+body.dark-mode,
+body.dark-mode * {
+    color: #ffffff !important;
+}
+
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select,
+body.dark-mode [type="text"],
+body.dark-mode [type="email"],
+body.dark-mode [type="file"] {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    border-color: #333333 !important;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+    color: #666 !important;
+}
