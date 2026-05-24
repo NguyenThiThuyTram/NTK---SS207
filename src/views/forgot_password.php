@@ -100,7 +100,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
             }
         } catch (PDOException $e) {
-            die("Lỗi Database: " . $e->getMessage());
+            // Handle error silently
         }
     }
 }

@@ -174,7 +174,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <th>Họ tên</th>
                 <th>Email / SĐT</th>
                 <th>Vai trò</th>
-                <th>Trạng thái</th>
+                <th>Thành viên</th>
+                <th>Điểm Loyalty</th>
                 <th>Tổng chi tiêu</th>
                 <th>Hành động</th>
             </tr>
@@ -195,10 +196,16 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 </td>
                 <td>
                     <?php if ($u['status'] == 1): ?>
-                        <span class="status-badge status-active">Hoạt động</span>
+                        <span class="status-badge status-active" style="margin-bottom: 5px;">Hoạt động</span>
                     <?php else: ?>
-                        <span class="status-badge status-locked">Đã khóa</span>
+                        <span class="status-badge status-locked" style="margin-bottom: 5px;">Đã khóa</span>
                     <?php endif; ?>
+                    <br>
+                    <span style="font-weight:600; color:#b8860b; font-size:12px;"><i class="fa-solid fa-crown"></i> Hạng: <?= htmlspecialchars($u['tier'] ?? 'Member') ?></span>
+                </td>
+                <td>
+                    <div style="font-size:13px; color:#2f1c00; font-weight:600;">Khả dụng: <?= number_format($u['current_points'] ?? 0, 0, ',', '.') ?></div>
+                    <div style="font-size:12px; color:#888;">Tích lũy: <?= number_format($u['accumulated_points'] ?? 0, 0, ',', '.') ?></div>
                 </td>
                 <td style="font-weight:600; color:#2f1c00;"><?= number_format($u['total_spent'], 0, ',', '.') ?>đ</td>
                 <td>
