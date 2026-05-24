@@ -48,7 +48,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $protocol = 'https';
                 }
                 $host = $_SERVER['HTTP_HOST'] ?? 'ntkfashion.me';
-                $reset_link = "$protocol://$host/src/views/reset_password.php?token=" . urlencode($token);
+                
+                // Dynamically resolve directory path based on how the script is accessed by the browser
+                $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+                $request_path = explode('?', $request_uri)[0];
+                $dir_path = dirname($request_path);
+                $dir_path = rtrim(str_replace('\\', '/', $dir_path), '/');
+                
+                $reset_link = "$protocol://$host$dir_path/reset_password.php?token=" . urlencode($token);
 
                 // Dispatch Email using PHPMailer SMTP Gmail setup
                 $mail = new PHPMailer(true);
