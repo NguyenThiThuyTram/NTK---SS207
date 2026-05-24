@@ -187,16 +187,8 @@ $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
                             <div class="price-container">
                                 <?php 
-                                    $db_price = (float)$p['original_price'];
-                                    $db_sale = (float)$p['sale_price'];
-
-                                    if ($db_price <= 0) {
-                                        $display_price = rand(200, 500) * 1000; 
-                                        $display_sale = 0; 
-                                    } else {
-                                        $display_price = $db_price;
-                                        $display_sale = $db_sale;
-                                    }
+                                    $display_price = (float)$p['original_price'];
+                                    $display_sale = (float)$p['sale_price'];
 
                                     if ($display_sale > 0 && $display_sale < $display_price): 
                                 ?>
