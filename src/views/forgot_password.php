@@ -2,11 +2,11 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-require_once '../config/database.php';
+require_once dirname(__DIR__) . '/config/database.php';
 
-require '../includes/PHPMailer/Exception.php';
-require '../includes/PHPMailer/PHPMailer.php';
-require '../includes/PHPMailer/SMTP.php';
+require dirname(__DIR__) . '/includes/PHPMailer/Exception.php';
+require dirname(__DIR__) . '/includes/PHPMailer/PHPMailer.php';
+require dirname(__DIR__) . '/includes/PHPMailer/SMTP.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -44,19 +44,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     'email' => $email
                 ]);
 
-                // Construct dynamic URL
-                $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
-                $host = $_SERVER['HTTP_HOST'];
+                // Construct dynamic URL (enforcing HTTPS on production)
+                $protocol = 'http';
+                if ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] == 1)) ||
+                    (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+                    (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'ntkfashion.me') !== false)) {
+                    $protocol = 'https';
+                }
+                $host = $_SERVER['HTTP_HOST'] ?? 'ntkfashion.me';
                 $reset_link = "$protocol://$host/src/views/reset_password.php?token=$token";
 
                 // Dispatch Email using PHPMailer SMTP Gmail setup
                 $mail = new PHPMailer(true);
                 try {
                     $mail->isSMTP();
+                    $mail->SMTPDebug  = 2;
+                    ob_start();
+
                     $mail->Host       = 'smtp.gmail.com';
                     $mail->SMTPAuth   = true;
+                    // Synchronized to match the exact credentials from registerController.php (including trailing CRLF)
                     $mail->Username   = 'tpkhai108@gmail.com'; 
-                    $mail->Password   = 'nswc oznx scfx clae'; 
+                    $mail->Password   = "nswc oznx scfx clae\r\n"; 
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
                     $mail->CharSet    = 'UTF-8';
@@ -76,8 +85,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     ";
 
                     $mail->send();
+                    ob_end_clean();
                 } catch (Exception $e) {
-                    // Log error or handle gracefully
+                    $smtp_log = ob_get_clean();
+                    $log_dir = dirname(__DIR__) . '/admin';
+                    if (!is_dir($log_dir)) {
+                        mkdir($log_dir, 0755, true);
+                    }
+                    $log_file = $log_dir . '/mail_error.log';
+                    $error_message = date('[Y-m-d H:i:s] ') . "Mail error: " . $e->getMessage() . "\n" . $mail->ErrorInfo . "\n" . "SMTP Log:\n" . $smtp_log . "\n-------------------------\n";
+                    file_put_contents($log_file, $error_message, FILE_APPEND);
                 }
             }
         } catch (PDOException $e) {
