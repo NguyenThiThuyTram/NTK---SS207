@@ -2,17 +2,40 @@
 require_once 'auth_check.php';
 require_once __DIR__ . '/../config/database.php';
 
-// Xử lý khi Admin bấm nút Gửi câu trả lời từ giao diện quản trị này
 if (isset($_POST['submit_reply'])) {
     $parent_id = intval($_POST['parent_id']);
     $product_id = $_POST['product_id'];
     $reply_comment = trim($_POST['reply_comment']);
+    $user_id_of_review = $_POST['user_id_of_review'];
+    $is_pinned = isset($_POST['is_pinned']) ? 1 : 0;
+    $give_voucher = isset($_POST['give_voucher']) ? 1 : 0;
     $admin_id = $_SESSION['user_id'] ?? null;
 
     if (!empty($reply_comment) && $admin_id) {
         $stmt = $conn->prepare("INSERT INTO reviews (user_id, product_id, parent_id, comment, created_at) VALUES (:uid, :pid, :parent, :text, NOW())");
         $stmt->execute(['uid' => $admin_id, 'pid' => $product_id, 'parent' => $parent_id, 'text' => $reply_comment]);
-        echo "<script>alert('Đã gửi phản hồi của Quản trị viên thành công!'); window.location.href='reviews.php';</script>";
+        
+        $coupon_id = null;
+        if ($give_voucher && $user_id_of_review) {
+            $coupon_id = 'V' . substr(str_shuffle("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 4);
+            $coupon_code = 'REWARD30K_' . time();
+            $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_amount, discount_type, min_spend, start_date, end_date, usage_limit, status, user_id) 
+                VALUES (:cid, :code, 30000, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, :uid)");
+            $stmt_cp->execute([
+                'cid' => $coupon_id,
+                'code' => $coupon_code,
+                'uid' => $user_id_of_review
+            ]);
+            
+            $msg = "Người bán đã phản hồi đánh giá của bạn và tặng bạn một Voucher giảm 30K (Mã: $coupon_code) cho đơn hàng tiếp theo.";
+            $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, type, title, message) VALUES (:uid, 'system', 'Quà tặng từ Shop', :msg)");
+            $stmt_notif->execute(['uid' => $user_id_of_review, 'msg' => $msg]);
+        }
+
+        $stmt_upd = $conn->prepare("UPDATE reviews SET is_pinned = :pin, reward_coupon_id = :cid WHERE review_id = :rid");
+        $stmt_upd->execute(['pin' => $is_pinned, 'cid' => $coupon_id, 'rid' => $parent_id]);
+
+        echo "<script>alert('Đã gửi phản hồi và cập nhật đánh giá thành công!'); window.location.href='reviews.php';</script>";
         exit;
     }
 }
@@ -80,9 +103,16 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <form action="" method="POST" class="reply-form-admin">
                     <input type="hidden" name="parent_id" value="<?= $r['review_id'] ?>">
                     <input type="hidden" name="product_id" value="<?= $r['product_id'] ?>">
+                    <input type="hidden" name="user_id_of_review" value="<?= htmlspecialchars($r['user_id']) ?>">
+                    
+                    <div style="margin-bottom: 10px; display: flex; gap: 15px; font-size: 13px;">
+                        <label><input type="checkbox" name="is_pinned" value="1"> <i class="fa-solid fa-thumbtack" style="color:#e74c3c"></i> Ghim lên đầu</label>
+                        <label><input type="checkbox" name="give_voucher" value="1"> <i class="fa-solid fa-gift" style="color:#27ae60"></i> Tặng Voucher 30K</label>
+                    </div>
+
                     <textarea name="reply_comment" class="reply-textarea-admin" placeholder="Nhập câu trả lời của Quản trị viên tại đây..." required></textarea>
                     <div style="text-align: right;">
-                        <button type="submit" name="submit_reply" class="btn-submit-reply-admin">Gửi câu trả lời</button>
+                        <button type="submit" name="submit_reply" class="btn-submit-reply-admin">Gửi câu trả lời & Lưu thay đổi</button>
                     </div>
                 </form>
             </div>

@@ -46,6 +46,13 @@ try {
     $conn->prepare("UPDATE orders SET order_status = 3, payment_status = 1 WHERE order_id = :oid")
          ->execute(['oid' => $order_id]);
 
+    // Thưởng điểm Loyalty
+    require_once '../includes/loyalty_utils.php';
+    $points_earned = floor((float)$order['final_price'] / 10000);
+    if ($points_earned > 0) {
+        addLoyaltyPoints($conn, $user_id, $points_earned, "hoàn thành đơn hàng #{$order_id}");
+    }
+
     // Tạo thông báo cho User
     try {
         $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'order_completed', :title, :msg, :oid)")

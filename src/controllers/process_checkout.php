@@ -54,10 +54,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $payment_method = $_POST['payment_method'] ?? 'cod';
     $wallet_used = isset($_POST['wallet_used']) ? floatval($_POST['wallet_used']) : 0;
 
-    // Nhận thông tin mã giảm giá từ form
     $coupon_id       = !empty($_POST['coupon_id'])       ? trim($_POST['coupon_id'])       : null;
     $coupon_discount = isset($_POST['coupon_discount'])  ? floatval($_POST['coupon_discount']) : 0;
     $coupon_code     = !empty($_POST['coupon_code'])     ? strtoupper(trim($_POST['coupon_code'])) : null;
+    
+    $points_discount = isset($_POST['points_discount']) ? floatval($_POST['points_discount']) : 0;
 
 
     try {
@@ -121,7 +122,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        $final_price = max(0, $total_price - $verified_coupon_discount - $wallet_used);
+        require_once '../includes/loyalty_utils.php';
+        
+        $stmt_user_loyalty = $conn->prepare("SELECT current_points, tier FROM users WHERE user_id = :uid FOR UPDATE");
+        $stmt_user_loyalty->execute(['uid' => $user_id]);
+        $u_data = $stmt_user_loyalty->fetch(PDO::FETCH_ASSOC);
+        $current_points = $u_data['current_points'] ?? 0;
+        $tier = $u_data['tier'] ?? 'Member';
+
+        // Xác thực điểm Loyalty
+        if ($points_discount > $current_points * 100) {
+            $points_discount = $current_points * 100;
+        }
+
+        // Tính chiết khấu hạng
+        $tier_discount_percent = getTierDiscount($tier);
+        $tier_discount = round($subtotal * ($tier_discount_percent / 100));
+
+        $final_price = max(0, $total_price - $verified_coupon_discount - $tier_discount - $points_discount - $wallet_used);
         $payos_order_code = intval(date('ymd') . rand(1000, 9999));
 
         // Logic trạng thái: COD=1 (pay_method=1), Online=2 (pay_method=2)
@@ -165,6 +183,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $conn->prepare("UPDATE users SET wallet_balance = wallet_balance - :amount WHERE user_id = :uid")->execute(['amount' => $wallet_used, 'uid' => $user_id]);
             $conn->prepare("INSERT INTO wallet_transactions (user_id, amount, transaction_type, description, related_order_id) VALUES (:uid, :amount, 2, :desc, :oid)")
                  ->execute(['uid' => $user_id, 'amount' => $wallet_used, 'desc' => "Sử dụng ví thanh toán đơn hàng " . $order_id, 'oid' => $order_id]);
+        }
+
+        // -------------------------------------------------------------
+        // BƯỚC 2b: XỬ LÝ ĐIỂM LOYALTY
+        // -------------------------------------------------------------
+        if ($points_discount > 0) {
+            $points_to_deduct = ceil($points_discount / 100);
+            $conn->prepare("UPDATE users SET current_points = current_points - :pts WHERE user_id = :uid")
+                 ->execute(['pts' => $points_to_deduct, 'uid' => $user_id]);
         }
 
         // -------------------------------------------------------------
