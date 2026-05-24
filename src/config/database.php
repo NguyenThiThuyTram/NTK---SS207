@@ -37,6 +37,8 @@ try {
         $password,
         $pdo_options
     );
+    // Set MySQL timezone
+    $conn->exec("SET time_zone = '+07:00'");
 } catch (PDOException $e) {
     die("Kết nối Database thất bại: " . $e->getMessage());
 }

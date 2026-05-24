@@ -19,8 +19,8 @@ $current_page_title = $page_titles[$admin_current_page] ?? '';
 require_once __DIR__ . '/../config/database.php';
 $notifications = [];
 
-// 1. Đơn hàng mới (order_status = 0, trong 24h)
-$stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
+// 1. Đơn hàng mới (order_status = 0 hoặc 1, trong 24h)
+$stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE order_status IN (0, 1) AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
 while ($row = $stmt->fetch()) {
     $notifications[] = [
         'time' => strtotime($row['order_date']),
@@ -32,6 +32,7 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
+/*
 // 1b. Thông báo từ bảng notifications (new_order type - từ process_checkout)
 $admin_user_id = $_SESSION['user_id'] ?? 0;
 try {
@@ -50,6 +51,7 @@ try {
 } catch (PDOException $e) {
     // Ignore error if table notifications does not exist yet
 }
+*/
 
 // 2. Yêu cầu trả hàng (order_status = 5)
 $stmt = $conn->query("SELECT order_id, order_date, return_requested_at FROM orders WHERE order_status = 5 ORDER BY order_date DESC");
