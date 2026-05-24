@@ -65,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $mail->SMTPAuth   = true;
                     // Synchronized to match the exact credentials from registerController.php (including trailing CRLF)
                     $mail->Username   = 'tpkhai108@gmail.com'; 
-                    $mail->Password   = "nswc oznx scfx clae\r\n"; 
+                    $mail->Password   = "nswcoznxscfxclae"; 
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
                     $mail->CharSet    = 'UTF-8';
