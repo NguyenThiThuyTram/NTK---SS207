@@ -135,6 +135,15 @@
                 </div>
             <?php endif; ?>
 
+            <?php if (isset($_SESSION['login_success_msg'])): ?>
+                <div style="background-color: #f0fdf4; color: #15803d; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-size: 14px; font-weight: 500; border: 1px solid #86efac;">
+                    <?php 
+                        echo $_SESSION['login_success_msg']; 
+                        unset($_SESSION['login_success_msg']); 
+                    ?>
+                </div>
+            <?php endif; ?>
+
             <form action="../controllers/loginController.php" method="POST">
                 
                 <?php 
@@ -175,7 +184,7 @@
                     <label class="remember-me">
                         <input type="checkbox" name="remember"> Ghi nhớ đăng nhập
                     </label>
-                    <a href="#" class="forgot-pass">Quên mật khẩu?</a>
+                    <a href="forgot_password.php" class="forgot-pass">Quên mật khẩu?</a>
                 </div>
 
                 <button type="submit" class="btn-login">ĐĂNG NHẬP</button>

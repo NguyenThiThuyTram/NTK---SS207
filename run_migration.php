@@ -27,6 +27,9 @@ $sqls = [
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(100) DEFAULT NULL" => "orders.tracking_number",
     "ALTER TABLE order_returns ADD COLUMN IF NOT EXISTS admin_note VARCHAR(500) DEFAULT NULL" => "order_returns.admin_note",
     "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS parent_id INT(11) DEFAULT NULL" => "reviews.parent_id",
+    "ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NOT NULL" => "users.password",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255) DEFAULT NULL" => "users.reset_token",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expiry DATETIME DEFAULT NULL" => "users.reset_token_expiry",
     "CREATE TABLE IF NOT EXISTS notifications (
         noti_id INT(11) NOT NULL AUTO_INCREMENT,
         user_id CHAR(5) DEFAULT NULL,
