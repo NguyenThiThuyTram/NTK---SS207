@@ -1,5 +1,5 @@
 <?php
-require_once 'src/config/database.php';
+require_once 'config/database.php';
 
 $sqls = [
     "ALTER TABLE users ADD COLUMN IF NOT EXISTS current_points INT(11) DEFAULT 0",
