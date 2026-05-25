@@ -208,8 +208,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $conn->prepare("DELETE FROM cart WHERE user_id = :uid AND is_selected = 1")->execute(['uid' => $user_id]);
         if ($verified_coupon_id) $conn->prepare("UPDATE coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")->execute(['cid' => $verified_coupon_id]);
 
-        // ── Thông báo Admin có đơn hàng mới ────────────────────────────
+        // ── Thông báo cho Khách hàng & Admin ───────────────────────────
         try {
+            // Thông báo cho Khách hàng
+            $order_total_fmt = number_format($final_price, 0, ',', '.');
+            $conn->prepare("INSERT INTO notifications (user_id, type, title, message, related_order_id) VALUES (:uid, 'order_placed', :title, :msg, :oid)")
+                 ->execute([
+                     'uid'   => $user_id,
+                     'title' => 'Đặt hàng thành công #' . $order_id,
+                     'msg'   => "Đơn hàng #{$order_id} của bạn đã được ghi nhận. Tổng thanh toán là {$order_total_fmt} VNĐ.",
+                     'oid'   => $order_id
+                 ]);
+
             // Lấy user_id của admin (role = 1)
             $stmt_admin = $conn->prepare("SELECT user_id FROM users WHERE role = 1 LIMIT 1");
             $stmt_admin->execute();

@@ -114,7 +114,12 @@ try {
             <div class="header-icons">
                 <a href="javascript:void(0)" onclick="toggleSearch()"><i class="fa-solid fa-magnifying-glass"></i></a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="<?= $_BASE ?>/views/user/dashboard.php?view=thongbao" title="Thông báo"><i class="fa-regular fa-bell"></i></a>
+                    <a href="<?= $_BASE ?>/views/user/dashboard.php?view=thongbao" title="Thông báo" style="position:relative;">
+                        <i class="fa-regular fa-bell"></i>
+                        <?php if ($unread_noti_count > 0): ?>
+                        <span class="cart-count" style="position:absolute; top:-6px; right:-8px; background:#e63946; color:#fff; font-size:12px; padding:2px 6px; border-radius:12px; display:inline-block;"><?= intval($unread_noti_count) ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a href="<?= ($_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản"><i class="fa-solid fa-user"></i></a>
                 <?php else: ?>
                     <a href="<?= $_BASE ?>/views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
