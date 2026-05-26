@@ -319,13 +319,89 @@ try {
             // 1. Nhận thông báo mới
             if (data.notifications && data.notifications.length > 0) {
                 let badge = document.getElementById('badge-notif');
-                let currentCount = parseInt(badge.innerText || '0');
-                currentCount += data.notifications.length;
-                badge.innerText = currentCount;
-                badge.style.display = 'inline-block';
+                if (badge) {
+                    let currentCount = parseInt(badge.innerText || '0');
+                    currentCount += data.notifications.length;
+                    badge.innerText = currentCount;
+                    badge.style.display = 'inline-block';
+                }
+
+                const notiList = document.querySelector('.noti-list');
+                if (notiList) {
+                    const emptyState = notiList.querySelector('.noti-empty');
+                    if (emptyState) emptyState.remove();
+                }
 
                 data.notifications.forEach(notif => {
                     showToast(notif.title, notif.message);
+                    
+                    if (notiList) {
+                        const item = document.createElement('div');
+                        item.className = 'noti-item unread';
+                        
+                        let iconClass = 'fa-solid fa-bell';
+                        let colorClass = 'icon-blue';
+                        const map = {
+                            'order_placed': { icon: 'fa-solid fa-bag-shopping', color: 'icon-blue' },
+                            'order_pending_payment': { icon: 'fa-solid fa-clock', color: 'icon-orange' },
+                            'order_confirmed': { icon: 'fa-solid fa-circle-check', color: 'icon-green' },
+                            'order_shipping': { icon: 'fa-solid fa-truck-fast', color: 'icon-orange' },
+                            'order_completed': { icon: 'fa-solid fa-star', color: 'icon-green' },
+                            'order_cancelled': { icon: 'fa-regular fa-circle-xmark', color: 'icon-red' },
+                            'return_request': { icon: 'fa-solid fa-rotate-left', color: 'icon-orange' },
+                            'return_approved': { icon: 'fa-solid fa-thumbs-up', color: 'icon-green' },
+                            'return_rejected': { icon: 'fa-solid fa-ban', color: 'icon-red' },
+                            'refund_done': { icon: 'fa-solid fa-wallet', color: 'icon-green' },
+                            'delivery_failed': { icon: 'fa-solid fa-triangle-exclamation', color: 'icon-red' },
+                            'cancel_approved': { icon: 'fa-solid fa-circle-xmark', color: 'icon-red' },
+                            'cancel_rejected': { icon: 'fa-solid fa-ban', color: 'icon-red' },
+                            'order_update': { icon: 'fa-solid fa-bell', color: 'icon-blue' }
+                        };
+                        
+                        if (map[notif.type]) {
+                            iconClass = map[notif.type].icon;
+                            colorClass = map[notif.type].color;
+                        }
+                        
+                        let orderLinkHtml = '';
+                        if (notif.related_order_id) {
+                            orderLinkHtml = `
+                                <a href="dashboard.php?view=chitietdonhang&id=${notif.related_order_id}" class="noti-order-link">
+                                    Xem đơn hàng #${notif.related_order_id} →
+                                </a>
+                            `;
+                        }
+
+                        const createdDate = new Date();
+                        const timeStr = createdDate.getHours().toString().padStart(2, '0') + ':' + createdDate.getMinutes().toString().padStart(2, '0') + ' ' + createdDate.getDate().toString().padStart(2, '0') + '/' + (createdDate.getMonth() + 1).toString().padStart(2, '0') + '/' + createdDate.getFullYear();
+
+                        item.innerHTML = `
+                            <div class="noti-icon ${colorClass}">
+                                <i class="${iconClass}"></i>
+                            </div>
+                            <div class="noti-body">
+                                <div class="noti-title" style="font-weight: 600;">${notif.title}</div>
+                                <div class="noti-msg">${notif.message}</div>
+                                ${orderLinkHtml}
+                                <div class="noti-time">
+                                    <i class="fa-regular fa-clock" style="margin-right:4px;"></i>
+                                    Vừa xong
+                                    <span style="color:#ddd; margin:0 6px;">·</span>
+                                    ${timeStr}
+                                </div>
+                            </div>
+                            <div class="unread-dot" title="Chưa đọc"></div>
+                        `;
+                        
+                        notiList.insertBefore(item, notiList.firstChild);
+                        
+                        const titleCount = document.querySelector('.noti-page-header span');
+                        if (titleCount) {
+                            const currentTotal = parseInt(titleCount.innerText) || 0;
+                            titleCount.innerText = (currentTotal + 1) + ' thông báo';
+                        }
+                    }
+
                     lastNotifId = Math.max(lastNotifId, notif.notification_id);
                 });
                 

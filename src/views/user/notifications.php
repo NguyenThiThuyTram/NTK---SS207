@@ -2,12 +2,6 @@
 // notifications.php - Included trong dashboard.php
 $user_id = $_SESSION['user_id'];
 
-// Đánh dấu tất cả là đã đọc khi mở trang
-try {
-    $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = :uid AND is_read = 0")
-         ->execute(['uid' => $user_id]);
-} catch (PDOException $e) {}
-
 // Lấy danh sách thông báo từ bảng notifications (nếu có)
 $notifications = [];
 try {
@@ -18,6 +12,12 @@ try {
 } catch (PDOException $e) {
     // Bỏ qua nếu bảng chưa tồn tại
 }
+
+// Đánh dấu tất cả là đã đọc khi mở trang
+try {
+    $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = :uid AND is_read = 0")
+         ->execute(['uid' => $user_id]);
+} catch (PDOException $e) {}
 
 // Bổ sung các thông báo động từ trạng thái đơn hàng hiện tại
 try {
@@ -181,9 +181,19 @@ function timeAgo($datetime) {
     .noti-empty i { font-size: 48px; display: block; margin-bottom: 16px; }
 </style>
 
-<div class="noti-page-header">
-    <h2 class="noti-page-title">🔔 Thông báo</h2>
-    <span style="font-size:13px; color:#999;"><?= count($notifications) ?> thông báo</span>
+<div class="noti-page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h2 class="noti-page-title">🔔 Thông báo</h2>
+        <span style="font-size:13px; color:#999;" id="user-noti-count"><?= count($notifications) ?> thông báo</span>
+    </div>
+    <?php
+    $unread_count = count(array_filter($notifications, function($n) { return !$n['is_read']; }));
+    if ($unread_count > 0):
+    ?>
+    <button class="btn-user-mark-all-read" onclick="userMarkAllRead(event)" style="background: #fdf5ea; color: #a6825c; border: 1px solid #a6825c; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+        <i class="fa-solid fa-check-double"></i> Đánh dấu đã đọc tất cả
+    </button>
+    <?php endif; ?>
 </div>
 
 <div class="noti-list">
@@ -225,3 +235,39 @@ function timeAgo($datetime) {
         <?php endforeach; ?>
     <?php endif; ?>
 </div>
+
+<script>
+function userMarkAllRead(e) {
+    if (e) e.preventDefault();
+    
+    fetch('<?= $_BASE ?>/api/user_mark_all_read.php', {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const unreadItems = document.querySelectorAll('.noti-item.unread');
+            unreadItems.forEach(item => {
+                item.classList.remove('unread');
+                const dot = item.querySelector('.unread-dot');
+                if (dot) dot.remove();
+            });
+            
+            const badge = document.getElementById('badge-notif');
+            if (badge) {
+                badge.innerText = '0';
+                badge.style.display = 'none';
+            }
+            
+            const btn = document.querySelector('.btn-user-mark-all-read');
+            if (btn) btn.remove();
+        } else {
+            alert('Có lỗi xảy ra: ' + (data.message || 'Không thể đánh dấu đã đọc.'));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Lỗi kết nối mạng, vui lòng thử lại.');
+    });
+}
+</script>

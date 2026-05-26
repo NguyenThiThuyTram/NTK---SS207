@@ -41,6 +41,23 @@ try {
     }
 } catch (PDOException $e) {}
 
+// Lấy max notification_id và max chat_id để làm mốc cho SSE
+$max_notif_id = 0;
+try {
+    $stmt_max = $conn->prepare("SELECT MAX(notification_id) as max_id FROM notifications WHERE user_id = :uid");
+    $stmt_max->execute(['uid' => $admin_user_id]);
+    $row_max = $stmt_max->fetch();
+    $max_notif_id = $row_max['max_id'] ?: 0;
+} catch (PDOException $e) {}
+
+$max_chat_id = 0;
+try {
+    $stmt_max_c = $conn->prepare("SELECT MAX(id) as max_id FROM chat_messages WHERE receiver_id = :uid OR sender_id = :uid");
+    $stmt_max_c->execute(['uid' => $admin_user_id]);
+    $row_max_c = $stmt_max_c->fetch();
+    $max_chat_id = $row_max_c['max_id'] ?: 0;
+} catch (PDOException $e) {}
+
 // 1. Đơn hàng mới (order_status = 0, trong 24h)
 $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
 while ($row = $stmt->fetch()) {
@@ -1422,9 +1439,24 @@ $notif_count = $total_unread;
                 grid-template-columns: 1fr !important;
             }
         }
+        
+        /* Toast Notification Styles */
+        .ntk-toast-container { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .ntk-toast { background: #fff; border-left: 4px solid #f39c12; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 15px 20px; border-radius: 4px; min-width: 300px; display: flex; align-items: flex-start; gap: 15px; animation: slideInRight 0.3s ease-out forwards; transition: opacity 0.3s; }
+        body.dark-mode .ntk-toast { background: #1e1e1e; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .ntk-toast i { font-size: 20px; color: #f39c12; margin-top: 2px; }
+        .ntk-toast-content { flex: 1; }
+        .ntk-toast-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #333; }
+        body.dark-mode .ntk-toast-title { color: #f5f5f5; }
+        .ntk-toast-msg { font-size: 13px; color: #666; }
+        body.dark-mode .ntk-toast-msg { color: #ccc; }
+        .ntk-toast-close { cursor: pointer; color: #aaa; font-size: 16px; border: none; background: none; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
+
+<div class="ntk-toast-container" id="ntk-toast-container"></div>
 
 <!-- ===== SIDEBAR ===== -->
 <aside class="admin-sidebar">
