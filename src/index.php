@@ -258,9 +258,12 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
 <button id="ntk-chat-toggle" onclick="toggleChat()">🤖</button>
 
 <div id="ntk-chatbox">
-    <div id="ntk-chat-header" onclick="toggleChat()">
-        <span>Nhân viên AI Tư Vấn</span>
-        <span>✖</span>
+    <div id="ntk-chat-header">
+        <select id="chat-mode" style="background:transparent; color:#fff; border:1px solid #fff; border-radius:4px; padding:2px; font-weight:bold; cursor:pointer;">
+            <option value="bot" style="color:#000">🤖 Bot AI</option>
+            <option value="human" style="color:#000">👩‍💼 Nhân viên</option>
+        </select>
+        <span onclick="toggleChat()" style="cursor:pointer;">✖</span>
     </div>
     <div id="ntk-chat-messages">
         <div class="msg-bot">Dạ chào anh/chị, em là nhân viên AI của shop NTK. Mình đang tìm đồ như thế nào để em tư vấn cho ạ? </div>
@@ -283,29 +286,75 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
         if (!msgText) return;
 
         const messagesDiv = document.getElementById('ntk-chat-messages');
+        const chatMode = document.getElementById('chat-mode').value;
         
         messagesDiv.innerHTML += `<div class="msg-user">${msgText}</div>`;
         input.value = '';
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-        const typingId = "typing-" + Date.now();
-        messagesDiv.innerHTML += `<div class="msg-bot" id="${typingId}">Nhân viên AI đang tìm câu trả lời...</div>`;
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        try {
-            const response = await fetch('api_chatbot.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: msgText })
-            });
-            const data = await response.json();
-            
-            document.getElementById(typingId).remove();
-            messagesDiv.innerHTML += `<div class="msg-bot">${data.reply.replace(/\n/g, '<br>')}</div>`;
+        if (chatMode === 'bot') {
+            const typingId = "typing-" + Date.now();
+            messagesDiv.innerHTML += `<div class="msg-bot" id="${typingId}">Nhân viên AI đang tìm câu trả lời...</div>`;
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        } catch (error) {
-            document.getElementById(typingId).innerHTML = "Lỗi kết nối rồi đại ca ơi!";
+
+            try {
+                const response = await fetch('api_chatbot.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msgText })
+                });
+                const data = await response.json();
+                
+                document.getElementById(typingId).remove();
+                messagesDiv.innerHTML += `<div class="msg-bot">${data.reply.replace(/\n/g, '<br>')}</div>`;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (error) {
+                document.getElementById(typingId).innerHTML = "Lỗi kết nối rồi đại ca ơi!";
+            }
+        } else {
+            // Live chat với nhân viên
+            try {
+                const formData = new FormData();
+                formData.append('message', msgText);
+                formData.append('receiver_id', 0); // 0 = Admin
+                
+                const response = await fetch('api/chat_send.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    messagesDiv.innerHTML += `<div class="msg-bot" style="color:red; font-size:12px;">Hệ thống: ${data.message}</div>`;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            } catch (error) {
+                messagesDiv.innerHTML += `<div class="msg-bot" style="color:red; font-size:12px;">Hệ thống: Lỗi kết nối.</div>`;
+            }
         }
+    }
+
+    // Hook nhận tin nhắn từ SSE (khai báo trong header.php)
+    if (typeof window.handleNewChatMessage === 'undefined') {
+        window.handleNewChatMessage = function(messages) {
+            const messagesDiv = document.getElementById('ntk-chat-messages');
+            const chatbox = document.getElementById('ntk-chatbox');
+            let hasNew = false;
+            
+            messages.forEach(msg => {
+                if (msg.sender_id != <?= isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 'null' ?>) {
+                    messagesDiv.innerHTML += `<div class="msg-bot"><b>Nhân viên:</b><br>${msg.message}</div>`;
+                    hasNew = true;
+                }
+            });
+
+            if (hasNew) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                // Nếu hộp thoại đang đóng thì mở lên hoặc hiện badge (tạm mở lên)
+                if (chatbox.style.display !== 'flex') {
+                    chatbox.style.display = 'flex';
+                }
+            }
+        };
     }
 </script>
 

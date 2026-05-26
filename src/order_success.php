@@ -439,6 +439,27 @@ include 'includes/header.php';
 
                 <script>
                 const orderId = <?= json_encode($order_id) ?>;
+                
+                // 1. Hook vào SSE chung từ header.php
+                window.handleOrderUpdate = function(updates) {
+                    updates.forEach(update => {
+                        if (update.order_id == orderId && update.payment_status == 1) {
+                            // Xử lý giao diện khi thanh toán thành công
+                            document.getElementById('success-overlay').classList.add('show');
+                            const badge = document.getElementById('status-badge');
+                            if(badge) {
+                                badge.className = 'status-badge status-paid';
+                                badge.innerHTML = '<i class="fa-solid fa-circle-check"></i> Đã thanh toán';
+                            }
+                            const qrBox = document.querySelector('.qr-box');
+                            if(qrBox) qrBox.style.display = 'none';
+                            
+                            setTimeout(() => window.location.reload(), 3000);
+                        }
+                    });
+                };
+
+                // 2. Fallback polling (giữ lại phòng khi trình duyệt không hỗ trợ SSE)
                 let pollCount = 0;
                 const maxPolls = 120; // Poll tối đa 6 phút (120 x 3s)
 

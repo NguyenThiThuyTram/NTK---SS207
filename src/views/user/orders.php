@@ -465,6 +465,17 @@ try {
                 alert('Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.');
             });
         });
+
+        // Hook vào SSE chung từ header.php
+        if (typeof window.handleOrderUpdate === 'undefined') {
+            window.handleOrderUpdate = function(updates) {
+                // updates là mảng các order có thay đổi
+                if (updates && updates.length > 0) {
+                    showToast('Đơn hàng cập nhật', 'Trạng thái đơn hàng của bạn vừa thay đổi!');
+                    setTimeout(() => window.location.reload(), 2000);
+                }
+            };
+        }
     </script>
 
 </div>

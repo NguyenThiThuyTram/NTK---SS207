@@ -22,12 +22,26 @@ try {
 } catch (PDOException $e) {}
 
 $unread_noti_count = 0;
+$max_notif_id = 0;
+$max_chat_id = 0;
 try {
     if (isset($_SESSION['user_id'])) {
-        $stmt_n = $conn->prepare("SELECT COUNT(*) as unread FROM notifications WHERE user_id = :user_id AND is_read = 0");
+        $stmt_n = $conn->prepare("SELECT COUNT(*) as unread, MAX(notification_id) as max_id FROM notifications WHERE user_id = :user_id");
         $stmt_n->execute(['user_id' => $_SESSION['user_id']]);
         $row_n = $stmt_n->fetch(PDO::FETCH_ASSOC);
-        $unread_noti_count = $row_n['unread'] ?: 0;
+        
+        $stmt_unread = $conn->prepare("SELECT COUNT(*) as unread FROM notifications WHERE user_id = :user_id AND is_read = 0");
+        $stmt_unread->execute(['user_id' => $_SESSION['user_id']]);
+        
+        $unread_noti_count = $stmt_unread->fetchColumn() ?: 0;
+        $max_notif_id = $row_n['max_id'] ?: 0;
+        
+        // Max chat id
+        try {
+            $stmt_c = $conn->prepare("SELECT MAX(id) FROM chat_messages WHERE receiver_id = :user_id");
+            $stmt_c->execute(['user_id' => $_SESSION['user_id']]);
+            $max_chat_id = $stmt_c->fetchColumn() ?: 0;
+        } catch (Exception $e) {}
     }
 } catch (PDOException $e) {}
 ?>
@@ -116,9 +130,9 @@ try {
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <a href="<?= $_BASE ?>/views/user/dashboard.php?view=thongbao" title="Thông báo" style="position:relative;">
                         <i class="fa-regular fa-bell"></i>
-                        <?php if ($unread_noti_count > 0): ?>
-                        <span class="cart-count" style="position:absolute; top:-6px; right:-8px; background:#e63946; color:#fff; font-size:12px; padding:2px 6px; border-radius:12px; display:inline-block;"><?= intval($unread_noti_count) ?></span>
-                        <?php endif; ?>
+                        <span id="badge-notif" class="cart-count" style="position:absolute; top:-6px; right:-8px; background:#e63946; color:#fff; font-size:12px; padding:2px 6px; border-radius:12px; <?= $unread_noti_count > 0 ? 'display:inline-block;' : 'display:none;' ?>">
+                            <?= intval($unread_noti_count) ?>
+                        </span>
                     </a>
                     <a href="<?= ($_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản"><i class="fa-solid fa-user"></i></a>
                 <?php else: ?>
@@ -272,4 +286,89 @@ try {
             document.getElementById('imageSearchInput').value = '';
         }
     </script>
+    
+    <!-- REAL-TIME SSE LOGIC -->
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <style>
+        .ntk-toast-container { position: fixed; top: 80px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+        .ntk-toast { background: #fff; border-left: 4px solid #f39c12; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 15px 20px; border-radius: 4px; min-width: 300px; display: flex; align-items: flex-start; gap: 15px; animation: slideInRight 0.3s ease-out forwards; transition: opacity 0.3s; }
+        body.dark-mode .ntk-toast { background: #1e1e1e; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .ntk-toast i { font-size: 20px; color: #f39c12; margin-top: 2px; }
+        .ntk-toast-content { flex: 1; }
+        .ntk-toast-title { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #333; }
+        body.dark-mode .ntk-toast-title { color: #f5f5f5; }
+        .ntk-toast-msg { font-size: 13px; color: #666; }
+        body.dark-mode .ntk-toast-msg { color: #ccc; }
+        .ntk-toast-close { cursor: pointer; color: #aaa; font-size: 16px; border: none; background: none; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    </style>
+    <div class="ntk-toast-container" id="ntk-toast-container"></div>
+    <script>
+        let lastNotifId = <?= $max_notif_id ?>;
+        let lastChatId = <?= $max_chat_id ?>;
+        const sseUrl = new URL('<?= $_BASE ?>/api/sse_stream.php', window.location.origin);
+        sseUrl.searchParams.set('last_notif_id', lastNotifId);
+        sseUrl.searchParams.set('last_chat_id', lastChatId);
+        // Note: polling_order_id can be added dynamically on order pages
+
+        const eventSource = new EventSource(sseUrl.toString());
+
+        eventSource.addEventListener('message', function(e) {
+            const data = JSON.parse(e.data);
+            
+            // 1. Nhận thông báo mới
+            if (data.notifications && data.notifications.length > 0) {
+                let badge = document.getElementById('badge-notif');
+                let currentCount = parseInt(badge.innerText || '0');
+                currentCount += data.notifications.length;
+                badge.innerText = currentCount;
+                badge.style.display = 'inline-block';
+
+                data.notifications.forEach(notif => {
+                    showToast(notif.title, notif.message);
+                    lastNotifId = Math.max(lastNotifId, notif.notification_id);
+                });
+                
+                // Cập nhật lại URL kết nối SSE với ID mới nhất để tránh gửi lại
+                sseUrl.searchParams.set('last_notif_id', lastNotifId);
+            }
+
+            // 2. Nhận tin nhắn chat mới (Sẽ xử lý sâu hơn ở phần Chat)
+            if (data.chat_messages && data.chat_messages.length > 0) {
+                if (typeof window.handleNewChatMessage === 'function') {
+                    window.handleNewChatMessage(data.chat_messages);
+                } else {
+                    // Nếu chưa mở khung chat, hiển thị thông báo
+                    showToast('Tin nhắn mới', 'Bạn có tin nhắn chưa đọc.');
+                }
+            }
+
+            // 3. Trạng thái đơn hàng (sẽ gọi hook nếu đang ở trang chi tiết)
+            if (data.order_update) {
+                if (typeof window.handleOrderUpdate === 'function') {
+                    window.handleOrderUpdate(data.order_update);
+                }
+            }
+        });
+
+        function showToast(title, message) {
+            const container = document.getElementById('ntk-toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'ntk-toast';
+            toast.innerHTML = `
+                <i class="fa-solid fa-bell"></i>
+                <div class="ntk-toast-content">
+                    <div class="ntk-toast-title">${title}</div>
+                    <div class="ntk-toast-msg">${message}</div>
+                </div>
+                <button class="ntk-toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+    </script>
+    <?php endif; ?>
     <main class="main-content">
