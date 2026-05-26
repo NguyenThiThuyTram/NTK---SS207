@@ -700,6 +700,12 @@ body.dark-mode #return-modal-detail textarea::placeholder {
             <?php endif; ?>
 
             <?php if ($os === 0 || $os === 1): ?>
+                <?php if ($os === 0 && !$is_paid): ?>
+                <!-- Chờ thanh toán: Thanh toán ngay -->
+                <a href="../../order_success.php?id=<?= htmlspecialchars($order['order_id']) ?>&method=online" class="od-action-btn od-btn-primary">
+                    <i class="fa-solid fa-credit-card" style="margin-right:5px;"></i> Thanh toán ngay
+                </a>
+                <?php endif; ?>
                 <!-- Chờ/Đang xử lý: Hủy đơn -->
                 <a href="#"
                    onclick="var r = prompt('Vui lòng nhập lý do hủy đơn hàng:'); if(r){ window.location.href='../../controllers/cancel_order.php?id=<?= $order['order_id'] ?>&reason=' + encodeURIComponent(r); } return false;"
