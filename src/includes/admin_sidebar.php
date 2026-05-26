@@ -47,6 +47,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'new_order_' . $row['order_id'];
     $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-cart-plus', 'color' => '#27ae60', // Thay đổi sang màu xanh
         'label' => 'Đơn hàng mới: #' . $row['order_id'],
@@ -64,6 +65,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'return_' . $row['order_id'];
     $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => $time,
         'icon' => 'fa-rotate-left', 'color' => '#e67e22',
         'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
@@ -81,6 +83,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'cancel_' . $row['order_id'];
     $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => $time,
         'icon' => 'fa-ban', 'color' => '#e74c3c',
         'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
@@ -97,6 +100,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'completed_order_' . $row['order_id'];
     $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-circle-check', 'color' => '#2ecc71',
         'label' => 'Đơn hàng hoàn thành: #' . $row['order_id'],
@@ -113,6 +117,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'paid_' . $row['order_id'];
     $link = 'order_detail.php?id=' . $row['order_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => strtotime($row['order_date']),
         'icon' => 'fa-circle-check', 'color' => '#27ae60',
         'label' => 'Đã thanh toán: #' . $row['order_id'],
@@ -129,6 +134,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'low_stock_' . $row['variant_id'];
     $link = 'inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
+        'event_id' => $eid,
         'time' => 1, 
         'icon' => 'fa-box-open', 'color' => '#d48806',
         'label' => 'Sắp hết hàng: ' . $row['name'],
@@ -145,6 +151,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'out_stock_' . $row['variant_id'];
     $link = 'inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
+        'event_id' => $eid,
         'time' => 0, 
         'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
         'label' => 'Hết hàng: ' . $row['name'],
@@ -161,6 +168,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'exp_coupon_' . $row['coupon_id'];
     $link = 'view_coupon.php?id=' . $row['coupon_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => strtotime($row['end_date']),
         'icon' => 'fa-ticket', 'color' => '#9b59b6',
         'label' => 'Voucher sắp hết hạn: ' . $row['code'],
@@ -177,6 +185,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'new_user_' . $row['user_id'];
     $link = 'account_detail.php?id=' . $row['user_id'];
     $notifications[] = [
+        'event_id' => $eid,
         'time' => strtotime($row['created_at']),
         'icon' => 'fa-user-plus', 'color' => '#2980b9',
         'label' => 'Thành viên mới: ' . $row['fullname'],
@@ -198,6 +207,7 @@ while ($row = $stmt->fetch()) {
     $eid = 'new_review_' . $row['review_id'];
     $link = 'reviews.php';
     $notifications[] = [
+        'event_id' => $eid,
         'time' => strtotime($row['created_at']),
         'icon' => 'fa-star', 'color' => '#f1c40f',
         'label' => 'Đánh giá mới: ' . ($row['fullname'] ?: 'Ẩn danh') . ' (' . $row['rating'] . ' sao) - ' . $row['product_name'],
@@ -1488,7 +1498,7 @@ $notif_count = $total_unread;
         <a href="#" class="topbar-icon-btn" title="Thông báo" onclick="toggleNotif(event)">
             <i class="fa-regular fa-bell"></i>
             <?php if ($notif_count > 0): ?>
-            <span class="topbar-badge"><?= min($notif_count, 9) ?><?= $notif_count > 9 ? '+' : '' ?></span>
+            <span class="topbar-badge" id="notif-badge-bell"><?= min($notif_count, 9) ?><?= $notif_count > 9 ? '+' : '' ?></span>
             <?php endif; ?>
         </a>
     </div>
@@ -1500,11 +1510,18 @@ $notif_count = $total_unread;
             <div class="notif-fs-header">
                 <div class="notif-fs-title-area">
                     <h2 class="notif-fs-title"><i class="fa-solid fa-bell"></i> THÔNG BÁO HỆ THỐNG</h2>
-                    <p class="notif-fs-subtitle">Bạn đang có <span class="highlight-count"><?= $notif_count ?></span> thông báo cần lưu ý</p>
+                    <p class="notif-fs-subtitle">Bạn đang có <span class="highlight-count" id="notif-unread-count-fs"><?= $notif_count ?></span> thông báo cần lưu ý</p>
                 </div>
-                <button class="notif-fs-close" onclick="toggleNotif(event)" title="Đóng toàn màn hình">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <?php if ($notif_count > 0): ?>
+                    <button class="btn-mark-all-read" onclick="markAllNotificationsAsRead(event)" style="background: rgba(166, 130, 92, 0.1); color: #a6825c; border: 1px solid #a6825c; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                        <i class="fa-solid fa-check-double"></i> Đánh dấu đã đọc tất cả
+                    </button>
+                    <?php endif; ?>
+                    <button class="notif-fs-close" onclick="toggleNotif(event)" title="Đóng toàn màn hình">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- Quick Stats Banner -->
@@ -1551,7 +1568,7 @@ $notif_count = $total_unread;
                     </div>
                     <?php else: ?>
                     <?php foreach ($notifications as $index => $n): ?>
-                    <a href="<?= htmlspecialchars($n['link']) ?>" class="notif-fs-item animate-in <?= !empty($n['is_unread']) ? 'unread-noti' : '' ?>" style="--delay: <?= $index * 0.05 ?>s; <?= !empty($n['is_unread']) ? 'background: rgba(166,130,92,0.05); border-left: 3px solid #e74c3c;' : 'opacity: 0.8;' ?>">
+                    <a href="<?= htmlspecialchars($n['link']) ?>" data-event-id="<?= htmlspecialchars($n['event_id'] ?? '') ?>" class="notif-fs-item animate-in <?= !empty($n['is_unread']) ? 'unread-noti' : '' ?>" style="--delay: <?= $index * 0.05 ?>s; <?= !empty($n['is_unread']) ? 'background: rgba(166,130,92,0.05); border-left: 3px solid #e74c3c;' : 'opacity: 0.8;' ?>">
                         <div class="notif-fs-icon-wrap" style="background:<?= $n['color'] ?>18; color:<?= $n['color'] ?>; box-shadow: 0 0 15px <?= $n['color'] ?>15;">
                             <i class="fa-solid <?= $n['icon'] ?>"></i>
                         </div>
@@ -1667,6 +1684,72 @@ function toggleAdminSidebar() {
         const isOpen = sidebar.classList.toggle('open');
         if (backdrop) backdrop.style.display = isOpen ? 'block' : 'none';
     }
+}
+
+function markAllNotificationsAsRead(e) {
+    if (e) e.preventDefault();
+    
+    const unreadItems = document.querySelectorAll('.notif-fs-item.unread-noti');
+    const eventIds = Array.from(unreadItems).map(item => item.getAttribute('data-event-id')).filter(id => id);
+    
+    if (eventIds.length === 0) return;
+    
+    fetch('mark_all_read.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ event_ids: eventIds })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            unreadItems.forEach(item => {
+                item.classList.remove('unread-noti');
+                item.style.background = '';
+                item.style.borderLeft = '';
+                item.style.opacity = '0.8';
+                
+                const label = item.querySelector('.notif-fs-label');
+                if (label) {
+                    label.style.fontWeight = '400';
+                    label.style.color = '#555';
+                }
+                
+                const redDot = item.querySelector('span[style*="background:#e74c3c"]');
+                if (redDot) redDot.remove();
+                
+                const time = item.querySelector('.notif-fs-time');
+                if (time) {
+                    time.style.fontWeight = '';
+                    time.style.color = '';
+                }
+            });
+            
+            const bellBadge = document.getElementById('notif-badge-bell');
+            if (bellBadge) bellBadge.remove();
+            
+            const fsCount = document.getElementById('notif-unread-count-fs');
+            if (fsCount) {
+                fsCount.innerText = '0';
+                fsCount.style.background = 'rgba(0,0,0,0.05)';
+                fsCount.style.color = '#777';
+            }
+            
+            document.querySelectorAll('.notif-stat-val').forEach(el => {
+                el.innerText = '0';
+            });
+            
+            const markAllBtn = document.querySelector('.btn-mark-all-read');
+            if (markAllBtn) markAllBtn.remove();
+        } else {
+            alert('Có lỗi xảy ra: ' + (data.message || 'Không thể đánh dấu đã đọc.'));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Lỗi kết nối mạng, vui lòng thử lại.');
+    });
 }
 </script>
 
