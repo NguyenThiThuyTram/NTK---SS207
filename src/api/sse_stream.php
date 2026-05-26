@@ -30,11 +30,16 @@ flush();
 $last_notif_id = isset($_GET['last_notif_id']) ? (int)$_GET['last_notif_id'] : 0;
 $last_chat_id = isset($_GET['last_chat_id']) ? (int)$_GET['last_chat_id'] : 0;
 
-// Lấy danh sách trạng thái hiện tại của tất cả đơn hàng (đang chờ/đang xử lý) của user này
+// Lấy danh sách trạng thái hiện tại của đơn hàng để theo dõi
 $current_orders = [];
 try {
-    $stmt = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders WHERE user_id = :uid AND (order_status IN (0, 1) OR payment_status = 0)");
-    $stmt->execute(['uid' => $user_id]);
+    if ($role == 1) {
+        $stmt = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders ORDER BY order_id DESC LIMIT 100");
+        $stmt->execute();
+    } else {
+        $stmt = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders WHERE user_id = :uid ORDER BY order_id DESC LIMIT 50");
+        $stmt->execute(['uid' => $user_id]);
+    }
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $current_orders[$row['order_id']] = [
             'os' => (int)$row['order_status'],
@@ -82,17 +87,21 @@ while (true) {
         }
     } catch (PDOException $e) {}
 
-    // 3. Kiểm tra TRẠNG THÁI ĐƠN HÀNG của user
+    // 3. Kiểm tra TRẠNG THÁI ĐƠN HÀNG
     try {
-        $stmt_ord = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders WHERE user_id = :uid AND (order_status IN (0, 1) OR payment_status = 0)");
-        $stmt_ord->execute(['uid' => $user_id]);
+        if ($role == 1) {
+            $stmt_ord = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders ORDER BY order_id DESC LIMIT 100");
+            $stmt_ord->execute();
+        } else {
+            $stmt_ord = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders WHERE user_id = :uid ORDER BY order_id DESC LIMIT 50");
+            $stmt_ord->execute(['uid' => $user_id]);
+        }
         
         while ($ord = $stmt_ord->fetch(PDO::FETCH_ASSOC)) {
             $oid = $ord['order_id'];
             $new_os = (int)$ord['order_status'];
             $new_ps = (int)$ord['payment_status'];
 
-            // Nếu đơn hàng đã có trong mảng theo dõi và trạng thái thay đổi
             if (isset($current_orders[$oid])) {
                 if ($new_os !== $current_orders[$oid]['os'] || $new_ps !== $current_orders[$oid]['ps']) {
                     if (!isset($events['order_update'])) $events['order_update'] = [];
@@ -101,11 +110,10 @@ while (true) {
                         'order_status' => $new_os,
                         'payment_status' => $new_ps
                     ];
-                    // Cập nhật lại state cục bộ
                     $current_orders[$oid] = ['os' => $new_os, 'ps' => $new_ps];
                 }
             } else {
-                // Đơn hàng mới xuất hiện
+                // Đơn hàng mới
                 $current_orders[$oid] = ['os' => $new_os, 'ps' => $new_ps];
             }
         }

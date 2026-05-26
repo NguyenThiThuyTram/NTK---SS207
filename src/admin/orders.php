@@ -314,5 +314,22 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 
 </div>
 </main>
+
+<script>
+    // Khởi tạo luồng SSE cho Admin để cập nhật trạng thái đơn hàng thời gian thực
+    const sseUrl = new URL('../api/sse_stream.php', window.location.origin);
+    const eventSource = new EventSource(sseUrl.toString());
+
+    eventSource.addEventListener('message', function(e) {
+        const data = JSON.parse(e.data);
+        
+        // Cập nhật đơn hàng (nếu có sự thay đổi về trạng thái hoặc đơn hàng mới)
+        if (data.order_update && data.order_update.length > 0) {
+            // Hiển thị toast hoặc alert nhỏ rồi reload trang
+            alert('Có cập nhật đơn hàng mới, hệ thống sẽ tự động làm mới!');
+            setTimeout(() => window.location.reload(), 1000);
+        }
+    });
+</script>
 </body>
 </html>
