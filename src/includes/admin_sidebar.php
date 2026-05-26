@@ -52,7 +52,8 @@ while ($row = $stmt->fetch()) {
         'label' => 'Đơn hàng mới: #' . $row['order_id'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'orders'
     ];
 }
 
@@ -68,7 +69,8 @@ while ($row = $stmt->fetch()) {
         'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', $time),
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'warnings'
     ];
 }
 
@@ -84,7 +86,24 @@ while ($row = $stmt->fetch()) {
         'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', $time),
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'warnings'
+    ];
+}
+
+// 2c. Đơn hàng hoàn thành (order_status = 3, trong 7 ngày)
+$stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 3 AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC");
+while ($row = $stmt->fetch()) {
+    $eid = 'completed_order_' . $row['order_id'];
+    $link = 'order_detail.php?id=' . $row['order_id'];
+    $notifications[] = [
+        'time' => strtotime($row['order_date']),
+        'icon' => 'fa-circle-check', 'color' => '#2ecc71',
+        'label' => 'Đơn hàng hoàn thành: #' . $row['order_id'],
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'time_str' => date('H:i d/m', strtotime($row['order_date'])),
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'orders'
     ];
 }
 
@@ -99,7 +118,8 @@ while ($row = $stmt->fetch()) {
         'label' => 'Đã thanh toán: #' . $row['order_id'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'orders'
     ];
 }
 
@@ -109,12 +129,13 @@ while ($row = $stmt->fetch()) {
     $eid = 'low_stock_' . $row['variant_id'];
     $link = 'inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
-        'time' => time(), 
+        'time' => 1, 
         'icon' => 'fa-box-open', 'color' => '#d48806',
         'label' => 'Sắp hết hàng: ' . $row['name'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => 'Tồn kho thấp',
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'products'
     ];
 }
 
@@ -124,12 +145,13 @@ while ($row = $stmt->fetch()) {
     $eid = 'out_stock_' . $row['variant_id'];
     $link = 'inventory.php?search=' . urlencode($row['name']);
     $notifications[] = [
-        'time' => time() - 3600, // Đẩy xuống một chút
+        'time' => 0, 
         'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
         'label' => 'Hết hàng: ' . $row['name'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => 'Kho rỗng',
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'warnings'
     ];
 }
 
@@ -144,7 +166,8 @@ while ($row = $stmt->fetch()) {
         'label' => 'Voucher sắp hết hạn: ' . $row['code'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => 'Hết hạn: ' . date('d/m', strtotime($row['end_date'])),
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'products'
     ];
 }
 
@@ -159,14 +182,36 @@ while ($row = $stmt->fetch()) {
         'label' => 'Thành viên mới: ' . $row['fullname'],
         'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
         'time_str' => date('H:i d/m', strtotime($row['created_at'])),
-        'is_unread' => !isset($read_logs[$eid])
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'products'
+    ];
+}
+
+// 7b. Đánh giá mới (parent_id IS NULL, trong 7 ngày)
+$stmt = $conn->query("SELECT r.review_id, r.created_at, r.rating, r.comment, p.name as product_name, u.fullname 
+                      FROM reviews r 
+                      LEFT JOIN users u ON r.user_id = u.user_id 
+                      LEFT JOIN products p ON r.product_id = p.product_id 
+                      WHERE r.parent_id IS NULL AND r.created_at >= NOW() - INTERVAL 7 DAY 
+                      ORDER BY r.created_at DESC");
+while ($row = $stmt->fetch()) {
+    $eid = 'new_review_' . $row['review_id'];
+    $link = 'reviews.php';
+    $notifications[] = [
+        'time' => strtotime($row['created_at']),
+        'icon' => 'fa-star', 'color' => '#f1c40f',
+        'label' => 'Đánh giá mới: ' . ($row['fullname'] ?: 'Ẩn danh') . ' (' . $row['rating'] . ' sao) - ' . $row['product_name'],
+        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+        'time_str' => date('H:i d/m', strtotime($row['created_at'])),
+        'is_unread' => !isset($read_logs[$eid]),
+        'group' => 'products'
     ];
 }
 
 // 8. Đếm thống kê chính xác toàn bộ trước khi cắt (slice)
-$count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && (strpos($n['icon'], 'cart') !== false || ($n['icon'] == 'fa-bell' && strpos($n['label'], 'Đơn hàng mới') !== false)); }));
-$count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && (strpos($n['icon'], 'exclamation') !== false || strpos($n['icon'], 'ban') !== false); }));
-$count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && (strpos($n['icon'], 'ticket') !== false || strpos($n['icon'], 'box') !== false); }));
+$count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'orders'; }));
+$count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'warnings'; }));
+$count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'products'; }));
 
 // Sort notifications by time descending
 usort($notifications, function($a, $b) {
