@@ -12,7 +12,9 @@ $page_titles = [
     'orders.php'     => 'Đơn hàng',
     'inventory.php'  => 'Tồn kho',
     'coupons.php'    => 'Coupon',
+    'flash_sales.php'=> 'Flash Sale',
     'accounts.php'   => 'Tài khoản',
+    'chat.php'       => 'Live Chat',
 ];
 $current_page_title = $page_titles[$admin_current_page] ?? '';
 // ── THÔNG BÁO ADMIN ────────────────────────────────────────────
@@ -1494,6 +1496,9 @@ $notif_count = $total_unread;
         </a>
         <a href="accounts.php" class="nav-item <?= ($admin_current_page === 'accounts.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-users"></i> Tài khoản
+        </a>
+        <a href="chat.php" class="nav-item <?= ($admin_current_page === 'chat.php') ? 'active' : '' ?>">
+            <i class="fa-solid fa-comments"></i> Live Chat
         </a>
     </nav>
 

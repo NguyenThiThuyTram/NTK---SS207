@@ -18,8 +18,8 @@ if (!$user_id) {
 // Báo cho EventSource client tự động gọi lại sau 3 giây
 echo "retry: 3000\n";
 
-$last_notif_id = $_SESSION['sse_last_notif_id'] ?? 0;
-$last_chat_id = $_SESSION['sse_last_chat_id'] ?? 0;
+$last_notif_id = isset($_GET['last_notif_id']) ? (int)$_GET['last_notif_id'] : ($_SESSION['sse_last_notif_id'] ?? 0);
+$last_chat_id = isset($_GET['last_chat_id']) ? (int)$_GET['last_chat_id'] : ($_SESSION['sse_last_chat_id'] ?? 0);
 
 $events = [];
 
@@ -31,7 +31,7 @@ try {
 
     if (!empty($new_notifs)) {
         $events['notifications'] = $new_notifs;
-        $_SESSION['sse_last_notif_id'] = end($new_notifs)['noti_id'];
+        $_SESSION['sse_last_notif_id'] = max($last_notif_id, (int)end($new_notifs)['noti_id']);
     }
 } catch (PDOException $e) {}
 
@@ -48,7 +48,7 @@ try {
 
     if (!empty($new_chats)) {
         $events['chat_messages'] = $new_chats;
-        $_SESSION['sse_last_chat_id'] = end($new_chats)['id'];
+        $_SESSION['sse_last_chat_id'] = max($last_chat_id, (int)end($new_chats)['id']);
     }
 } catch (PDOException $e) {}
 

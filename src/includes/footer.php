@@ -166,6 +166,344 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
     });
 </script>
 
+<style>
+    /* ============================================================
+       CSS CHATBOX HUman & AI Bot NTK Fashion
+    ============================================================ */
+    #ntk-chat-toggle { 
+        position: fixed; bottom: 20px; right: 20px; 
+        background: linear-gradient(135deg, #2f1c00 0%, #4a2c00 100%); 
+        color: #ffffff; 
+        border: none; border-radius: 50%; 
+        width: 60px; height: 60px; 
+        font-size: 24px; cursor: pointer; 
+        box-shadow: 0 8px 24px rgba(47,28,0,0.25); 
+        z-index: 9998; 
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #ntk-chat-toggle:hover {
+        transform: scale(1.1) translateY(-2px);
+        box-shadow: 0 12px 28px rgba(47,28,0,0.35);
+    }
+    
+    #ntk-chatbox { 
+        position: fixed; bottom: 90px; right: 20px; 
+        width: 340px; height: 480px;
+        background: #ffffff; 
+        border: 1px solid #e5e5e5; 
+        border-radius: 16px; 
+        box-shadow: 0 12px 36px rgba(0,0,0,0.1); 
+        display: none; flex-direction: column; 
+        z-index: 9999; overflow: hidden; 
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
+        color: #111111; 
+        transition: all 0.3s ease;
+    }
+    
+    body.dark-mode #ntk-chatbox {
+        background: #181818 !important;
+        border-color: #2a2a2a !important;
+        color: #fff !important;
+    }
+    
+    #ntk-chat-header { 
+        background: linear-gradient(135deg, #2f1c00 0%, #4a2c00 100%); 
+        color: #ffffff; 
+        padding: 14px 18px; 
+        font-weight: bold;
+        display: flex; justify-content: space-between; align-items: center;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    #ntk-chat-header select {
+        background: rgba(255,255,255,0.15);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    #ntk-chat-header select:hover {
+        background: rgba(255,255,255,0.25);
+    }
+    #ntk-chat-header select option {
+        color: #000;
+        background: #fff;
+    }
+    
+    #ntk-chat-messages { 
+        flex: 1; overflow-y: auto; 
+        padding: 16px; 
+        background: #f9f9fa; 
+        display: flex; flex-direction: column; gap: 12px; 
+    }
+    body.dark-mode #ntk-chat-messages {
+        background: #121212 !important;
+    }
+    
+    #ntk-chat-input-area { 
+        display: flex; align-items: center;
+        border-top: 1px solid #e5e5e5; 
+        padding: 12px 16px; 
+        background: #ffffff; 
+    }
+    body.dark-mode #ntk-chat-input-area {
+        background: #181818 !important;
+        border-top-color: #2a2a2a !important;
+    }
+    
+    #ntk-chat-input { 
+        flex: 1; padding: 10px 16px; 
+        border: 1px solid #e5e5e5; 
+        border-radius: 20px; outline: none; 
+        font-size: 13px;
+        background-color: #f9f9fa;
+        color: #111111;
+        transition: all 0.3s;
+    }
+    #ntk-chat-input:focus {
+        border-color: #2f1c00;
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(47,28,0,0.1);
+    }
+    body.dark-mode #ntk-chat-input {
+        background-color: #252525 !important;
+        border-color: #333333 !important;
+        color: #ffffff !important;
+    }
+    body.dark-mode #ntk-chat-input:focus {
+        border-color: #a6825c !important;
+        box-shadow: 0 0 0 3px rgba(166,130,92,0.2);
+    }
+    
+    #ntk-send-btn { 
+        background: #2f1c00; 
+        color: #ffffff; border: none; 
+        padding: 10px 18px; margin-left: 8px; 
+        border-radius: 20px; cursor: pointer; 
+        font-weight: bold; font-size: 13px;
+        transition: all 0.2s;
+    }
+    #ntk-send-btn:hover {
+        background: #1a0f00;
+    }
+    body.dark-mode #ntk-send-btn {
+        background: #a6825c !important;
+        color: #121212 !important;
+    }
+    body.dark-mode #ntk-send-btn:hover {
+        background: #c9a47e !important;
+    }
+    
+    .msg-user { 
+        background: #2f1c00; 
+        color: #ffffff; 
+        padding: 10px 14px; 
+        border-radius: 15px 15px 0 15px; 
+        align-self: flex-end; max-width: 80%; 
+        font-size: 13px; line-height: 1.45;
+        box-shadow: 0 2px 6px rgba(47,28,0,0.15);
+        word-wrap: break-word;
+        animation: msgSlideUp 0.25s ease;
+    }
+    body.dark-mode .msg-user {
+        background: #a6825c !important;
+        color: #121212 !important;
+        box-shadow: 0 2px 6px rgba(166,130,92,0.2);
+    }
+    
+    .msg-bot { 
+        background: #ffffff; 
+        border: 1px solid #e5e5e5; 
+        color: #111111; 
+        padding: 10px 14px; 
+        border-radius: 15px 15px 15px 0; 
+        align-self: flex-start; max-width: 80%; 
+        font-size: 13px; line-height: 1.45;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        word-wrap: break-word;
+        animation: msgSlideUp 0.25s ease;
+    }
+    body.dark-mode .msg-bot {
+        background: #222222 !important;
+        border-color: #2a2a2a !important;
+        color: #eeeeee !important;
+    }
+    @keyframes msgSlideUp {
+        from { transform: translateY(8px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+<button id="ntk-chat-toggle" onclick="toggleChat()">
+    <i class="fa-solid fa-comments"></i>
+</button>
+
+<div id="ntk-chatbox">
+    <div id="ntk-chat-header">
+        <select id="chat-mode">
+            <option value="bot">🤖 Trợ lý AI</option>
+            <option value="human">👩‍💼 Nhân viên NTK</option>
+        </select>
+        <span onclick="toggleChat()" style="cursor:pointer; font-size:16px;">✖</span>
+    </div>
+    <div id="ntk-chat-messages">
+        <div class="msg-bot">Dạ chào anh/chị, em là trợ lý AI của NTK Fashion. Em có thể giúp gì cho mình ạ?</div>
+    </div>
+    <div id="ntk-chat-input-area">
+        <input type="text" id="ntk-chat-input" placeholder="Nhập tin nhắn..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button id="ntk-send-btn" onclick="sendMessage()">Gửi</button>
+    </div>
+</div>
+
+<script>
+    function toggleChat() {
+        const chatbox = document.getElementById('ntk-chatbox');
+        const isOpening = (chatbox.style.display !== 'flex');
+        chatbox.style.display = isOpening ? 'flex' : 'none';
+        
+        if (isOpening) {
+            const chatMode = document.getElementById('chat-mode').value;
+            if (chatMode === 'human') {
+                loadChatHistory();
+            }
+            document.getElementById('ntk-chat-input').focus();
+        }
+    }
+
+    document.getElementById('chat-mode').addEventListener('change', function() {
+        const messagesDiv = document.getElementById('ntk-chat-messages');
+        if (this.value === 'human') {
+            loadChatHistory();
+        } else {
+            messagesDiv.innerHTML = '<div class="msg-bot">Dạ chào anh/chị, em là trợ lý AI của NTK Fashion. Em có thể giúp gì cho mình ạ?</div>';
+        }
+    });
+
+    async function loadChatHistory() {
+        const messagesDiv = document.getElementById('ntk-chat-messages');
+        messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải hội thoại...</div>';
+        
+        try {
+            const response = await fetch('<?= $_FBASE ?>/api/chat_history.php');
+            const data = await response.json();
+            
+            if (data.success) {
+                messagesDiv.innerHTML = '';
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(m => {
+                        const isUser = (m.sender_id == <?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : '0' ?>);
+                        const msgClass = isUser ? 'msg-user' : 'msg-bot';
+                        const label = isUser ? '' : '<b>Nhân viên:</b><br>';
+                        messagesDiv.innerHTML += `<div class="${msgClass}">${label}${m.message}</div>`;
+                    });
+                    
+                    const lastMsg = data.messages[data.messages.length - 1];
+                    if (lastMsg && typeof sseUrl !== 'undefined') {
+                        lastChatId = Math.max(lastChatId, parseInt(lastMsg.id));
+                        sseUrl.searchParams.set('last_chat_id', lastChatId);
+                    }
+                } else {
+                    messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa; font-size:12.5px;">Chưa có tin nhắn nào. Bạn hãy nhập câu hỏi phía dưới để trò chuyện với Nhân viên nhé!</div>';
+                }
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } else {
+                messagesDiv.innerHTML = `<div style="text-align:center; padding:20px; color:#e74c3c; font-size:12.5px;"><i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>${data.message}</div>`;
+            }
+        } catch (e) {
+            messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#e74c3c; font-size:12.5px;">Không thể tải lịch sử chat. Vui lòng kiểm tra kết nối!</div>';
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('ntk-chat-input');
+        const msgText = input.value.trim();
+        if (!msgText) return;
+
+        const messagesDiv = document.getElementById('ntk-chat-messages');
+        const chatMode = document.getElementById('chat-mode').value;
+        
+        messagesDiv.innerHTML += `<div class="msg-user">${msgText}</div>`;
+        input.value = '';
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (chatMode === 'bot') {
+            const typingId = "typing-" + Date.now();
+            messagesDiv.innerHTML += `<div class="msg-bot" id="${typingId}"><i class="fa-solid fa-ellipsis fa-bounce"></i> Trợ lý AI đang xử lý...</div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            try {
+                const response = await fetch('<?= $_FBASE ?>/api_chatbot.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msgText })
+                });
+                const data = await response.json();
+                
+                const typNode = document.getElementById(typingId);
+                if (typNode) typNode.remove();
+                
+                messagesDiv.innerHTML += `<div class="msg-bot">${data.reply.replace(/\n/g, '<br>')}</div>`;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (error) {
+                const typNode = document.getElementById(typingId);
+                if (typNode) typNode.innerHTML = "Đã xảy ra lỗi kết nối AI!";
+            }
+        } else {
+            // Live chat với nhân viên
+            try {
+                const formData = new FormData();
+                formData.append('message', msgText);
+                formData.append('receiver_id', 0); // 0 = Admin
+                
+                const response = await fetch('<?= $_FBASE ?>/api/chat_send.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    messagesDiv.innerHTML += `<div class="msg-bot" style="color:#c0392b; font-size:12px;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Hệ thống: ${data.message}</div>`;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            } catch (error) {
+                messagesDiv.innerHTML += `<div class="msg-bot" style="color:#c0392b; font-size:12px;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>Hệ thống: Lỗi kết nối gửi tin.</div>`;
+            }
+        }
+    }
+
+    // Hook nhận tin nhắn từ SSE
+    if (typeof window.handleNewChatMessage === 'undefined' || window.handleNewChatMessage.name !== 'globalHandleNewChatMessage') {
+        window.handleNewChatMessage = function globalHandleNewChatMessage(messages) {
+            const chatbox = document.getElementById('ntk-chatbox');
+            const selectMode = document.getElementById('chat-mode');
+            
+            let hasNewFromStaff = false;
+            messages.forEach(msg => {
+                if (msg.sender_id != <?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 'null' ?>) {
+                    hasNewFromStaff = true;
+                }
+            });
+
+            if (hasNewFromStaff) {
+                // Tự động mở hộp chat nếu chưa mở
+                if (chatbox.style.display !== 'flex') {
+                    chatbox.style.display = 'flex';
+                }
+                // Tự chuyển sang tab chat nhân viên và load lại
+                if (selectMode && selectMode.value !== 'human') {
+                    selectMode.value = 'human';
+                }
+                loadChatHistory();
+            }
+        };
+    }
+</script>
+
 <script src="<?= $_FBASE ?>/assets/js/main.js"></script>
 </body>
 </html>
