@@ -397,7 +397,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
                 messagesDiv.innerHTML = '';
                 if (data.messages && data.messages.length > 0) {
                     data.messages.forEach(m => {
-                        const isUser = (m.sender_id == <?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : '0' ?>);
+                        const isUser = (m.sender_id === <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>);
                         const msgClass = isUser ? 'msg-user' : 'msg-bot';
                         const label = isUser ? '' : '<b>Nhân viên:</b><br>';
                         messagesDiv.innerHTML += `<div class="${msgClass}">${label}${m.message}</div>`;
@@ -484,7 +484,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
             
             let hasNewFromStaff = false;
             messages.forEach(msg => {
-                if (msg.sender_id != <?= isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 'null' ?>) {
+                if (msg.sender_id !== <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>) {
                     hasNewFromStaff = true;
                 }
             });

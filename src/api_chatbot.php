@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 
 // Đọc dữ liệu gửi lên từ giao diện chat
 $data = json_decode(file_get_contents('php://input'), true);
-$userMessage = $data['message'] ?? '';
+$userMessage = $data['message'] ?? $_POST['message'] ?? $_GET['message'] ?? '';
 
 if (empty($userMessage)) {
     echo json_encode(['reply' => 'Anh/chị muốn hỏi gì ạ?']);

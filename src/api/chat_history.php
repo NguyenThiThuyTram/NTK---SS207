@@ -9,13 +9,13 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_id = (int)$_SESSION['user_id'];
+$user_id = trim($_SESSION['user_id']);
 
 try {
     // Lấy tin nhắn giữa user này và admin
     $stmt = $conn->prepare("
         SELECT * FROM chat_messages 
-        WHERE (sender_id = :uid AND receiver_id = 0) 
+        WHERE (sender_id = :uid AND receiver_id = '0') 
            OR (receiver_id = :uid AND sender_id IN (SELECT user_id FROM users WHERE role = 1)) 
         ORDER BY id ASC
     ");

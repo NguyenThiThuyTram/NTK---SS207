@@ -14,11 +14,11 @@ $stmt = $conn->prepare("
         u.fullname, 
         MAX(c.created_at) as last_msg_time,
         (SELECT message FROM chat_messages 
-         WHERE (sender_id = u.user_id AND receiver_id = 0) 
+         WHERE (sender_id = u.user_id AND receiver_id = '0') 
             OR (sender_id IN (SELECT user_id FROM users WHERE role = 1) AND receiver_id = u.user_id) 
          ORDER BY id DESC LIMIT 1) as last_msg_content,
         (SELECT COUNT(*) FROM chat_messages 
-         WHERE sender_id = u.user_id AND receiver_id = 0 AND is_read = 0) as unread_count
+         WHERE sender_id = u.user_id AND receiver_id = '0' AND is_read = 0) as unread_count
     FROM chat_messages c
     JOIN users u ON (c.sender_id = u.user_id OR c.receiver_id = u.user_id)
     WHERE u.role = 0
@@ -28,11 +28,11 @@ $stmt = $conn->prepare("
 $stmt->execute();
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$current_user = isset($_GET['uid']) ? (int)$_GET['uid'] : 0;
+$current_user = isset($_GET['uid']) ? trim($_GET['uid']) : '';
 $messages = [];
 $current_customer_name = "";
 
-if ($current_user > 0) {
+if (!empty($current_user)) {
     // Lấy thông tin khách hàng đang chọn
     $stmt_cust = $conn->prepare("SELECT fullname FROM users WHERE user_id = :uid AND role = 0");
     $stmt_cust->execute(['uid' => $current_user]);
@@ -42,12 +42,12 @@ if ($current_user > 0) {
     }
 
     // Đánh dấu đã đọc tất cả tin nhắn từ khách hàng này
-    $conn->prepare("UPDATE chat_messages SET is_read = 1 WHERE sender_id = :uid AND receiver_id = 0 AND is_read = 0")->execute(['uid' => $current_user]);
+    $conn->prepare("UPDATE chat_messages SET is_read = 1 WHERE sender_id = :uid AND receiver_id = '0' AND is_read = 0")->execute(['uid' => $current_user]);
     
     // Lấy tin nhắn giữa khách hàng này và admin
     $stmt_msg = $conn->prepare("
         SELECT * FROM chat_messages 
-        WHERE (sender_id = :uid AND receiver_id = 0) 
+        WHERE (sender_id = :uid AND receiver_id = '0') 
            OR (sender_id IN (SELECT user_id FROM users WHERE role = 1) AND receiver_id = :uid) 
         ORDER BY id ASC
     ");
@@ -464,7 +464,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <div style="text-align:center; padding:30px; color:#aaa; font-size:13px;">Chưa có cuộc trò chuyện nào</div>
             <?php else: ?>
                 <?php foreach ($users as $u): 
-                    $is_active = ($current_user === (int)$u['user_id']);
+                    $is_active = ($current_user === $u['user_id']);
                     $initials = strtoupper(substr($u['fullname'], 0, 1));
                     
                     // Xử lý hiển thị tin nhắn cuối
@@ -499,7 +499,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 
     <!-- Cột nội dung tin nhắn -->
     <div class="chat-window">
-        <?php if ($current_user > 0): ?>
+        <?php if (!empty($current_user)): ?>
             <div class="chat-header">
                 <div class="active-user-avatar"><?= strtoupper(substr($current_customer_name, 0, 1)) ?></div>
                 <div>
@@ -592,7 +592,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         try {
             const fd = new FormData();
             fd.append('message', msg);
-            fd.append('receiver_id', <?= $current_user ?>);
+            fd.append('receiver_id', <?= json_encode($current_user) ?>);
             
             const response = await fetch('../api/chat_send.php', { method: 'POST', body: fd });
             const data = await response.json();
@@ -600,17 +600,17 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 console.error("Gửi tin thất bại: ", data.message);
             } else {
                 // Cập nhật preview của sidebar
-                const previewEl = document.getElementById('preview-<?= $current_user ?>');
+                const previewEl = document.getElementById('preview-' + <?= json_encode($current_user) ?>);
                 if (previewEl) {
                     previewEl.innerText = msg.length > 30 ? msg.substring(0,30) + '...' : msg;
                 }
-                const timeEl = document.getElementById('time-<?= $current_user ?>');
+                const timeEl = document.getElementById('time-' + <?= json_encode($current_user) ?>);
                 if (timeEl) {
                     timeEl.innerText = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
                 }
                 
                 // Đưa user này lên top
-                moveUserToTop(<?= $current_user ?>);
+                moveUserToTop(<?= json_encode($current_user) ?>);
             }
         } catch (e) {
             console.error("Lỗi kết nối gửi tin: ", e);
@@ -652,11 +652,40 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             let receivedActiveUserMsg = false;
             
             data.chat_messages.forEach(m => {
-                const senderId = parseInt(m.sender_id);
-                const activeId = <?= $current_user ?>;
+                const senderId = m.sender_id;
+                const activeId = <?= json_encode($current_user) ?>;
                 
+                // Nếu khách hàng gửi tin nhắn chưa có trong sidebar thì tự động thêm mới vào DOM tức thì
+                if (m.receiver_id == '0') {
+                    let itemEl = document.querySelector(`.user-item[data-id="${senderId}"]`);
+                    if (!itemEl) {
+                        const initials = m.sender_name ? m.sender_name.charAt(0).toUpperCase() : 'U';
+                        const name = m.sender_name || 'Khách hàng';
+                        const listItems = document.getElementById('user-list-items');
+                        if (listItems) {
+                            const newHtml = `
+                                <a href="?uid=${senderId}" class="user-item ${senderId === activeId ? 'active' : ''}" data-id="${senderId}" data-name="${name.toLowerCase()}">
+                                    <div class="user-avatar">${initials}</div>
+                                    <div class="user-info">
+                                        <div class="user-name-row">
+                                            <span class="user-fullname">${name}</span>
+                                            <span class="msg-time" id="time-${senderId}"></span>
+                                        </div>
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <span class="msg-preview" id="preview-${senderId}"></span>
+                                            <span class="unread-badge" id="unread-${senderId}" style="display:none;">0</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            `;
+                            // Prepend vào danh sách
+                            listItems.insertAdjacentHTML('afterbegin', newHtml);
+                        }
+                    }
+                }
+
                 // Nếu tin nhắn là từ khách hàng ta đang chat
-                if (senderId === activeId && m.receiver_id == 0) {
+                if (senderId === activeId && m.receiver_id == '0') {
                     receivedActiveUserMsg = true;
                     
                     const hintNode = document.getElementById('no-msg-hint');
@@ -685,7 +714,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     
                     // Đưa user lên top
                     moveUserToTop(activeId);
-                } else if (m.receiver_id == 0) {
+                } else if (m.receiver_id == '0') {
                     // Tin nhắn từ khách hàng khác
                     // Cập nhật badge chưa đọc ở sidebar
                     const badgeEl = document.getElementById('unread-' + senderId);
@@ -724,7 +753,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             // Nếu có tin nhắn của khách hàng đang chat, ta gọi API để đánh dấu đã đọc luôn
             if (receivedActiveUserMsg) {
                 const fd = new FormData();
-                fd.append('user_id', <?= $current_user ?>);
+                fd.append('user_id', <?= json_encode($current_user) ?>);
                 fetch('../api/chat_mark_read.php', { method: 'POST', body: fd });
             }
             

@@ -9,10 +9,10 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 1) {
     exit;
 }
 
-$uid = isset($_POST['user_id']) ? (int)$_POST['user_id'] : 0;
-if ($uid > 0) {
+$uid = isset($_POST['user_id']) ? trim($_POST['user_id']) : '';
+if (!empty($uid)) {
     try {
-        $stmt = $conn->prepare("UPDATE chat_messages SET is_read = 1 WHERE sender_id = :uid AND receiver_id = 0 AND is_read = 0");
+        $stmt = $conn->prepare("UPDATE chat_messages SET is_read = 1 WHERE sender_id = :uid AND receiver_id = '0' AND is_read = 0");
         $stmt->execute(['uid' => $uid]);
         echo json_encode(['success' => true]);
     } catch (Exception $e) {

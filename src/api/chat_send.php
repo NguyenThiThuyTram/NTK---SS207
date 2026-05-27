@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 
 $sender_id = $_SESSION['user_id'];
 $message = trim($_POST['message'] ?? '');
-$receiver_id = isset($_POST['receiver_id']) ? (int)$_POST['receiver_id'] : 0; // 0 = Admin
+$receiver_id = isset($_POST['receiver_id']) ? trim($_POST['receiver_id']) : '0'; // '0' = Admin
 
 if (empty($message)) {
     echo json_encode(['success' => false, 'message' => 'Tin nhắn rỗng']);

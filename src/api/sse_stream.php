@@ -18,8 +18,15 @@ if (!$user_id) {
 // Báo cho EventSource client tự động gọi lại sau 3 giây
 echo "retry: 3000\n";
 
-$last_notif_id = isset($_GET['last_notif_id']) ? (int)$_GET['last_notif_id'] : ($_SESSION['sse_last_notif_id'] ?? 0);
-$last_chat_id = isset($_GET['last_chat_id']) ? (int)$_GET['last_chat_id'] : ($_SESSION['sse_last_chat_id'] ?? 0);
+$last_event_id = $_SERVER['HTTP_LAST_EVENT_ID'] ?? '';
+if (!empty($last_event_id) && strpos($last_event_id, '_') !== false) {
+    list($last_chat_id_from_id, $last_notif_id_from_id) = explode('_', $last_event_id);
+    $last_chat_id = (int)$last_chat_id_from_id;
+    $last_notif_id = (int)$last_notif_id_from_id;
+} else {
+    $last_notif_id = isset($_GET['last_notif_id']) ? (int)$_GET['last_notif_id'] : ($_SESSION['sse_last_notif_id'] ?? 0);
+    $last_chat_id = isset($_GET['last_chat_id']) ? (int)$_GET['last_chat_id'] : ($_SESSION['sse_last_chat_id'] ?? 0);
+}
 
 $events = [];
 
@@ -39,10 +46,16 @@ try {
 try {
     $chat_cond = "receiver_id = :uid";
     if ($role == 1) {
-        $chat_cond = "(receiver_id = :uid OR receiver_id IS NULL OR receiver_id = 0)"; 
+        $chat_cond = "(receiver_id = :uid OR receiver_id IS NULL OR receiver_id = '0')"; 
     }
     
-    $stmt_chat = $conn->prepare("SELECT * FROM chat_messages WHERE $chat_cond AND id > :last_id ORDER BY id ASC");
+    $stmt_chat = $conn->prepare("
+        SELECT c.*, u.fullname as sender_name 
+        FROM chat_messages c
+        LEFT JOIN users u ON c.sender_id = u.user_id
+        WHERE $chat_cond AND c.id > :last_id 
+        ORDER BY c.id ASC
+    ");
     $stmt_chat->execute(['uid' => $user_id, 'last_id' => $last_chat_id]);
     $new_chats = $stmt_chat->fetchAll(PDO::FETCH_ASSOC);
 
@@ -91,6 +104,11 @@ session_write_close();
 
 // Nếu có sự kiện mới, ĐẨY DỮ LIỆU
 if (!empty($events)) {
+    $max_chat_sent = !empty($new_chats) ? (int)end($new_chats)['id'] : $last_chat_id;
+    $max_notif_sent = !empty($new_notifs) ? (int)end($new_notifs)['noti_id'] : $last_notif_id;
+    $eventId = $max_chat_sent . '_' . $max_notif_sent;
+
+    echo "id: $eventId\n";
     echo "event: message\n";
     echo "data: " . json_encode($events) . "\n\n";
 } else {
