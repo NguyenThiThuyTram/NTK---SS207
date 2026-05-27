@@ -13,19 +13,21 @@ $_BASE = $_protocol . '://' . $_host . $_src_path;
 
 $cart_count = 0;
 try {
-    if (isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['user_id']) && isset($conn)) {
         $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM cart WHERE user_id = :user_id");
         $stmt->execute(['user_id' => $_SESSION['user_id']]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $cart_count = $row['total_items'] ?: 0;
     }
-} catch (PDOException $e) {}
+} catch (\Throwable $e) {
+    error_log($e->getMessage());
+}
 
 $unread_noti_count = 0;
 $max_notif_id = 0;
 $max_chat_id = 0;
 try {
-    if (isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['user_id']) && isset($conn)) {
         $stmt_n = $conn->prepare("SELECT COUNT(*) as unread, MAX(noti_id) as max_id FROM notifications WHERE user_id = :user_id");
         $stmt_n->execute(['user_id' => $_SESSION['user_id']]);
         $row_n = $stmt_n->fetch(PDO::FETCH_ASSOC);
@@ -41,9 +43,13 @@ try {
             $stmt_c = $conn->prepare("SELECT MAX(id) FROM chat_messages WHERE receiver_id = :user_id");
             $stmt_c->execute(['user_id' => $_SESSION['user_id']]);
             $max_chat_id = $stmt_c->fetchColumn() ?: 0;
-        } catch (Exception $e) {}
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+        }
     }
-} catch (PDOException $e) {}
+} catch (\Throwable $e) {
+    error_log($e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -134,7 +140,7 @@ try {
                             <?= intval($unread_noti_count) ?>
                         </span>
                     </a>
-                    <a href="<?= ($_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản"><i class="fa-solid fa-user"></i></a>
+                    <a href="<?= (isset($_SESSION['role']) && $_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản"><i class="fa-solid fa-user"></i></a>
                 <?php else: ?>
                     <a href="<?= $_BASE ?>/views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>

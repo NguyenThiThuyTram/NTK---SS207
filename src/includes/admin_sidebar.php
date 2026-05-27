@@ -20,239 +20,261 @@ $current_page_title = $page_titles[$admin_current_page] ?? '';
 // ── THÔNG BÁO ADMIN ────────────────────────────────────────────
 require_once __DIR__ . '/../config/database.php';
 $notifications = [];
-
-// Tạo bảng admin_read_logs nếu chưa có
-try {
-    $conn->exec("CREATE TABLE IF NOT EXISTS admin_read_logs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        event_id VARCHAR(100) NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY user_event (user_id, event_id)
-    )");
-} catch (PDOException $e) {}
-
-// Lấy danh sách đã đọc của admin hiện tại
 $admin_user_id = $_SESSION['user_id'] ?? 0;
 $read_logs = [];
-try {
-    $stmt_logs = $conn->prepare("SELECT event_id FROM admin_read_logs WHERE user_id = :uid");
-    $stmt_logs->execute(['uid' => $admin_user_id]);
-    while ($r = $stmt_logs->fetch()) {
-        $read_logs[$r['event_id']] = true;
-    }
-} catch (PDOException $e) {}
-
-// Lấy max notification_id và max chat_id để làm mốc cho SSE
 $max_notif_id = 0;
-try {
-    $stmt_max = $conn->prepare("SELECT MAX(noti_id) as max_id FROM notifications WHERE user_id = :uid");
-    $stmt_max->execute(['uid' => $admin_user_id]);
-    $row_max = $stmt_max->fetch();
-    $max_notif_id = $row_max['max_id'] ?: 0;
-} catch (PDOException $e) {}
-
 $max_chat_id = 0;
+$count_new_orders = 0;
+$count_warnings   = 0;
+$count_products   = 0;
+$total_unread     = 0;
+$notif_count      = 0;
+
 try {
-    $stmt_max_c = $conn->prepare("SELECT MAX(id) as max_id FROM chat_messages WHERE receiver_id = :uid OR sender_id = :uid");
-    $stmt_max_c->execute(['uid' => $admin_user_id]);
-    $row_max_c = $stmt_max_c->fetch();
-    $max_chat_id = $row_max_c['max_id'] ?: 0;
-} catch (PDOException $e) {}
+    if (!isset($conn)) {
+        throw new Exception("Lỗi kết nối database: \$conn không tồn tại.");
+    }
 
-// 1. Đơn hàng mới (order_status = 0, trong 24h)
-$stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $eid = 'new_order_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => strtotime($row['order_date']),
-        'icon' => 'fa-cart-plus', 'color' => '#27ae60', // Thay đổi sang màu xanh
-        'label' => 'Đơn hàng mới: #' . $row['order_id'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'orders'
-    ];
+    // Tạo bảng admin_read_logs nếu chưa có
+    try {
+        $conn->exec("CREATE TABLE IF NOT EXISTS admin_read_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            event_id VARCHAR(100) NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY user_event (user_id, event_id)
+        )");
+    } catch (\Throwable $e) {
+        error_log("admin_sidebar logs creation failed: " . $e->getMessage());
+    }
+
+    // Lấy danh sách đã đọc của admin hiện tại
+    try {
+        $stmt_logs = $conn->prepare("SELECT event_id FROM admin_read_logs WHERE user_id = :uid");
+        $stmt_logs->execute(['uid' => $admin_user_id]);
+        while ($r = $stmt_logs->fetch()) {
+            $read_logs[$r['event_id']] = true;
+        }
+    } catch (\Throwable $e) {
+        error_log("admin_sidebar fetch logs failed: " . $e->getMessage());
+    }
+
+    // Lấy max notification_id và max chat_id để làm mốc cho SSE
+    try {
+        $stmt_max = $conn->prepare("SELECT MAX(noti_id) as max_id FROM notifications WHERE user_id = :uid");
+        $stmt_max->execute(['uid' => $admin_user_id]);
+        $row_max = $stmt_max->fetch();
+        $max_notif_id = $row_max['max_id'] ?: 0;
+    } catch (\Throwable $e) {
+        error_log("admin_sidebar fetch max_notif_id failed: " . $e->getMessage());
+    }
+
+    try {
+        $stmt_max_c = $conn->prepare("SELECT MAX(id) as max_id FROM chat_messages WHERE receiver_id = :uid OR sender_id = :uid");
+        $stmt_max_c->execute(['uid' => $admin_user_id]);
+        $row_max_c = $stmt_max_c->fetch();
+        $max_chat_id = $row_max_c['max_id'] ?: 0;
+    } catch (\Throwable $e) {
+        error_log("admin_sidebar fetch max_chat_id failed: " . $e->getMessage());
+    }
+
+    // 1. Đơn hàng mới (order_status = 0, trong 24h)
+    $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
+    while ($row = $stmt->fetch()) {
+        $eid = 'new_order_' . $row['order_id'];
+        $link = 'order_detail.php?id=' . $row['order_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => strtotime($row['order_date']),
+            'icon' => 'fa-cart-plus', 'color' => '#27ae60', // Thay đổi sang màu xanh
+            'label' => 'Đơn hàng mới: #' . $row['order_id'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', strtotime($row['order_date'])),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'orders'
+        ];
+    }
+
+    // 2. Yêu cầu trả hàng (order_status = 5)
+    $stmt = $conn->query("SELECT order_id, order_date, return_requested_at FROM orders WHERE order_status = 5 ORDER BY order_date DESC");
+    while ($row = $stmt->fetch()) {
+        $time = !empty($row['return_requested_at']) ? strtotime($row['return_requested_at']) : strtotime($row['order_date']);
+        $eid = 'return_' . $row['order_id'];
+        $link = 'order_detail.php?id=' . $row['order_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => $time,
+            'icon' => 'fa-rotate-left', 'color' => '#e67e22',
+            'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', $time),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'warnings'
+        ];
+    }
+
+    // 2b. Khách hàng hủy đơn (order_status = 4 hoặc 8)
+    $stmt = $conn->query("SELECT order_id, order_date, cancel_requested_at, order_status FROM orders WHERE order_status IN (4, 8) AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC");
+    while ($row = $stmt->fetch()) {
+        $time = !empty($row['cancel_requested_at']) ? strtotime($row['cancel_requested_at']) : strtotime($row['order_date']);
+        $eid = 'cancel_' . $row['order_id'];
+        $link = 'order_detail.php?id=' . $row['order_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => $time,
+            'icon' => 'fa-ban', 'color' => '#e74c3c',
+            'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', $time),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'warnings'
+        ];
+    }
+
+    // 2c. Đơn hàng hoàn thành (order_status = 3, trong 7 ngày)
+    $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 3 AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC");
+    while ($row = $stmt->fetch()) {
+        $eid = 'completed_order_' . $row['order_id'];
+        $link = 'order_detail.php?id=' . $row['order_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => strtotime($row['order_date']),
+            'icon' => 'fa-circle-check', 'color' => '#2ecc71',
+            'label' => 'Đơn hàng hoàn thành: #' . $row['order_id'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', strtotime($row['order_date'])),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'orders'
+        ];
+    }
+
+    // 3. Thanh toán thành công (payment_status = 1, trong 24h)
+    $stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE payment_status = 1 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
+    while ($row = $stmt->fetch()) {
+        $eid = 'paid_' . $row['order_id'];
+        $link = 'order_detail.php?id=' . $row['order_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => strtotime($row['order_date']),
+            'icon' => 'fa-circle-check', 'color' => '#27ae60',
+            'label' => 'Đã thanh toán: #' . $row['order_id'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', strtotime($row['order_date'])),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'orders'
+        ];
+    }
+
+    // 4. Sắp hết hàng (stock <= 10)
+    $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock > 0 AND pv.stock <= 10");
+    while ($row = $stmt->fetch()) {
+        $eid = 'low_stock_' . $row['variant_id'];
+        $link = 'inventory.php?search=' . urlencode($row['name']);
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => 1, 
+            'icon' => 'fa-box-open', 'color' => '#d48806',
+            'label' => 'Sắp hết hàng: ' . $row['name'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => 'Tồn kho thấp',
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'products'
+        ];
+    }
+
+    // 5. Hết hàng
+    $stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock = 0");
+    while ($row = $stmt->fetch()) {
+        $eid = 'out_stock_' . $row['variant_id'];
+        $link = 'inventory.php?search=' . urlencode($row['name']);
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => 0, 
+            'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
+            'label' => 'Hết hàng: ' . $row['name'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => 'Kho rỗng',
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'warnings'
+        ];
+    }
+
+    // 6. Voucher sắp hết hạn
+    $stmt = $conn->query("SELECT coupon_id, code, end_date FROM coupons WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL 3 DAY AND status = 1");
+    while ($row = $stmt->fetch()) {
+        $eid = 'exp_coupon_' . $row['coupon_id'];
+        $link = 'view_coupon.php?id=' . $row['coupon_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => strtotime($row['end_date']),
+            'icon' => 'fa-ticket', 'color' => '#9b59b6',
+            'label' => 'Voucher sắp hết hạn: ' . $row['code'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => 'Hết hạn: ' . date('d/m', strtotime($row['end_date'])),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'products'
+        ];
+    }
+
+    // 7. User mới
+    $stmt = $conn->query("SELECT user_id, fullname, created_at FROM users WHERE created_at >= NOW() - INTERVAL 7 DAY AND role = 0 ORDER BY created_at DESC");
+    while ($row = $stmt->fetch()) {
+        $eid = 'new_user_' . $row['user_id'];
+        $link = 'account_detail.php?id=' . $row['user_id'];
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => strtotime($row['created_at']),
+            'icon' => 'fa-user-plus', 'color' => '#2980b9',
+            'label' => 'Thành viên mới: ' . $row['fullname'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', strtotime($row['created_at'])),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'products'
+        ];
+    }
+
+    // 7b. Đánh giá mới (parent_id IS NULL, trong 7 ngày)
+    $stmt = $conn->query("SELECT r.review_id, r.created_at, r.rating, r.comment, p.name as product_name, u.fullname 
+                          FROM reviews r 
+                          LEFT JOIN users u ON r.user_id = u.user_id 
+                          LEFT JOIN products p ON r.product_id = p.product_id 
+                          WHERE r.parent_id IS NULL AND r.created_at >= NOW() - INTERVAL 7 DAY 
+                          ORDER BY r.created_at DESC");
+    while ($row = $stmt->fetch()) {
+        $eid = 'new_review_' . $row['review_id'];
+        $link = 'reviews.php';
+        $notifications[] = [
+            'event_id' => $eid,
+            'time' => strtotime($row['created_at']),
+            'icon' => 'fa-star', 'color' => '#f1c40f',
+            'label' => 'Đánh giá mới: ' . ($row['fullname'] ?: 'Ẩn danh') . ' (' . $row['rating'] . ' sao) - ' . $row['product_name'],
+            'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
+            'time_str' => date('H:i d/m', strtotime($row['created_at'])),
+            'is_unread' => !isset($read_logs[$eid]),
+            'group' => 'products'
+        ];
+    }
+
+    // 8. Đếm thống kê chính xác toàn bộ trước khi cắt (slice)
+    $count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'orders'; }));
+    $count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'warnings'; }));
+    $count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'products'; }));
+
+    // Sort notifications by time descending
+    usort($notifications, function($a, $b) {
+        return $b['time'] <=> $a['time'];
+    });
+
+    // Tính tổng số lượng chưa đọc
+    $total_unread = count(array_filter($notifications, function($n) { return !empty($n['is_unread']); }));
+
+    // Giới hạn hiển thị top 20 thông báo mới nhất trong dropdown
+    $notifications = array_slice($notifications, 0, 20);
+    $notif_count = $total_unread;
+
+} catch (\Throwable $e) {
+    error_log("Lỗi ở header admin/admin_sidebar: " . $e->getMessage());
 }
-
-// 2. Yêu cầu trả hàng (order_status = 5)
-$stmt = $conn->query("SELECT order_id, order_date, return_requested_at FROM orders WHERE order_status = 5 ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $time = !empty($row['return_requested_at']) ? strtotime($row['return_requested_at']) : strtotime($row['order_date']);
-    $eid = 'return_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => $time,
-        'icon' => 'fa-rotate-left', 'color' => '#e67e22',
-        'label' => 'Yêu cầu trả hàng: #' . $row['order_id'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', $time),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'warnings'
-    ];
-}
-
-// 2b. Khách hàng hủy đơn (order_status = 4 hoặc 8)
-$stmt = $conn->query("SELECT order_id, order_date, cancel_requested_at, order_status FROM orders WHERE order_status IN (4, 8) AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $time = !empty($row['cancel_requested_at']) ? strtotime($row['cancel_requested_at']) : strtotime($row['order_date']);
-    $eid = 'cancel_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => $time,
-        'icon' => 'fa-ban', 'color' => '#e74c3c',
-        'label' => 'Đơn hàng bị hủy: #' . $row['order_id'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', $time),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'warnings'
-    ];
-}
-
-// 2c. Đơn hàng hoàn thành (order_status = 3, trong 7 ngày)
-$stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 3 AND order_date >= NOW() - INTERVAL 7 DAY ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $eid = 'completed_order_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => strtotime($row['order_date']),
-        'icon' => 'fa-circle-check', 'color' => '#2ecc71',
-        'label' => 'Đơn hàng hoàn thành: #' . $row['order_id'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'orders'
-    ];
-}
-
-// 3. Thanh toán thành công (payment_status = 1, trong 24h)
-$stmt = $conn->query("SELECT order_id, order_date, order_status FROM orders WHERE payment_status = 1 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
-while ($row = $stmt->fetch()) {
-    $eid = 'paid_' . $row['order_id'];
-    $link = 'order_detail.php?id=' . $row['order_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => strtotime($row['order_date']),
-        'icon' => 'fa-circle-check', 'color' => '#27ae60',
-        'label' => 'Đã thanh toán: #' . $row['order_id'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', strtotime($row['order_date'])),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'orders'
-    ];
-}
-
-// 4. Sắp hết hàng (stock <= 10)
-$stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock > 0 AND pv.stock <= 10");
-while ($row = $stmt->fetch()) {
-    $eid = 'low_stock_' . $row['variant_id'];
-    $link = 'inventory.php?search=' . urlencode($row['name']);
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => 1, 
-        'icon' => 'fa-box-open', 'color' => '#d48806',
-        'label' => 'Sắp hết hàng: ' . $row['name'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => 'Tồn kho thấp',
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'products'
-    ];
-}
-
-// 5. Hết hàng
-$stmt = $conn->query("SELECT pv.variant_id, p.name FROM product_variants pv JOIN products p ON pv.product_id = p.product_id WHERE pv.stock = 0");
-while ($row = $stmt->fetch()) {
-    $eid = 'out_stock_' . $row['variant_id'];
-    $link = 'inventory.php?search=' . urlencode($row['name']);
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => 0, 
-        'icon' => 'fa-triangle-exclamation', 'color' => '#e74c3c',
-        'label' => 'Hết hàng: ' . $row['name'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => 'Kho rỗng',
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'warnings'
-    ];
-}
-
-// 6. Voucher sắp hết hạn
-$stmt = $conn->query("SELECT coupon_id, code, end_date FROM coupons WHERE end_date BETWEEN NOW() AND NOW() + INTERVAL 3 DAY AND status = 1");
-while ($row = $stmt->fetch()) {
-    $eid = 'exp_coupon_' . $row['coupon_id'];
-    $link = 'view_coupon.php?id=' . $row['coupon_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => strtotime($row['end_date']),
-        'icon' => 'fa-ticket', 'color' => '#9b59b6',
-        'label' => 'Voucher sắp hết hạn: ' . $row['code'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => 'Hết hạn: ' . date('d/m', strtotime($row['end_date'])),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'products'
-    ];
-}
-
-// 7. User mới
-$stmt = $conn->query("SELECT user_id, fullname, created_at FROM users WHERE created_at >= NOW() - INTERVAL 7 DAY AND role = 0 ORDER BY created_at DESC");
-while ($row = $stmt->fetch()) {
-    $eid = 'new_user_' . $row['user_id'];
-    $link = 'account_detail.php?id=' . $row['user_id'];
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => strtotime($row['created_at']),
-        'icon' => 'fa-user-plus', 'color' => '#2980b9',
-        'label' => 'Thành viên mới: ' . $row['fullname'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', strtotime($row['created_at'])),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'products'
-    ];
-}
-
-// 7b. Đánh giá mới (parent_id IS NULL, trong 7 ngày)
-$stmt = $conn->query("SELECT r.review_id, r.created_at, r.rating, r.comment, p.name as product_name, u.fullname 
-                      FROM reviews r 
-                      LEFT JOIN users u ON r.user_id = u.user_id 
-                      LEFT JOIN products p ON r.product_id = p.product_id 
-                      WHERE r.parent_id IS NULL AND r.created_at >= NOW() - INTERVAL 7 DAY 
-                      ORDER BY r.created_at DESC");
-while ($row = $stmt->fetch()) {
-    $eid = 'new_review_' . $row['review_id'];
-    $link = 'reviews.php';
-    $notifications[] = [
-        'event_id' => $eid,
-        'time' => strtotime($row['created_at']),
-        'icon' => 'fa-star', 'color' => '#f1c40f',
-        'label' => 'Đánh giá mới: ' . ($row['fullname'] ?: 'Ẩn danh') . ' (' . $row['rating'] . ' sao) - ' . $row['product_name'],
-        'link' => 'read_notification.php?event_id=' . $eid . '&redirect=' . urlencode($link),
-        'time_str' => date('H:i d/m', strtotime($row['created_at'])),
-        'is_unread' => !isset($read_logs[$eid]),
-        'group' => 'products'
-    ];
-}
-
-// 8. Đếm thống kê chính xác toàn bộ trước khi cắt (slice)
-$count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'orders'; }));
-$count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'warnings'; }));
-$count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'products'; }));
-
-// Sort notifications by time descending
-usort($notifications, function($a, $b) {
-    return $b['time'] <=> $a['time'];
-});
-
-// Tính tổng số lượng chưa đọc
-$total_unread = count(array_filter($notifications, function($n) { return !empty($n['is_unread']); }));
-
-// Giới hạn hiển thị top 20 thông báo mới nhất trong dropdown
-$notifications = array_slice($notifications, 0, 20);
-$notif_count = $total_unread;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
