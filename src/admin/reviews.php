@@ -19,7 +19,7 @@ if (isset($_POST['submit_reply'])) {
         if ($give_voucher && $user_id_of_review) {
             $coupon_id = 'V' . substr(str_shuffle("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 4);
             $coupon_code = 'REWARD30K_' . time();
-            $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_amount, discount_type, min_spend, start_date, end_date, usage_limit, status, user_id) 
+            $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_value, discount_type, min_spend, start_date, end_date, usage_limit, status, user_id) 
                 VALUES (:cid, :code, 30000, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, :uid)");
             $stmt_cp->execute([
                 'cid' => $coupon_id,
