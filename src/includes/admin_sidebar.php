@@ -78,8 +78,8 @@ try {
         error_log("admin_sidebar fetch max_chat_id failed: " . $e->getMessage());
     }
 
-    // 1. Đơn hàng mới (order_status = 0, trong 24h)
-    $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_status = 0 AND order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
+    // 1. Đơn hàng mới (trong 24h)
+    $stmt = $conn->query("SELECT order_id, order_date FROM orders WHERE order_date >= NOW() - INTERVAL 24 HOUR ORDER BY order_date DESC");
     while ($row = $stmt->fetch()) {
         $eid = 'new_order_' . $row['order_id'];
         $link = 'order_detail.php?id=' . $row['order_id'];
