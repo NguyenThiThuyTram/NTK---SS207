@@ -825,7 +825,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </main>
 
 <script>
-    const sseUrl = new URL('../api/sse_stream.php', window.location.origin);
+    const sseUrl = new URL('../api/sse_stream.php', window.location.href);
     const eventSource = new EventSource(sseUrl.toString());
 
     eventSource.addEventListener('message', function(e) {

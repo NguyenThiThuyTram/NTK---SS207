@@ -642,7 +642,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     // ── XỬ LÝ CHAT SSE REAL-TIME ────────────────────────────
     let lastChatId = <?= $max_chat_id ?>;
     
-    const sseUrl = new URL('../api/sse_stream.php', window.location.origin);
+    const sseUrl = new URL('../api/sse_stream.php', window.location.href);
     sseUrl.searchParams.set('last_chat_id', lastChatId);
     
     const sse = new EventSource(sseUrl);

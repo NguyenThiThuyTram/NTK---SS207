@@ -387,9 +387,11 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         }
     });
 
-    async function loadChatHistory() {
+    async function loadChatHistory(isSilent = false) {
         const messagesDiv = document.getElementById('ntk-chat-messages');
-        messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải hội thoại...</div>';
+        if (!isSilent) {
+            messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải hội thoại...</div>';
+        }
         
         try {
             const response = await fetch('<?= $_FBASE ?>/api/chat_history.php');
@@ -415,10 +417,14 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
                 }
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             } else {
-                messagesDiv.innerHTML = `<div style="text-align:center; padding:20px; color:#e74c3c; font-size:12.5px;"><i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>${data.message}</div>`;
+                if (!isSilent) {
+                    messagesDiv.innerHTML = `<div style="text-align:center; padding:20px; color:#e74c3c; font-size:12.5px;"><i class="fa-solid fa-circle-exclamation" style="margin-right:6px;"></i>${data.message}</div>`;
+                }
             }
         } catch (e) {
-            messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#e74c3c; font-size:12.5px;">Không thể tải lịch sử chat. Vui lòng kiểm tra kết nối!</div>';
+            if (!isSilent) {
+                messagesDiv.innerHTML = '<div style="text-align:center; padding:20px; color:#e74c3c; font-size:12.5px;">Không thể tải lịch sử chat. Vui lòng kiểm tra kết nối!</div>';
+            }
         }
     }
 
@@ -500,7 +506,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
                 if (selectMode && selectMode.value !== 'human') {
                     selectMode.value = 'human';
                 }
-                loadChatHistory();
+                loadChatHistory(true);
             }
         };
     }

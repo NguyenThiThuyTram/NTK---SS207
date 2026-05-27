@@ -9,7 +9,7 @@ if (basename($_SERVER['PHP_SELF']) === 'login.php') {
 }
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? 0) != 1 || !isset($_SESSION['admin_logged_in'])) {
-    header("Location: https://admin.ntkfashion.me/login.php");
+    header("Location: login.php");
     exit();
 }
 ?>
