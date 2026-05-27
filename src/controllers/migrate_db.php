@@ -113,6 +113,59 @@ runSQL($conn,
 );
 
 // ─────────────────────────────────────────────────────
+// 3b. CẬP NHẬT DỮ LIỆU ĐỂ HỖ TRỢ DUAL COUPONS, SHIPPERS VÀ FLASH SALE
+// ─────────────────────────────────────────────────────
+
+// freeship_coupon_id: lưu mã coupon freeship
+runSQL($conn,
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS freeship_coupon_id CHAR(5) DEFAULT NULL AFTER coupon_id",
+    "Thêm cột freeship_coupon_id vào orders"
+);
+
+// freeship_discount_value: lưu giá trị giảm giá freeship
+runSQL($conn,
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS freeship_discount_value DECIMAL(15,2) DEFAULT 0.00 AFTER discount_value",
+    "Thêm cột freeship_discount_value vào orders"
+);
+
+// coupon_type: 0 = giảm giá sản phẩm, 1 = freeship
+runSQL($conn,
+    "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS coupon_type INT(11) DEFAULT 0 AFTER status",
+    "Thêm cột coupon_type vào coupons"
+);
+
+// Bảng flash_sales: quản lý giá flash sale theo biến thể
+runSQL($conn,
+    "CREATE TABLE IF NOT EXISTS `flash_sales` (
+        `flash_sale_id` INT(11) NOT NULL AUTO_INCREMENT,
+        `variant_id` CHAR(5) NOT NULL,
+        `sale_date` DATE NOT NULL,
+        `flash_sale_price` DECIMAL(15,2) NOT NULL,
+        `status` INT(11) DEFAULT 1,
+        PRIMARY KEY (`flash_sale_id`),
+        KEY `idx_fs_variant` (`variant_id`),
+        KEY `idx_fs_date` (`sale_date`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+    "Tạo bảng flash_sales"
+);
+
+// Bảng chat_messages: lưu trữ tin nhắn chat real-time
+runSQL($conn,
+    "CREATE TABLE IF NOT EXISTS `chat_messages` (
+      `id` INT(11) NOT NULL AUTO_INCREMENT,
+      `sender_id` CHAR(5) NOT NULL,
+      `receiver_id` CHAR(5) DEFAULT '0',
+      `message` TEXT NOT NULL,
+      `is_read` TINYINT(1) DEFAULT 0,
+      `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP(),
+      PRIMARY KEY (`id`),
+      KEY `idx_chat_sender` (`sender_id`),
+      KEY `idx_chat_receiver` (`receiver_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+    "Tạo bảng chat_messages"
+);
+
+// ─────────────────────────────────────────────────────
 // 4. CẬP NHẬT DỮ LIỆU HIỆN CÓ - Đồng nhất hóa order_status
 // ─────────────────────────────────────────────────────
 // Luồng cũ: 1 = Đang xử lý (COD), 2 = Đang giao
