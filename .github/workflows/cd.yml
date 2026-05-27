@@ -20,7 +20,8 @@ jobs:
         cd /home/ubuntu/NTK---SS207
         
         echo "Kéo code mới nhất từ Github..."
-        git pull origin main
+        git fetch origin main
+        git reset --hard origin/main
         
         echo "Cập nhật và khởi động lại website..."
         docker compose up -d --build
