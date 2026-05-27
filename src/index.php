@@ -119,7 +119,110 @@ $best_sellers = $stmt_best->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
+<div class="section bg-be main-section-card" id="recent-views-section" style="display: none;">
+    <div class="section-header">
+        <p>XEM GẦN ĐÂY</p>
+        <h2>Recently Viewed</h2>
+    </div>
+    <div class="product-grid" id="recent-views-grid">
+        <!-- Will be populated dynamically via AJAX -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const recentSection = document.getElementById("recent-views-section");
+        const recentGrid = document.getElementById("recent-views-grid");
+        let lastProductIds = ""; // Store last rendered product IDs to prevent blinking
+
+        function fetchRecentViews() {
+            fetch("views/get_recent_views.php")
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === "success" && result.data && result.data.length > 0) {
+                        // Check if the products list has actually changed
+                        const currentProductIds = result.data.map(item => item.product_id).join(',');
+                        if (currentProductIds === lastProductIds) {
+                            return; // No change, do not re-render to avoid visual blinking
+                        }
+                        lastProductIds = currentProductIds;
+
+                        let html = "";
+                        result.data.forEach((item, index) => {
+                            const priceFormatted = new Intl.NumberFormat('vi-VN').format(item.original_price) + 'đ';
+                            // Apply col-md-3 and fade-in-up with a staggered transition delay
+                            html += `
+                                <div class="product-card col-md-3 fade-in-up" style="transition-delay: ${index * 50}ms;">
+                                    <a href="product_detail.php?id=${item.product_id}">
+                                        <div class="img-wrapper">
+                                            <img src="${item.image}" alt="${item.name}">
+                                        </div>
+                                        <div class="product-info">
+                                            <h3 class="product-name">${item.name}</h3>
+                                            <div class="product-meta">
+                                                <span class="product-stars">★★★★★</span>
+                                                <span class="product-sold">| Đã bán ${item.sold_count}</span>
+                                            </div>
+                                            <p class="price">${priceFormatted}</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            `;
+                        });
+                        
+                        // Render elements in inactive state
+                        recentGrid.innerHTML = html;
+                        recentSection.style.display = "block";
+                        
+                        // Trigger transition with slight delay so browser applies styles and animations render smoothly
+                        setTimeout(() => {
+                            const cards = recentGrid.querySelectorAll('.product-card');
+                            cards.forEach(card => card.classList.add('active'));
+                        }, 50);
+                    } else {
+                        recentSection.style.display = "none";
+                        lastProductIds = "";
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching recently viewed products:", error);
+                });
+        }
+
+        // Fetch immediately on load
+        fetchRecentViews();
+
+        // Poll every 5 seconds (5000ms)
+        setInterval(fetchRecentViews, 5000);
+    });
+</script>
+
 <style>
+    /* Smooth slide-up fade animation for live product cards */
+    .fade-in-up {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    .fade-in-up.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Concept layout compatible with bootstrap col-md-3 grids */
+    #recent-views-grid.product-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 30px !important;
+    }
+
+    @media (max-width: 768px) {
+        #recent-views-grid.product-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 15px !important;
+        }
+    }
+
     /* ============================================================
         CSS FIX ĐỒNG BỘ DARKMODE TRANG CHỦ NTK FASHION
     ============================================================ */

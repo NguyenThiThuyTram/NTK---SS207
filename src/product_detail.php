@@ -29,6 +29,20 @@ if ($product_id) {
     $product = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($product) {
+        // Log to recently viewed list (limit to top 20 rows)
+        try {
+            $stmt_rv = $conn->prepare("INSERT INTO recent_views (product_id, viewed_at) VALUES (:pid, NOW()) ON DUPLICATE KEY UPDATE viewed_at = NOW()");
+            $stmt_rv->execute(['pid' => $product_id]);
+
+            $conn->exec("DELETE FROM recent_views WHERE product_id NOT IN (
+                SELECT product_id FROM (
+                    SELECT product_id FROM recent_views ORDER BY viewed_at DESC LIMIT 20
+                ) as tmp
+            )");
+        } catch (PDOException $e) {
+            // Fail silently
+        }
+
         // 4. Lấy Biến thể (Màu, Size, Giá, Tồn kho)
         $sql_variants = "SELECT pv.*, 
                             (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = pv.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1) as flash_sale_price

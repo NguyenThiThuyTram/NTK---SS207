@@ -47,7 +47,12 @@ $sqls = [
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (like_id),
         UNIQUE KEY unique_user_review_like (user_id, review_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE review_likes"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE review_likes",
+    "CREATE TABLE IF NOT EXISTS recent_views (
+        product_id CHAR(5) NOT NULL,
+        viewed_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (product_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE recent_views"
 ];
 
 foreach ($sqls as $sql => $desc) {
