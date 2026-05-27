@@ -467,26 +467,13 @@ try {
         });
 
         // Hook vào SSE chung từ header.php
-        // KHÔNG auto-reload cứng nhắc, thay vào đó hiển thị banner để user tự quyết định
         if (typeof window.handleOrderUpdate === 'undefined') {
             window.handleOrderUpdate = function(updates) {
                 if (updates && updates.length > 0) {
-                    showOrderUpdateBanner();
+                    showToast('Đơn hàng cập nhật', 'Trạng thái đơn hàng của bạn vừa thay đổi!');
+                    setTimeout(() => window.location.reload(), 2000);
                 }
             };
-        }
-
-        function showOrderUpdateBanner() {
-            // Tránh hiện nhiều banner cùng lúc
-            if (document.getElementById('order-update-banner')) return;
-            var banner = document.createElement('div');
-            banner.id = 'order-update-banner';
-            banner.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:10000;background:#2980b9;color:#fff;padding:14px 24px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;gap:14px;font-size:14px;min-width:320px;';
-            banner.innerHTML = '<i class="fa-solid fa-rotate" style="font-size:18px;"></i>'
-                + '<span>Trạng thái đơn hàng vừa được cập nhật.</span>'
-                + '<button onclick="window.location.reload()" style="background:#fff;color:#2980b9;border:none;border-radius:6px;padding:6px 14px;cursor:pointer;font-weight:600;white-space:nowrap;">Tải lại</button>'
-                + '<button onclick="document.getElementById(\"order-update-banner\").remove()" style="background:transparent;border:none;color:#fff;font-size:18px;cursor:pointer;line-height:1;">&times;</button>';
-            document.body.appendChild(banner);
         }
     </script>
 
