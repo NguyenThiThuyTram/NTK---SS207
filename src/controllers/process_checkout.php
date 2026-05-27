@@ -57,6 +57,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $coupon_id       = !empty($_POST['coupon_id'])       ? trim($_POST['coupon_id'])       : null;
     $coupon_discount = isset($_POST['coupon_discount'])  ? floatval($_POST['coupon_discount']) : 0;
     $coupon_code     = !empty($_POST['coupon_code'])     ? strtoupper(trim($_POST['coupon_code'])) : null;
+
+    $freeship_coupon_id       = !empty($_POST['freeship_coupon_id'])       ? trim($_POST['freeship_coupon_id'])       : null;
+    $freeship_coupon_discount = isset($_POST['freeship_coupon_discount'])  ? floatval($_POST['freeship_coupon_discount']) : 0;
+    $freeship_coupon_code     = !empty($_POST['freeship_coupon_code'])     ? strtoupper(trim($_POST['freeship_coupon_code'])) : null;
+
+    $shipping_method_id = !empty($_POST['shipping_method_id']) ? trim($_POST['shipping_method_id']) : 'S01';
     
     $points_discount = isset($_POST['points_discount']) ? floatval($_POST['points_discount']) : 0;
 
@@ -77,6 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_cart = $conn->prepare("
             SELECT c.cart_id, c.quantity, c.variant_id,
                    v.original_price, v.sale_price,
+                   (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = v.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1) as flash_sale_price,
                    p.product_id, p.name AS product_name
             FROM cart c
             JOIN product_variants v ON c.variant_id = v.variant_id
@@ -89,17 +96,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Tính tổng
         $subtotal = 0;
         foreach ($cart_items as $ci) {
-            $price = ($ci['sale_price'] > 0) ? $ci['sale_price'] : $ci['original_price'];
+            $price = ($ci['flash_sale_price'] !== null) ? $ci['flash_sale_price'] : (($ci['sale_price'] > 0) ? $ci['sale_price'] : $ci['original_price']);
             $subtotal += $price * $ci['quantity'];
         }
-        $shipping_fee = 35000;
+
+        // Lấy thông tin phí ship của Đơn vị vận chuyển từ database
+        $stmt_sm = $conn->prepare("SELECT cost FROM shipping_methods WHERE shipping_method_id = :smid");
+        $stmt_sm->execute(['smid' => $shipping_method_id]);
+        $shipping_fee = floatval($stmt_sm->fetchColumn() ?: 35000);
         $total_price  = $subtotal + $shipping_fee;
 
-        // ── Xác nhận lại coupon phía server ──────────────────
+        // ── Xác nhận lại coupon giảm giá đơn hàng phía server ──────────────────
         $verified_coupon_discount = 0;
         $verified_coupon_id = null;
-        if ($coupon_id && $coupon_discount > 0) {
-            $stmt_cp = $conn->prepare("SELECT * FROM coupons WHERE coupon_id = :cid AND status = 1 AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW())");
+        if ($coupon_id) {
+            $stmt_cp = $conn->prepare("SELECT * FROM coupons WHERE coupon_id = :cid AND status = 1 AND (coupon_type = 0 OR coupon_type IS NULL) AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW())");
             $stmt_cp->execute(['cid' => $coupon_id]);
             $cp = $stmt_cp->fetch(PDO::FETCH_ASSOC);
 
@@ -108,7 +119,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $min_ok = ($subtotal >= floatval($cp['min_order_value']));
                 if ($qty_ok && $min_ok) {
                     if ($cp['discount_type'] == 0) {
-                        // Giảm % áp dụng trên subtotal (nhất quán với JS checkout)
                         $calc = $subtotal * (floatval($cp['discount_value']) / 100);
                         if (!empty($cp['max_discount_amount']) && $cp['max_discount_amount'] > 0) {
                             $calc = min($calc, floatval($cp['max_discount_amount']));
@@ -118,6 +128,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     }
                     $verified_coupon_discount = min(round($calc), $subtotal);
                     $verified_coupon_id = $cp['coupon_id'];
+                }
+            }
+        }
+
+        // ── Xác nhận lại coupon freeship phía server ──────────────────
+        $verified_freeship_discount = 0;
+        $verified_freeship_id = null;
+        if ($freeship_coupon_id) {
+            $stmt_fcp = $conn->prepare("SELECT * FROM coupons WHERE coupon_id = :cid AND status = 1 AND coupon_type = 1 AND (start_date IS NULL OR start_date <= NOW()) AND (end_date IS NULL OR end_date >= NOW())");
+            $stmt_fcp->execute(['cid' => $freeship_coupon_id]);
+            $fcp = $stmt_fcp->fetch(PDO::FETCH_ASSOC);
+
+            if ($fcp) {
+                $qty_ok = ($fcp['quantity'] === null || $fcp['used_count'] < $fcp['quantity']);
+                $min_ok = ($subtotal >= floatval($fcp['min_order_value']));
+                if ($qty_ok && $min_ok) {
+                    if ($fcp['discount_type'] == 0) {
+                        $calc = $shipping_fee * (floatval($fcp['discount_value']) / 100);
+                    } else {
+                        $calc = floatval($fcp['discount_value']);
+                    }
+                    $verified_freeship_discount = min(round($calc), $shipping_fee);
+                    $verified_freeship_id = $fcp['coupon_id'];
                 }
             }
         }
@@ -139,7 +172,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $tier_discount_percent = getTierDiscount($tier);
         $tier_discount = round($subtotal * ($tier_discount_percent / 100));
 
-        $final_price = max(0, $total_price - $verified_coupon_discount - $tier_discount - $points_discount - $wallet_used);
+        $final_price = max(0, $total_price - $verified_coupon_discount - $verified_freeship_discount - $tier_discount - $points_discount - $wallet_used);
         $payos_order_code = intval(date('ymd') . rand(1000, 9999));
 
         // Logic trạng thái: COD=1 (pay_method=1), Online=2 (pay_method=2)
@@ -149,8 +182,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $initial_payment_status = ($wallet_used >= $total_price && $payment_method !== 'online') ? 1 : 0;
         $initial_order_status = ($payment_method === 'online') ? 0 : 1;
 
-        $sql_order = "INSERT INTO orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value) 
-                      VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv)";
+        $sql_order = "INSERT INTO orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value, shipping_method_id, freeship_coupon_id, freeship_discount_value) 
+                      VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv, :smid, :fcsid, :fcsval)";
         $stmt_order = $conn->prepare($sql_order);
         $stmt_order->execute([
             'oid'         => $order_id,
@@ -168,7 +201,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'ps'          => $initial_payment_status,
             'os'          => $initial_order_status,
             'cpid'        => $verified_coupon_id,
-            'dv'          => $verified_coupon_discount
+            'dv'          => $verified_coupon_discount,
+            'smid'        => $shipping_method_id,
+            'fcsid'       => $verified_freeship_id,
+            'fcsval'      => $verified_freeship_discount
         ]);
 
         // -------------------------------------------------------------
@@ -203,10 +239,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_detail = $conn->prepare("INSERT INTO order_details (detail_id, order_id, variant_id, product_name, quantity, price) VALUES (:did, :oid, :vid, :pname, :qty, :price)");
         foreach ($cart_items as $ci) {
             $max_d++;
-            $stmt_detail->execute(['did' => 'D' . str_pad($max_d, 4, '0', STR_PAD_LEFT), 'oid' => $order_id, 'vid' => $ci['variant_id'], 'pname' => $ci['product_name'], 'qty' => $ci['quantity'], 'price' => ($ci['sale_price'] > 0 ? $ci['sale_price'] : $ci['original_price'])]);
+            $price = ($ci['flash_sale_price'] !== null) ? $ci['flash_sale_price'] : ($ci['sale_price'] > 0 ? $ci['sale_price'] : $ci['original_price']);
+            $stmt_detail->execute(['did' => 'D' . str_pad($max_d, 4, '0', STR_PAD_LEFT), 'oid' => $order_id, 'vid' => $ci['variant_id'], 'pname' => $ci['product_name'], 'qty' => $ci['quantity'], 'price' => $price]);
         }
         $conn->prepare("DELETE FROM cart WHERE user_id = :uid AND is_selected = 1")->execute(['uid' => $user_id]);
         if ($verified_coupon_id) $conn->prepare("UPDATE coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")->execute(['cid' => $verified_coupon_id]);
+        if ($verified_freeship_id) $conn->prepare("UPDATE coupons SET used_count = used_count + 1 WHERE coupon_id = :cid")->execute(['cid' => $verified_freeship_id]);
 
         // ── Thông báo cho Khách hàng & Admin ───────────────────────────
         try {

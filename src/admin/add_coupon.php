@@ -11,16 +11,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $min_order = $_POST['min_order_value'];
     $quantity = $_POST['quantity'];
     $end_date = $_POST['end_date'];
+    $coupon_type = $_POST['coupon_type'];
 
     // 2. TỰ SINH ID: Dùng tiền tố CP + số ngẫu nhiên để đảm bảo vừa đúng 5 ký tự char(5)
     $new_id = "CP" . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT); 
 
     try {
         // 3. Chèn vào database
-        $sql = "INSERT INTO coupons (coupon_id, code, discount_type, discount_value, min_order_value, quantity, end_date, used_count) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0)";
+        $sql = "INSERT INTO coupons (coupon_id, code, discount_type, discount_value, min_order_value, quantity, end_date, used_count, coupon_type) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->execute([$new_id, $code, $discount_type, $discount_value, $min_order, $quantity, $end_date]);
+        $stmt->execute([$new_id, $code, $discount_type, $discount_value, $min_order, $quantity, $end_date, $coupon_type]);
         
         header("Location: coupons.php?msg=added"); exit;
     } catch (PDOException $e) {
@@ -61,6 +62,14 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             <div class="form-group">
                 <label>Mã Voucher (Ví dụ: HELLOWORLD)</label>
                 <input type="text" name="code" class="form-control" placeholder="Nhập mã ưu đãi..." required>
+            </div>
+
+            <div class="form-group">
+                <label>Loại Voucher</label>
+                <select name="coupon_type" class="form-control">
+                    <option value="0">Giảm giá sản phẩm/đơn hàng</option>
+                    <option value="1">Voucher Freeship (Giảm phí vận chuyển)</option>
+                </select>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">

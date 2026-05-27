@@ -39,7 +39,7 @@ try {
         exit;
     }
 
-    // Kiểm tra giá trị đơn tối thiểu
+    // Kiểm tra giá trị đơn tối thiểu (áp dụng cho giá sản phẩm - order_total ở đây đại diện cho subtotal)
     if ($order_total < floatval($coupon['min_order_value'])) {
         $min_fmt = number_format($coupon['min_order_value'], 0, ',', '.');
         echo json_encode(['valid' => false, 'message' => "Đơn hàng tối thiểu {$min_fmt} VNĐ để dùng mã này."]);
@@ -48,30 +48,45 @@ try {
 
     // Tính số tiền giảm
     $discount_amount = 0;
-    if ($coupon['discount_type'] == 0) {
-        // Giảm theo %
-        $discount_amount = $order_total * (floatval($coupon['discount_value']) / 100);
-        // Áp dụng giảm tối đa (nếu có)
-        if (!empty($coupon['max_discount_amount']) && $coupon['max_discount_amount'] > 0) {
-            $discount_amount = min($discount_amount, floatval($coupon['max_discount_amount']));
+    if ($coupon['coupon_type'] == 1) {
+        // Voucher Freeship
+        $shipping_fee = floatval($_POST['shipping_fee'] ?? $_GET['shipping_fee'] ?? 35000);
+        if ($coupon['discount_type'] == 0) {
+            // Giảm % phí ship
+            $discount_amount = $shipping_fee * (floatval($coupon['discount_value']) / 100);
+        } else {
+            // Giảm tiền ship cố định
+            $discount_amount = floatval($coupon['discount_value']);
         }
+        $discount_amount = min($discount_amount, $shipping_fee);
     } else {
-        // Giảm số tiền cố định
-        $discount_amount = floatval($coupon['discount_value']);
+        // Voucher Giảm giá đơn hàng
+        if ($coupon['discount_type'] == 0) {
+            // Giảm theo %
+            $discount_amount = $order_total * (floatval($coupon['discount_value']) / 100);
+            // Áp dụng giảm tối đa (nếu có)
+            if (!empty($coupon['max_discount_amount']) && $coupon['max_discount_amount'] > 0) {
+                $discount_amount = min($discount_amount, floatval($coupon['max_discount_amount']));
+            }
+        } else {
+            // Giảm số tiền cố định
+            $discount_amount = floatval($coupon['discount_value']);
+        }
+        $discount_amount = min($discount_amount, $order_total);
     }
-
-    // Không cho giảm nhiều hơn tổng đơn
-    $discount_amount = min($discount_amount, $order_total);
+    
     $discount_amount = round($discount_amount);
 
     echo json_encode([
-        'valid'           => true,
-        'coupon_id'       => $coupon['coupon_id'],
-        'code'            => $coupon['code'],
-        'discount_amount' => $discount_amount,
-        'discount_type'   => $coupon['discount_type'],
-        'discount_value'  => $coupon['discount_value'],
-        'message'         => 'Áp dụng mã thành công!'
+        'valid'               => true,
+        'coupon_id'           => $coupon['coupon_id'],
+        'code'                => $coupon['code'],
+        'discount_amount'     => $discount_amount,
+        'discount_type'       => $coupon['discount_type'],
+        'discount_value'      => $coupon['discount_value'],
+        'max_discount_amount' => $coupon['max_discount_amount'],
+        'coupon_type'         => $coupon['coupon_type'],
+        'message'             => 'Áp dụng mã thành công!'
     ]);
 
 } catch (PDOException $e) {

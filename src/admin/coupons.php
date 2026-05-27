@@ -123,7 +123,9 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <tr><td colspan="7" style="text-align:center; padding: 40px; color:#999;">Chưa có dữ liệu voucher.</td></tr>
                 <?php else: ?>
                     <?php foreach ($coupons as $cp): 
-                        $is_expired = strtotime($cp['end_date']) < time();
+                        $is_expired = (!empty($cp['end_date']) && strtotime($cp['end_date']) < time());
+                        $is_out_of_qty = ($cp['quantity'] !== null && $cp['used_count'] >= $cp['quantity']);
+                        $is_disabled = ($cp['status'] == 0);
                     ?>
                     <tr>
                         <td><span class="code-badge"><?= htmlspecialchars($cp['code']) ?></span></td>
@@ -139,9 +141,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             </div>
                         </td>
                         <td>
-                            <span class="status-tag <?= $is_expired ? 'tag-expired' : 'tag-active' ?>">
-                                <?= $is_expired ? 'Hết hạn' : 'Hoạt động' ?>
-                            </span>
+                            <?php if ($is_disabled): ?>
+                                <span class="status-tag tag-expired">Tắt</span>
+                            <?php elseif ($is_expired): ?>
+                                <span class="status-tag tag-expired">Hết hạn</span>
+                            <?php elseif ($is_out_of_qty): ?>
+                                <span class="status-tag tag-expired" style="background: #fdf5e6; color: #f39c12; border: 1px solid #f39c12;">Hết lượt</span>
+                            <?php else: ?>
+                                <span class="status-tag tag-active">Hoạt động</span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <div class="action-btns">

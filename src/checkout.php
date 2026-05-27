@@ -14,6 +14,7 @@ if (!$user_id) {
 // 1. Lấy sản phẩm đang ĐƯỢC CHỌN trong giỏ hàng
 $sql = "SELECT c.cart_id, c.quantity, 
                v.variant_id, v.color, v.size, v.original_price, v.sale_price,
+               (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = v.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1) as flash_sale_price,
                p.product_id, p.name AS product_name, p.image
         FROM cart c
         JOIN product_variants v ON c.variant_id = v.variant_id
@@ -47,19 +48,19 @@ $coupons = $stmt_cp->fetchAll(PDO::FETCH_ASSOC);
 // Tính toán tiền tạm tính ban đầu để JS xử lý
 $subtotal = 0;
 foreach ($checkout_items as $item) {
-    $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
+    $price = ($item['flash_sale_price'] !== null) ? $item['flash_sale_price'] : ($item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price']);
     $subtotal += $price * $item['quantity'];
 }
-$shipping_fee = 30000; // Phí ship mặc định của Bee
+// Lấy danh sách đơn vị vận chuyển
+$shipping_methods = [];
+try {
+    $st_ship = $conn->prepare("SELECT * FROM shipping_methods");
+    $st_ship->execute();
+    $shipping_methods = $st_ship->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {}
 
-// 2. Tính toán cơ bản
-$subtotal = 0;
-foreach ($checkout_items as $item) {
-    $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
-    $subtotal += $price * $item['quantity'];
-}
-
-$shipping_fee = 35000; // Cố định 35k như yêu cầu
+$shipping_fee = !empty($shipping_methods) ? floatval($shipping_methods[0]['cost']) : 35000;
+$default_shipping_id = !empty($shipping_methods) ? $shipping_methods[0]['shipping_method_id'] : 'S01';
 
 require_once 'includes/loyalty_utils.php';
 
@@ -84,32 +85,42 @@ $available_coupons = [];
 try {
     $stmt_coupons = $conn->prepare("
         SELECT coupon_id, code, discount_type, discount_value,
-               min_order_value, max_discount_amount, end_date, quantity, used_count
+               min_order_value, max_discount_amount, end_date, quantity, used_count, coupon_type
         FROM coupons
         WHERE status = 1
           AND (start_date IS NULL OR start_date <= NOW())
           AND (end_date IS NULL OR end_date >= NOW())
-          -- ĐÃ SỬA: Thay usage_limit thành quantity cho khớp Database
           AND (quantity IS NULL OR used_count < quantity) 
         ORDER BY discount_value DESC
     ");
     $stmt_coupons->execute();
     $raw_coupons = $stmt_coupons->fetchAll(PDO::FETCH_ASSOC);
 
-    // Tính toán discount thực tế cho từng coupon dựa trên subtotal hiện tại
+    // Tính toán discount thực tế cho từng coupon dựa trên subtotal hiện tại hoặc shipping fee
     foreach ($raw_coupons as $cp) {
         // Kiểm tra điều kiện đơn tối thiểu
         if ($subtotal < floatval($cp['min_order_value'])) continue;
 
-        if ($cp['discount_type'] == 0) {
-            $calc = $subtotal * (floatval($cp['discount_value']) / 100);
-            if (!empty($cp['max_discount_amount']) && $cp['max_discount_amount'] > 0) {
-                $calc = min($calc, floatval($cp['max_discount_amount']));
+        if ($cp['coupon_type'] == 1) {
+            // Freeship coupon
+            if ($cp['discount_type'] == 0) {
+                $calc = $shipping_fee * (floatval($cp['discount_value']) / 100);
+            } else {
+                $calc = floatval($cp['discount_value']);
             }
+            $cp['calc_discount'] = min(round($calc), $shipping_fee);
         } else {
-            $calc = floatval($cp['discount_value']);
+            // Regular discount coupon
+            if ($cp['discount_type'] == 0) {
+                $calc = $subtotal * (floatval($cp['discount_value']) / 100);
+                if (!empty($cp['max_discount_amount']) && $cp['max_discount_amount'] > 0) {
+                    $calc = min($calc, floatval($cp['max_discount_amount']));
+                }
+            } else {
+                $calc = floatval($cp['discount_value']);
+            }
+            $cp['calc_discount'] = min(round($calc), $subtotal);
         }
-        $cp['calc_discount'] = min(round($calc), $subtotal);
         $available_coupons[] = $cp;
     }
 
@@ -726,18 +737,20 @@ include 'includes/header.php';
                 </div>
 
                 <div class="checkout-step" id="step-2">
-                    <h2 class="step-title">Phí Ship</h2>
+                    <h2 class="step-title">Đơn vị vận chuyển</h2>
                     
-                    <label class="method-box active">
+                    <?php foreach ($shipping_methods as $s_idx => $sm): ?>
+                    <label class="method-box <?= $s_idx === 0 ? 'active' : '' ?>" id="shipping-method-box-<?= $sm['shipping_method_id'] ?>" onclick="selectShippingMethod('<?= $sm['shipping_method_id'] ?>', <?= floatval($sm['cost']) ?>)">
                         <div style="display: flex; align-items: center;">
-                            <input type="radio" name="shipping_method" value="standard" checked>
+                            <input type="radio" name="shipping_method_id" value="<?= $sm['shipping_method_id'] ?>" <?= $s_idx === 0 ? 'checked' : '' ?> style="accent-color:#2f1c00;">
                             <div class="method-info">
-                                <div class="method-name">Tiêu chuẩn</div>
-                                <div class="method-desc">Giao hàng trong 3-5 ngày</div>
+                                <div class="method-name"><?= htmlspecialchars($sm['name']) ?></div>
+                                <div class="method-desc">Dự kiến nhận hàng: <?= htmlspecialchars($sm['estimated_delivery']) ?></div>
                             </div>
                         </div>
-                        <div class="method-price"><?php echo number_format($shipping_fee, 0, ',', '.'); ?> VNĐ</div>
+                        <div class="method-price"><?= number_format($sm['cost'], 0, ',', '.'); ?> VNĐ</div>
                     </label>
+                    <?php endforeach; ?>
 
                     <div class="step-actions">
                         <button type="button" class="btn-back" onclick="goToStep(1)">< Quay lại</button>
@@ -783,6 +796,10 @@ include 'includes/header.php';
                     <input type="hidden" name="coupon_code" id="input_coupon_code" value="">
                     <input type="hidden" name="coupon_discount" id="input_coupon_discount" value="0">
                     <input type="hidden" name="coupon_id" id="input_coupon_id" value="">
+                    <input type="hidden" name="shipping_method_id" id="input_shipping_method_id" value="<?= $default_shipping_id ?>">
+                    <input type="hidden" name="freeship_coupon_code" id="input_freeship_coupon_code" value="">
+                    <input type="hidden" name="freeship_coupon_discount" id="input_freeship_coupon_discount" value="0">
+                    <input type="hidden" name="freeship_coupon_id" id="input_freeship_coupon_id" value="">
 
                     <div class="step-actions">
                         <button type="button" class="btn-back" onclick="goToStep(2)">< Quay lại</button>
@@ -798,7 +815,7 @@ include 'includes/header.php';
             
             <div class="summary-items" style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
                 <?php foreach ($checkout_items as $item): 
-                    $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
+                    $price = ($item['flash_sale_price'] !== null) ? $item['flash_sale_price'] : ($item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price']);
                 ?>
                 <div class="sum-item">
                     <img src="<?php echo htmlspecialchars($item['image']); ?>" alt="">
@@ -850,14 +867,17 @@ include 'includes/header.php';
                         Voucher dành cho bạn
                     </div>
                     <div class="coupon-suggest-list" id="suggest_list">
-                    <?php foreach (array_slice($available_coupons, 0, 3) as $idx => $sc):
+                    <?php foreach ($available_coupons as $idx => $sc):
                         $is_percent = ($sc['discount_type'] == 0);
-                        $desc = $is_percent
+                        $is_freeship = ($sc['coupon_type'] == 1);
+                        $desc = ($is_freeship ? '[Freeship] ' : '') . ($is_percent
                             ? 'Giảm ' . intval($sc['discount_value']) . '%' . (!empty($sc['max_discount_amount']) ? ' (tối đa ' . number_format($sc['max_discount_amount'],0,',','.') . 'đ)' : '')
-                            : 'Giảm cố định';
+                            : 'Giảm ' . number_format($sc['discount_value'], 0, ',', '.') . ' VNĐ');
                         $end_str = empty($sc['end_date']) ? 'Vô hạn' : 'HSD: ' . date('d/m/Y', strtotime($sc['end_date']));
+                        $hide_style = $idx >= 3 ? 'style="display: none;"' : '';
                     ?>
-                    <div class="coupon-suggest-item <?= $idx === 0 ? 'best-pick' : '' ?>"
+                    <div class="coupon-suggest-item <?= $idx === 0 ? 'best-pick' : '' ?> <?= $idx >= 3 ? 'extra-coupon' : '' ?>"
+                         <?= $hide_style ?>
                          onclick="selectSuggestedCoupon('<?= htmlspecialchars($sc['code']) ?>')"
                          data-code="<?= htmlspecialchars($sc['code']) ?>"
                          data-id="<?= $sc['coupon_id'] ?>"
@@ -868,9 +888,12 @@ include 'includes/header.php';
                          data-max="<?= $sc['max_discount_amount'] ?? 0 ?>"
                          data-end="<?= $sc['end_date'] ?? '' ?>"
                          data-qty="<?= $sc['quantity'] ?? '' ?>"
-                         data-used="<?= $sc['used_count'] ?? 0 ?>">
+                         data-used="<?= $sc['used_count'] ?? 0 ?>"
+                         data-coupon-type="<?= $sc['coupon_type'] ?>">
                         <div class="csi-left">
-                            <?php if ($idx === 0): ?>
+                            <?php if ($is_freeship): ?>
+                                <span class="csi-badge ship" style="background: #00bfa5; color: #fff;"><i class="fa-solid fa-truck-fast"></i></span>
+                            <?php elseif ($idx === 0): ?>
                                 <span class="csi-badge best">Tốt nhất</span>
                             <?php else: ?>
                                 <span class="csi-badge"><i class="fa-solid fa-tag"></i></span>
@@ -905,7 +928,11 @@ include 'includes/header.php';
                 <div class="coupon-msg" id="coupon_msg"></div>
                 <div id="coupon_applied_tag" style="display:none;" class="coupon-applied-tag">
                     <span id="coupon_tag_text"></span>
-                    <button class="coupon-remove" onclick="removeCoupon()" title="Xóa mã">✕</button>
+                    <button type="button" class="coupon-remove" onclick="removeCoupon(0)" title="Xóa mã">✕</button>
+                </div>
+                <div id="freeship_coupon_applied_tag" style="display:none; margin-top:8px; background:#e0f2f1; color:#00796b; border:1px solid #b2dfdb;" class="coupon-applied-tag">
+                    <span id="freeship_coupon_tag_text"></span>
+                    <button type="button" class="coupon-remove" onclick="removeCoupon(1)" title="Xóa mã" style="color:#00796b;">✕</button>
                 </div>
             </div>
 
@@ -919,8 +946,13 @@ include 'includes/header.php';
             </div>
 
             <div class="sum-row" id="coupon_discount_row" style="display: none; color: #2e7d32;">
-                <span>Giảm giá (mã):</span>
+                <span>Giảm giá đơn hàng:</span>
                 <span id="ui_coupon_discount">-0 VNĐ</span>
+            </div>
+
+            <div class="sum-row" id="freeship_discount_row" style="display: none; color: #00796b;">
+                <span>Giảm phí vận chuyển:</span>
+                <span id="ui_freeship_discount">-0 VNĐ</span>
             </div>
 
             <div class="sum-row" id="tier_discount_row" style="display: none; color: #2e7d32;">
@@ -1112,13 +1144,12 @@ include 'includes/header.php';
     const walletBalance = <?php echo $wallet_balance; ?>;
 
     // State mã giảm giá
-    let activeCoupon = null; // { coupon_id, code, discount_amount }
+    let activeDiscountCoupon = null; // { coupon_id, code, discount_type, discount_value, max_discount_amount }
+    let activeFreeshipCoupon = null; // { coupon_id, code, discount_type, discount_value, max_discount_amount }
 
     function applyCoupon() {
         const code = document.getElementById('coupon_code_input').value.trim().toUpperCase();
         const msgEl = document.getElementById('coupon_msg');
-        const tagEl = document.getElementById('coupon_applied_tag');
-        const tagText = document.getElementById('coupon_tag_text');
 
         if (!code) {
             msgEl.textContent = 'Vui lòng nhập mã giảm giá.';
@@ -1128,40 +1159,52 @@ include 'includes/header.php';
 
         const subtotal = parseInt(document.getElementById('ui_subtotal').getAttribute('data-val'));
         const shipping = parseInt(document.getElementById('ui_shipping').getAttribute('data-val'));
-        const orderTotal = subtotal; // Dùng subtotal (không cộng ship) cho nhất quán với giỏ hàng
+        const orderTotal = subtotal;
 
-        // Gọi AJAX kiểm tra mã qua POST để tránh lỗi ký tự đặc biệt trong URL (vd: 30/4)
+        // Gọi AJAX kiểm tra mã qua POST
         fetch('api/check_coupon.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'code=' + encodeURIComponent(code) + '&order_total=' + orderTotal
+            body: 'code=' + encodeURIComponent(code) + '&order_total=' + orderTotal + '&shipping_fee=' + shipping
         })
             .then(r => r.json())
             .then(res => {
                 if (res.valid) {
-                    activeCoupon = {
+                    const cpObj = {
                         coupon_id: res.coupon_id,
                         code: res.code,
-                        discount_amount: res.discount_amount
+                        discount_type: res.discount_type,
+                        discount_value: parseFloat(res.discount_value),
+                        max_discount_amount: parseFloat(res.max_discount_amount || 0),
+                        coupon_type: parseInt(res.coupon_type)
                     };
-                    document.getElementById('input_coupon_code').value = res.code;
-                    document.getElementById('input_coupon_discount').value = res.discount_amount;
-                    document.getElementById('input_coupon_id').value = res.coupon_id;
 
-                    tagText.textContent = res.code + ' – Giảm ' + res.discount_amount.toLocaleString('vi-VN') + ' VNĐ';
-                    tagEl.style.display = 'flex';
-                    msgEl.textContent = '';
-                    msgEl.className = 'coupon-msg';
+                    if (cpObj.coupon_type == 1) {
+                        activeFreeshipCoupon = cpObj;
+                        document.getElementById('input_freeship_coupon_code').value = res.code;
+                        document.getElementById('input_freeship_coupon_id').value = res.coupon_id;
+                        
+                        document.getElementById('freeship_coupon_tag_text').textContent = res.code + ' – Giảm phí vận chuyển';
+                        document.getElementById('freeship_coupon_applied_tag').style.display = 'flex';
+                        
+                        highlightSuggestion(res.code, 1);
+                    } else {
+                        activeDiscountCoupon = cpObj;
+                        document.getElementById('input_coupon_code').value = res.code;
+                        document.getElementById('input_coupon_id').value = res.coupon_id;
+                        
+                        document.getElementById('coupon_tag_text').textContent = res.code + ' – Giảm đơn hàng';
+                        document.getElementById('coupon_applied_tag').style.display = 'flex';
+                        
+                        highlightSuggestion(res.code, 0);
+                    }
+
+                    msgEl.textContent = 'Áp dụng mã thành công!';
+                    msgEl.className = 'coupon-msg success';
                     calculateTotal();
                 } else {
-                    activeCoupon = null;
-                    tagEl.style.display = 'none';
-                    document.getElementById('input_coupon_code').value = '';
-                    document.getElementById('input_coupon_discount').value = '0';
-                    document.getElementById('input_coupon_id').value = '';
                     msgEl.textContent = res.message || 'Mã giảm giá không hợp lệ.';
                     msgEl.className = 'coupon-msg error';
-                    calculateTotal();
                 }
             })
             .catch(() => {
@@ -1170,16 +1213,91 @@ include 'includes/header.php';
             });
     }
 
-    function removeCoupon() {
-        activeCoupon = null;
-        document.getElementById('coupon_code_input').value = '';
-        document.getElementById('input_coupon_code').value = '';
-        document.getElementById('input_coupon_discount').value = '0';
-        document.getElementById('input_coupon_id').value = '';
-        document.getElementById('coupon_applied_tag').style.display = 'none';
+    function highlightSuggestion(code, type) {
+        document.querySelectorAll(`.coupon-suggest-item[data-coupon-type="${type}"]`).forEach(item => {
+            item.classList.remove('best-pick');
+        });
+        const activeItem = document.querySelector(`.coupon-suggest-item[data-code="${code}"]`);
+        if (activeItem) activeItem.classList.add('best-pick');
+    }
+
+    function removeCoupon(type) {
+        if (type === 0) {
+            activeDiscountCoupon = null;
+            document.getElementById('input_coupon_code').value = '';
+            document.getElementById('input_coupon_discount').value = '0';
+            document.getElementById('input_coupon_id').value = '';
+            document.getElementById('coupon_applied_tag').style.display = 'none';
+            removeCouponHighlight(0);
+        } else if (type === 1) {
+            activeFreeshipCoupon = null;
+            document.getElementById('input_freeship_coupon_code').value = '';
+            document.getElementById('input_freeship_coupon_discount').value = '0';
+            document.getElementById('input_freeship_coupon_id').value = '';
+            document.getElementById('freeship_coupon_applied_tag').style.display = 'none';
+            removeCouponHighlight(1);
+        }
+        
+        if (!activeDiscountCoupon && !activeFreeshipCoupon) {
+            document.getElementById('coupon_code_input').value = '';
+        }
+        
         document.getElementById('coupon_msg').textContent = '';
         document.getElementById('coupon_msg').className = 'coupon-msg';
         calculateTotal();
+    }
+
+    function removeCouponHighlight(type) {
+        document.querySelectorAll(`.coupon-suggest-item[data-coupon-type="${type}"]`).forEach(item => {
+            item.classList.remove('best-pick');
+        });
+    }
+
+    function selectShippingMethod(id, cost) {
+        const radios = document.querySelectorAll('[name="shipping_method_id"]');
+        radios.forEach(r => r.checked = (r.value == id));
+
+        document.querySelectorAll('#step-2 .method-box').forEach(box => {
+            box.classList.remove('active');
+        });
+        const activeBox = document.getElementById('shipping-method-box-' + id);
+        if (activeBox) {
+            activeBox.classList.add('active');
+        }
+
+        document.getElementById('input_shipping_method_id').value = id;
+
+        const uiShipping = document.getElementById('ui_shipping');
+        if (uiShipping) {
+            uiShipping.setAttribute('data-val', cost);
+            uiShipping.innerText = cost.toLocaleString('vi-VN') + ' VNĐ';
+        }
+
+        calculateTotal();
+    }
+
+    function toggleMoreCoupons() {
+        const extraCoupons = document.querySelectorAll('.extra-coupon');
+        const chevron = document.getElementById('suggest_chevron');
+        const moreText = document.querySelector('.coupon-suggest-more');
+        
+        let isExpanded = false;
+        extraCoupons.forEach(item => {
+            if (item.style.display === 'none' || !item.style.display) {
+                item.style.display = 'flex';
+                isExpanded = true;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        if (isExpanded) {
+            if (chevron) chevron.className = 'fa-solid fa-chevron-up';
+            moreText.innerHTML = '<i class="fa-solid fa-chevron-up" id="suggest_chevron"></i> Thu gọn';
+        } else {
+            if (chevron) chevron.className = 'fa-solid fa-chevron-down';
+            moreText.innerHTML = `<i class="fa-solid fa-chevron-down" id="suggest_chevron"></i> Xem thêm ${extraCoupons.length} voucher khác`;
+        }
     }
 
     function calculateTotal() {
@@ -1203,15 +1321,51 @@ include 'includes/header.php';
         const pointsRow = document.getElementById('points_discount_row');
         const uiPointsDiscount = document.getElementById('ui_points_discount');
 
-        // Giảm giá coupon
-        const couponDiscount = activeCoupon ? activeCoupon.discount_amount : 0;
+        // 1. Calculate discount coupon
+        let discountVal = 0;
+        if (activeDiscountCoupon) {
+            if (activeDiscountCoupon.discount_type == 0) {
+                discountVal = Math.round(subtotal * (activeDiscountCoupon.discount_value / 100));
+                if (activeDiscountCoupon.max_discount_amount > 0) {
+                    discountVal = Math.min(discountVal, activeDiscountCoupon.max_discount_amount);
+                }
+            } else {
+                discountVal = activeDiscountCoupon.discount_value;
+            }
+            discountVal = Math.min(discountVal, subtotal);
+        }
+        document.getElementById('input_coupon_discount').value = discountVal;
+
         const couponRow = document.getElementById('coupon_discount_row');
         const uiCouponDiscount = document.getElementById('ui_coupon_discount');
-        if (couponDiscount > 0) {
+        if (discountVal > 0) {
             couponRow.style.display = 'flex';
-            uiCouponDiscount.innerText = '-' + couponDiscount.toLocaleString('vi-VN') + ' VNĐ';
+            uiCouponDiscount.innerText = '-' + discountVal.toLocaleString('vi-VN') + ' VNĐ';
+            document.getElementById('coupon_tag_text').textContent = activeDiscountCoupon.code + ' – Giảm ' + discountVal.toLocaleString('vi-VN') + ' VNĐ';
         } else {
             couponRow.style.display = 'none';
+        }
+
+        // 2. Calculate freeship coupon
+        let freeshipVal = 0;
+        if (activeFreeshipCoupon) {
+            if (activeFreeshipCoupon.discount_type == 0) {
+                freeshipVal = Math.round(shipping * (activeFreeshipCoupon.discount_value / 100));
+            } else {
+                freeshipVal = activeFreeshipCoupon.discount_value;
+            }
+            freeshipVal = Math.min(freeshipVal, shipping);
+        }
+        document.getElementById('input_freeship_coupon_discount').value = freeshipVal;
+
+        const freeshipRow = document.getElementById('freeship_discount_row');
+        const uiFreeshipDiscount = document.getElementById('ui_freeship_discount');
+        if (freeshipVal > 0) {
+            freeshipRow.style.display = 'flex';
+            uiFreeshipDiscount.innerText = '-' + freeshipVal.toLocaleString('vi-VN') + ' VNĐ';
+            document.getElementById('freeship_coupon_tag_text').textContent = activeFreeshipCoupon.code + ' – Giảm ' + freeshipVal.toLocaleString('vi-VN') + ' VNĐ';
+        } else {
+            freeshipRow.style.display = 'none';
         }
 
         // Chiết khấu hạng (tính trên subtotal)
@@ -1224,7 +1378,7 @@ include 'includes/header.php';
         }
 
         // Tính tiền sau giảm giá mã và hạng
-        let totalAfterDiscount = Math.max(0, subtotal + shipping - couponDiscount - tierDiscount);
+        let totalAfterDiscount = Math.max(0, subtotal + shipping - discountVal - freeshipVal - tierDiscount);
 
         // Giảm điểm Loyalty
         let pointsDiscount = 0;
@@ -1353,20 +1507,10 @@ include 'includes/header.php';
 
 <script>
 function selectSuggestedCoupon(code) {
-    // 1. Điền mã vào ô nhập thủ công
     const input = document.getElementById('coupon_code_input');
     if (input) {
         input.value = code;
-        
-        // 2. Tự động gọi hàm applyCoupon() để kiểm tra và trừ tiền qua AJAX
         applyCoupon();
-        
-        // 3. Hiệu ứng Visual: Highlight voucher đang chọn
-        document.querySelectorAll('.coupon-suggest-item').forEach(item => {
-            item.classList.remove('best-pick');
-        });
-        const activeItem = document.querySelector(`.coupon-suggest-item[data-code="${code}"]`);
-        if (activeItem) activeItem.classList.add('best-pick');
     }
 }
 </script>

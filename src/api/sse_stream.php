@@ -25,13 +25,13 @@ $events = [];
 
 // 1. Kiểm tra THÔNG BÁO MỚI
 try {
-    $stmt_notif = $conn->prepare("SELECT * FROM notifications WHERE user_id = :uid AND notification_id > :last_id ORDER BY notification_id ASC");
+    $stmt_notif = $conn->prepare("SELECT * FROM notifications WHERE user_id = :uid AND noti_id > :last_id ORDER BY noti_id ASC");
     $stmt_notif->execute(['uid' => $user_id, 'last_id' => $last_notif_id]);
     $new_notifs = $stmt_notif->fetchAll(PDO::FETCH_ASSOC);
 
     if (!empty($new_notifs)) {
         $events['notifications'] = $new_notifs;
-        $_SESSION['sse_last_notif_id'] = end($new_notifs)['notification_id'];
+        $_SESSION['sse_last_notif_id'] = end($new_notifs)['noti_id'];
     }
 } catch (PDOException $e) {}
 

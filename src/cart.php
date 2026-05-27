@@ -19,6 +19,7 @@ if (!$user_id) {
 // Lấy danh sách sản phẩm trong giỏ hàng
 $sql = "SELECT c.cart_id, c.quantity, c.is_selected,
                v.variant_id, v.color, v.size, v.original_price, v.sale_price, v.stock,
+               (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = v.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1) as flash_sale_price,
                p.product_id, p.name AS product_name, p.image
         FROM cart c
         JOIN product_variants v ON c.variant_id = v.variant_id
@@ -211,7 +212,7 @@ body.dark-mode .order-warning {
 
                     <div id="cart-items-list">
                         <?php foreach ($cart_items as $item):
-                            $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
+                            $price = ($item['flash_sale_price'] !== null) ? $item['flash_sale_price'] : ($item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price']);
                             $line_total = $price * $item['quantity'];
                             $is_checked = $item['is_selected'] == 1 ? 'checked' : '';
                             ?>
@@ -338,7 +339,7 @@ body.dark-mode .order-warning {
     // Dữ liệu giỏ hàng từ PHP
     var cartData = {};
     <?php foreach ($cart_items as $item):
-        $price = $item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price'];
+        $price = ($item['flash_sale_price'] !== null) ? $item['flash_sale_price'] : ($item['sale_price'] > 0 ? $item['sale_price'] : $item['original_price']);
         ?>
         cartData['<?php echo $item['cart_id']; ?>'] = {
             price: <?php echo $price; ?>,

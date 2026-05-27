@@ -2,13 +2,14 @@
 require_once 'config/database.php';
 include 'includes/header.php';
 
-// Lấy danh sách sản phẩm đang giảm giá (sale_price < original_price)
-$sql_promo = "SELECT p.*, v.original_price, v.sale_price 
+// Lấy danh sách sản phẩm đang trong chương trình Flash Sale hôm nay
+$sql_promo = "SELECT p.*, v.original_price, fs.flash_sale_price as sale_price 
               FROM products p 
               JOIN product_variants v ON p.product_id = v.product_id 
-              WHERE v.sale_price < v.original_price AND p.status = 1
+              JOIN flash_sales fs ON v.variant_id = fs.variant_id
+              WHERE fs.status = 1 AND fs.sale_date = CURRENT_DATE() AND p.status = 1
               GROUP BY p.product_id 
-              ORDER BY (v.original_price - v.sale_price) DESC";
+              ORDER BY (v.original_price - fs.flash_sale_price) DESC";
 
 $stmt = $conn->prepare($sql_promo);
 $stmt->execute();

@@ -16,6 +16,15 @@ if (!$order) {
     return;
 }
 
+$shipping_method_name = "Tiêu chuẩn";
+if (!empty($order['shipping_method_id'])) {
+    try {
+        $st_sm = $conn->prepare("SELECT name FROM shipping_methods WHERE shipping_method_id = :smid");
+        $st_sm->execute(['smid' => $order['shipping_method_id']]);
+        $shipping_method_name = $st_sm->fetchColumn() ?: "Tiêu chuẩn";
+    } catch (PDOException $e) {}
+}
+
 // Lấy chi tiết sản phẩm
 $stmt_items = $conn->prepare("
     SELECT od.*, p.product_id AS product_id, p.image AS product_image, v.image AS variant_image, v.color, v.size 
@@ -564,7 +573,7 @@ body.dark-mode #return-modal-detail textarea::placeholder {
             <div class="od-info-row" style="margin-bottom:15px; display:flex; justify-content:space-between;">
                 <div>
                     <div style="color:#888; font-size:13px; margin-bottom:5px;">Đơn vị vận chuyển</div>
-                    <strong>Nhanh (COD)</strong>
+                    <strong><?= htmlspecialchars($shipping_method_name) ?></strong>
                 </div>
                 <!-- <div>
                     <div style="color:#888; font-size:13px; margin-bottom:5px;">Mã vận đơn</div>
@@ -623,8 +632,14 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                 </div>
                 <?php if (!empty($order['discount_value']) && floatval($order['discount_value']) > 0): ?>
                 <div class="od-summary-row" style="color:#2e7d32;">
-                    <span>Giảm giá (voucher):</span>
+                    <span>Giảm giá đơn hàng:</span>
                     <span>-<?= number_format($order['discount_value'], 0, ',', '.') ?> đ</span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($order['freeship_discount_value']) && floatval($order['freeship_discount_value']) > 0): ?>
+                <div class="od-summary-row" style="color:#00796b;">
+                    <span>Giảm phí vận chuyển (Freeship):</span>
+                    <span>-<?= number_format($order['freeship_discount_value'], 0, ',', '.') ?> đ</span>
                 </div>
                 <?php endif; ?>
                 <?php if ($order['wallet_used_amount'] > 0): ?>

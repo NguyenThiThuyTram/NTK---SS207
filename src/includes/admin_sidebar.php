@@ -44,7 +44,7 @@ try {
 // Lấy max notification_id và max chat_id để làm mốc cho SSE
 $max_notif_id = 0;
 try {
-    $stmt_max = $conn->prepare("SELECT MAX(notification_id) as max_id FROM notifications WHERE user_id = :uid");
+    $stmt_max = $conn->prepare("SELECT MAX(noti_id) as max_id FROM notifications WHERE user_id = :uid");
     $stmt_max->execute(['uid' => $admin_user_id]);
     $row_max = $stmt_max->fetch();
     $max_notif_id = $row_max['max_id'] ?: 0;
@@ -1488,6 +1488,9 @@ $notif_count = $total_unread;
         </a>
         <a href="coupons.php" class="nav-item <?= ($admin_current_page === 'coupons.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-ticket"></i> Coupon
+        </a>
+        <a href="flash_sales.php" class="nav-item <?= ($admin_current_page === 'flash_sales.php') ? 'active' : '' ?>">
+            <i class="fa-solid fa-bolt"></i> Flash Sale
         </a>
         <a href="accounts.php" class="nav-item <?= ($admin_current_page === 'accounts.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-users"></i> Tài khoản

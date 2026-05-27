@@ -20,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $min_order = $_POST['min_order_value']; // Mới thêm
     $quantity = $_POST['quantity'];         // Mới thêm
     $end_date = $_POST['end_date'];
+    $coupon_type = $_POST['coupon_type'];
 
     // Cập nhật câu SQL để lưu đầy đủ các cột
     $sql = "UPDATE coupons SET 
@@ -28,10 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             discount_value=?, 
             min_order_value=?, 
             quantity=?, 
-            end_date=? 
+            end_date=?,
+            coupon_type=?
             WHERE coupon_id=?";
     
-    $conn->prepare($sql)->execute([$code, $discount_type, $discount_value, $min_order, $quantity, $end_date, $id]);
+    $conn->prepare($sql)->execute([$code, $discount_type, $discount_value, $min_order, $quantity, $end_date, $coupon_type, $id]);
     
     header("Location: coupons.php?msg=updated"); exit;
 }
@@ -85,6 +87,14 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             <div class="form-group">
                 <label>Mã Voucher (Code)</label>
                 <input type="text" name="code" value="<?= htmlspecialchars($cp['code']) ?>" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label>Loại Voucher</label>
+                <select name="coupon_type" class="form-control">
+                    <option value="0" <?= $cp['coupon_type'] == 0 ? 'selected' : '' ?>>Giảm giá sản phẩm/đơn hàng</option>
+                    <option value="1" <?= $cp['coupon_type'] == 1 ? 'selected' : '' ?>>Voucher Freeship (Giảm phí vận chuyển)</option>
+                </select>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">

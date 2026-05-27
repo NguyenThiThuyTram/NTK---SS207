@@ -494,6 +494,11 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <span class="info-val"><?= $pm ?></span>
             </div>
             <div class="info-row">
+                <i class="fa-solid fa-truck info-icon"></i>
+                <span class="info-label">Đơn vị vận chuyển:</span>
+                <span class="info-val"><?= htmlspecialchars($order['shipping_method_name'] ?: 'Mặc định') ?></span>
+            </div>
+            <div class="info-row">
                 <i class="fa-solid fa-dollar-sign info-icon"></i>
                 <span class="info-label">Trạng thái thanh toán:</span>
                 <span class="info-val" style="color: <?= $order['payment_status'] == 1 ? '#27ae60' : '#888' ?>;">
@@ -564,8 +569,14 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 </div>
                 <?php if ($order['discount_value'] > 0): ?>
                 <div class="summary-row">
-                    <span>Giảm giá:</span>
+                    <span>Giảm giá đơn hàng:</span>
                     <span style="font-weight:500; color:#c0392b;">-<?= number_format($order['discount_value'], 0, ',', '.') ?> đ</span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($order['freeship_discount_value']) && $order['freeship_discount_value'] > 0): ?>
+                <div class="summary-row">
+                    <span>Giảm phí vận chuyển (Freeship):</span>
+                    <span style="font-weight:500; color:#00796b;">-<?= number_format($order['freeship_discount_value'], 0, ',', '.') ?> đ</span>
                 </div>
                 <?php endif; ?>
                 <?php if ($order['wallet_used_amount'] > 0): ?>

@@ -26,7 +26,7 @@ $max_notif_id = 0;
 $max_chat_id = 0;
 try {
     if (isset($_SESSION['user_id'])) {
-        $stmt_n = $conn->prepare("SELECT COUNT(*) as unread, MAX(notification_id) as max_id FROM notifications WHERE user_id = :user_id");
+        $stmt_n = $conn->prepare("SELECT COUNT(*) as unread, MAX(noti_id) as max_id FROM notifications WHERE user_id = :user_id");
         $stmt_n->execute(['user_id' => $_SESSION['user_id']]);
         $row_n = $stmt_n->fetch(PDO::FETCH_ASSOC);
         
@@ -338,6 +338,7 @@ try {
                     if (notiList) {
                         const item = document.createElement('div');
                         item.className = 'noti-item unread';
+                        item.setAttribute('data-id', notif.noti_id);
                         
                         let iconClass = 'fa-solid fa-bell';
                         let colorClass = 'icon-blue';
@@ -402,7 +403,7 @@ try {
                         }
                     }
 
-                    lastNotifId = Math.max(lastNotifId, notif.notification_id);
+                    lastNotifId = Math.max(lastNotifId, notif.noti_id);
                 });
                 
                 // Cập nhật lại URL kết nối SSE với ID mới nhất để tránh gửi lại

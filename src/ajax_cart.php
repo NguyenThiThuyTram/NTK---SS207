@@ -191,8 +191,10 @@ $sql = "SELECT * FROM coupons
     }
 
     // Tính tổng tiền các sản phẩm ĐÃ CHỌN trong giỏ
-    $sql2 = "SELECT SUM(c.quantity * CASE WHEN v.sale_price > 0 THEN v.sale_price ELSE v.original_price END
-                    ) AS subtotal
+    $sql2 = "SELECT SUM(c.quantity * COALESCE(
+                        (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = v.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1),
+                        CASE WHEN v.sale_price > 0 THEN v.sale_price ELSE v.original_price END
+                    )) AS subtotal
              FROM cart c
              JOIN product_variants v ON c.variant_id = v.variant_id
              WHERE c.user_id = :uid AND c.is_selected = 1";

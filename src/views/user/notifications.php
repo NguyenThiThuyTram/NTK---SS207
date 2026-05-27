@@ -13,11 +13,7 @@ try {
     // Bỏ qua nếu bảng chưa tồn tại
 }
 
-// Đánh dấu tất cả là đã đọc khi mở trang
-try {
-    $conn->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = :uid AND is_read = 0")
-         ->execute(['uid' => $user_id]);
-} catch (PDOException $e) {}
+
 
 // Bổ sung các thông báo động từ trạng thái đơn hàng hiện tại
 try {
@@ -144,16 +140,29 @@ function timeAgo($datetime) {
     .icon-purple { background: #ede9fe; color: #7c3aed; }
 
     .noti-body { flex: 1; min-width: 0; }
-    .noti-title {
+    .noti-item .noti-title {
         font-size: 14.5px;
-        font-weight: 600;
-        color: #222;
+        font-weight: 500;
+        color: #555;
         margin-bottom: 4px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .noti-msg { font-size: 13.5px; color: #555; line-height: 1.5; }
+    .noti-item.unread .noti-title {
+        font-weight: bold;
+        color: #111;
+    }
+    .noti-item .noti-msg { 
+        font-size: 13.5px; 
+        color: #666; 
+        line-height: 1.5; 
+        font-weight: normal;
+    }
+    .noti-item.unread .noti-msg {
+        font-weight: 600;
+        color: #222;
+    }
     .noti-time { font-size: 12px; color: #aaa; margin-top: 6px; }
     .noti-order-link {
         display: inline-block;
@@ -208,7 +217,7 @@ function timeAgo($datetime) {
             $style     = getNotiStyle($noti['type']);
             $is_unread = !$noti['is_read'];
             ?>
-            <div class="noti-item <?= $is_unread ? 'unread' : '' ?>">
+            <div class="noti-item <?= $is_unread ? 'unread' : '' ?>" data-id="<?= htmlspecialchars($noti['noti_id']) ?>">
                 <div class="noti-icon <?= $style['color'] ?>">
                     <i class="<?= $style['icon'] ?>"></i>
                 </div>
@@ -270,4 +279,51 @@ function userMarkAllRead(e) {
         alert('Lỗi kết nối mạng, vui lòng thử lại.');
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const list = document.querySelector('.noti-list');
+    if (list) {
+        list.addEventListener('click', function(e) {
+            const item = e.target.closest('.noti-item.unread');
+            if (!item) return;
+            
+            const notiId = item.getAttribute('data-id');
+            if (!notiId || notiId === 'null') return;
+            
+            const formData = new FormData();
+            formData.append('noti_id', notiId);
+            
+            fetch('<?= $_BASE ?>/api/user_mark_read.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    item.classList.remove('unread');
+                    const dot = item.querySelector('.unread-dot');
+                    if (dot) dot.remove();
+                    
+                    const badge = document.getElementById('badge-notif');
+                    if (badge) {
+                        let currentCount = parseInt(badge.innerText || '0');
+                        if (currentCount > 1) {
+                            badge.innerText = currentCount - 1;
+                        } else {
+                            badge.innerText = '0';
+                            badge.style.display = 'none';
+                        }
+                    }
+                    
+                    const remainingUnread = document.querySelectorAll('.noti-item.unread').length;
+                    if (remainingUnread === 0) {
+                        const btn = document.querySelector('.btn-user-mark-all-read');
+                        if (btn) btn.remove();
+                    }
+                }
+            })
+            .catch(err => console.error(err));
+        });
+    }
+});
 </script>

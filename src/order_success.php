@@ -382,8 +382,14 @@ include 'includes/header.php';
                 </div>
                 <?php if (!empty($order['discount_value']) && floatval($order['discount_value']) > 0): ?>
                 <div class="price-row" style="color:#2e7d32;">
-                    <span>Giảm giá (voucher)</span>
+                    <span>Giảm giá đơn hàng</span>
                     <span>-<?= number_format($order['discount_value'], 0, ',', '.') ?> VNĐ</span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($order['freeship_discount_value']) && floatval($order['freeship_discount_value']) > 0): ?>
+                <div class="price-row" style="color:#00796b;">
+                    <span>Giảm phí vận chuyển (Freeship)</span>
+                    <span>-<?= number_format($order['freeship_discount_value'], 0, ',', '.') ?> VNĐ</span>
                 </div>
                 <?php endif; ?>
                 <?php if ($order['wallet_used_amount'] > 0): ?>

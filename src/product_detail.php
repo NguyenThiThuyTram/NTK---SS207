@@ -30,7 +30,10 @@ if ($product_id) {
 
     if ($product) {
         // 4. Lấy Biến thể (Màu, Size, Giá, Tồn kho)
-        $sql_variants = "SELECT * FROM product_variants WHERE product_id = :id AND is_active = 1";
+        $sql_variants = "SELECT pv.*, 
+                            (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = pv.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1) as flash_sale_price
+                         FROM product_variants pv 
+                         WHERE pv.product_id = :id AND pv.is_active = 1";
         $stmt_v = $conn->prepare($sql_variants);
         $stmt_v->bindParam(':id', $product_id);
         $stmt_v->execute();
@@ -415,12 +418,25 @@ include 'includes/header.php';
                 <div class="detail-price-box">
                     <span class="detail-sale-price" id="detail-sale-price">
                         <?php if ($first_v):
-                            echo number_format($first_v['sale_price'] > 0 ? $first_v['sale_price'] : $first_v['original_price'], 0, ',', '.') . 'đ';
+                            $active_price = ($first_v['flash_sale_price'] !== null) ? $first_v['flash_sale_price'] : ($first_v['sale_price'] > 0 ? $first_v['sale_price'] : $first_v['original_price']);
+                            echo number_format($active_price, 0, ',', '.') . 'đ';
                         endif; ?>
                     </span>
-                    <?php if ($first_v && $first_v['sale_price'] < $first_v['original_price'] && $first_v['sale_price'] > 0): ?>
+                    <?php 
+                    $show_discount = false;
+                    $sale_p = 0;
+                    if ($first_v) {
+                        if ($first_v['flash_sale_price'] !== null) {
+                            $show_discount = true;
+                            $sale_p = $first_v['flash_sale_price'];
+                        } elseif ($first_v['sale_price'] < $first_v['original_price'] && $first_v['sale_price'] > 0) {
+                            $show_discount = true;
+                            $sale_p = $first_v['sale_price'];
+                        }
+                    }
+                    if ($show_discount): ?>
                         <span class="detail-old-price" id="detail-old-price"><?php echo number_format($first_v['original_price'], 0, ',', '.'); ?>đ</span>
-                        <span class="discount-tag" id="detail-discount">-<?php echo round((($first_v['original_price'] - $first_v['sale_price']) / $first_v['original_price']) * 100); ?>%</span>
+                        <span class="discount-tag" id="detail-discount">-<?php echo round((($first_v['original_price'] - $sale_p) / $first_v['original_price']) * 100); ?>%</span>
                     <?php else: ?>
                         <span class="detail-old-price" id="detail-old-price" style="display:none;"></span>
                         <span class="discount-tag" id="detail-discount" style="display:none;"></span>
@@ -673,7 +689,8 @@ include 'includes/header.php';
             return;
         }
 
-        var salePrice = parseFloat(v.sale_price) || 0;
+        var flashSalePrice = parseFloat(v.flash_sale_price) || 0;
+        var salePrice = flashSalePrice > 0 ? flashSalePrice : (parseFloat(v.sale_price) || 0);
         var originalPrice = parseFloat(v.original_price) || 0;
         var displayPrice = salePrice > 0 ? salePrice : originalPrice;
 
