@@ -7,10 +7,17 @@ $username = getenv('DB_USER') ?: 'root';
 $password = getenv('DB_PASS') ?: '';
 $dbname = getenv('DB_NAME') ?: 'ntk';
 
+$is_local = in_array($host, ['localhost', '127.0.0.1', '::1']);
+$pdo_options = [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+];
+if (!$is_local) {
+    $pdo_options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    $pdo_options[PDO::MYSQL_ATTR_SSL_CA]                 = false;
+}
+
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, $pdo_options);
 } catch (PDOException $e) {
     echo "Loi ket noi: " . $e->getMessage() . PHP_EOL;
     exit(1);
