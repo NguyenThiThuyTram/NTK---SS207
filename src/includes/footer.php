@@ -1,6 +1,8 @@
 <?php
 // Tính BASE URL cho footer (giống header.php)
-$_f_protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$_f_is_https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+               (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+$_f_protocol = $_f_is_https ? 'https' : 'http';
 $_f_host = $_SERVER['HTTP_HOST'];
 $_f_src_dir = str_replace('\\', '/', realpath(__DIR__ . '/../'));
 $_f_doc_root = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']));
