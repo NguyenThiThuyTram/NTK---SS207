@@ -1813,7 +1813,76 @@ function markAllNotificationsAsRead(e) {
         alert('Lỗi kết nối mạng, vui lòng thử lại.');
     });
 }
+
+// ── SSE Toàn cục cho Admin ────────────────────────────────────────────
+const sseUrl = new URL('../api/sse_stream.php', window.location.href);
+const eventSource = new EventSource(sseUrl.toString());
+
+eventSource.addEventListener('message', function(e) {
+    const data = JSON.parse(e.data);
+    
+    // Đơn hàng MỚI được đặt
+    if (data.new_order && data.new_order.length > 0) {
+        data.new_order.forEach(function(o) {
+            var price = parseInt(o.final_price || 0).toLocaleString('vi-VN');
+            showToast('🛒 Đơn hàng mới #' + o.order_id, (o.fullname || 'Khách') + ' vừa đặt hàng • ' + price + '₫');
+            
+            // Cập nhật badge "Đơn hàng mới"
+            var badge = document.querySelector('[data-admin-badge="new_orders"]');
+            if (badge) {
+                badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+            }
+            // Tự động thêm dấu chấm đỏ vào icon chuông nếu chưa có
+            var bellBtn = document.querySelector('.topbar-icon-btn');
+            if (bellBtn && !document.getElementById('notif-badge-bell')) {
+                bellBtn.innerHTML += '<span class="topbar-badge" id="notif-badge-bell">1</span>';
+            }
+        });
+        if (typeof window.handleNewOrder === 'function') {
+            window.handleNewOrder(data.new_order);
+        }
+    }
+
+    // Cập nhật trạng thái đơn hàng
+    if (data.order_update) {
+        if (typeof window.handleOrderUpdate === 'function') {
+            window.handleOrderUpdate(data.order_update);
+        }
+    }
+});
+
+function showToast(title, message) {
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    var toast = document.createElement('div');
+    toast.className = 'ntk-toast';
+    toast.innerHTML = '<div class="ntk-toast-title">' + title + '</div><div class="ntk-toast-message">' + message + '</div>';
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => { toast.classList.add('show'); }, 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => { toast.remove(); }, 300);
+    }, 4000);
+}
 </script>
+
+<div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+<style>
+    .ntk-toast {
+        background: #fff; border-left: 4px solid #a6825c;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        padding: 15px 20px; border-radius: 4px;
+        min-width: 300px; transform: translateX(120%);
+        transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        display: flex; flex-direction: column; gap: 5px;
+    }
+    .ntk-toast.show { transform: translateX(0); }
+    .ntk-toast-title { font-weight: 600; color: #333; font-size: 15px; }
+    .ntk-toast-message { color: #666; font-size: 13px; }
+</style>
 
 <!-- Main content starts here -->
 <main class="admin-main">
