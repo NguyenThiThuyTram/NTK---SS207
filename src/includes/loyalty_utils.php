@@ -58,13 +58,12 @@ function checkTierUpgrade($conn, $user_id, $accumulated_points, $current_tier) {
             elseif ($new_tier === 'Silver') $voucher_amount = 20000;
 
             if ($voucher_amount > 0) {
-                $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_value, discount_type, min_spend, start_date, end_date, usage_limit, status, user_id) 
-                    VALUES (:cid, :code, :amt, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, :uid)");
+                $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_value, discount_type, min_order_value, start_date, end_date, quantity, status, coupon_type) 
+                    VALUES (:cid, :code, :amt, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, 0)");
                 $stmt_cp->execute([
                     'cid' => $coupon_id,
                     'code' => $coupon_code,
-                    'amt' => $voucher_amount,
-                    'uid' => $user_id
+                    'amt' => $voucher_amount
                 ]);
 
                 $msg_voucher = "Hệ thống tặng bạn một Voucher giảm ".number_format($voucher_amount, 0, ',', '.')."đ (Mã: $coupon_code) tri ân thăng hạng $new_tier. Bạn có thể sử dụng cho đơn hàng tiếp theo!";
