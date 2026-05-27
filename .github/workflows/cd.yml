@@ -25,6 +25,11 @@ jobs:
         echo "Cập nhật và khởi động lại website..."
         docker compose up -d --build
         
+        echo "Chạy file run_migration.php..."
+        docker compose cp run_migration.php php:/var/www/html/run_migration.php
+        docker compose exec -T php php /var/www/html/run_migration.php
+        docker compose exec -T php rm /var/www/html/run_migration.php
+        
         echo "Dọn dẹp rác Docker để nhẹ máy..."
         docker image prune -f
         

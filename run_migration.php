@@ -2,10 +2,10 @@
 /**
  * run_migration.php - Chạy migration DB từ command line
  */
-$host = 'localhost';
-$username = 'root';
-$password = '';
-$dbname = 'ntk';
+$host = getenv('DB_HOST') ?: 'localhost';
+$username = getenv('DB_USER') ?: 'root';
+$password = getenv('DB_PASS') ?: '';
+$dbname = getenv('DB_NAME') ?: 'ntk';
 
 try {
     $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
