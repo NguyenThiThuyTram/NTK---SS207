@@ -1832,10 +1832,49 @@ eventSource.addEventListener('message', function(e) {
             if (badge) {
                 badge.textContent = (parseInt(badge.textContent) || 0) + 1;
             }
+            
+            // Cập nhật số thông báo chưa đọc trong modal
+            var fsCount = document.getElementById('notif-unread-count-fs');
+            if (fsCount) {
+                fsCount.textContent = (parseInt(fsCount.textContent) || 0) + 1;
+            }
+
             // Tự động thêm dấu chấm đỏ vào icon chuông nếu chưa có
-            var bellBtn = document.querySelector('.topbar-icon-btn');
-            if (bellBtn && !document.getElementById('notif-badge-bell')) {
-                bellBtn.innerHTML += '<span class="topbar-badge" id="notif-badge-bell">1</span>';
+            var bellBadge = document.getElementById('notif-badge-bell');
+            if (!bellBadge) {
+                var bellBtn = document.querySelector('.topbar-icon-btn');
+                if (bellBtn) bellBtn.innerHTML += '<span class="topbar-badge" id="notif-badge-bell">1</span>';
+            } else {
+                var c = parseInt(bellBadge.textContent.replace('+', '')) || 0;
+                bellBadge.textContent = c < 9 ? (c + 1) : '9+';
+            }
+            
+            // Bơm trực tiếp HTML vào danh sách thông báo
+            var list = document.querySelector('.notif-fs-list');
+            if (list) {
+                var emptyMsg = document.querySelector('.notif-fs-empty');
+                if (emptyMsg) emptyMsg.remove();
+                
+                var eventId = 'new_order_' + o.order_id;
+                var redirectUrl = encodeURIComponent('order_detail.php?id=' + o.order_id);
+                var html = `
+                    <a href="read_notification.php?event_id=${eventId}&redirect=${redirectUrl}" data-event-id="${eventId}" class="notif-fs-item animate-in unread-noti" style="--delay: 0s; background: rgba(166,130,92,0.05); border-left: 3px solid #e74c3c;">
+                        <div class="notif-fs-icon-wrap" style="background:#27ae6018; color:#27ae60; box-shadow: 0 0 15px #27ae6015;">
+                            <i class="fa-solid fa-cart-plus"></i>
+                        </div>
+                        <div class="notif-fs-body-content" style="position: relative;">
+                            <div class="notif-fs-label" style="font-weight: 800; color: #000;">
+                                Đơn hàng mới: #${o.order_id}
+                                <span style="display:inline-block; width:8px; height:8px; background:#e74c3c; border-radius:50%; margin-left:5px; vertical-align:middle;"></span>
+                            </div>
+                            <div class="notif-fs-time" style="font-weight: 600; color: #333;"><i class="fa-regular fa-clock"></i> Vừa xong</div>
+                        </div>
+                        <div class="notif-fs-action">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </a>
+                `;
+                list.insertAdjacentHTML('afterbegin', html);
             }
         });
         if (typeof window.handleNewOrder === 'function') {
