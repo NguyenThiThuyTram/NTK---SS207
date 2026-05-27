@@ -432,6 +432,26 @@ try {
                     window.handleOrderUpdate(data.order_update);
                 }
             }
+
+            // 4. Đơn hàng MỚI được đặt (chỉ admin nhận)
+            if (data.new_order && data.new_order.length > 0) {
+                data.new_order.forEach(function(o) {
+                    var price = parseInt(o.final_price || 0).toLocaleString('vi-VN');
+                    showToast(
+                        '🛒 Đơn hàng mới #' + o.order_id,
+                        (o.fullname || 'Khách') + ' vừa đặt hàng • ' + price + '₫'
+                    );
+                    // Cập nhật badge "Đơn hàng mới" trong admin sidebar nếu có
+                    var badge = document.querySelector('[data-admin-badge="new_orders"]');
+                    if (badge) {
+                        badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+                        badge.style.display = 'inline-block';
+                    }
+                });
+                if (typeof window.handleNewOrder === 'function') {
+                    window.handleNewOrder(data.new_order);
+                }
+            }
         });
 
         function showToast(title, message) {

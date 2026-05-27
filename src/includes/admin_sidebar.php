@@ -1593,7 +1593,7 @@ try {
                         <i class="fa-solid fa-cart-plus"></i>
                     </div>
                     <div class="notif-stat-info">
-                        <span class="notif-stat-val"><?= $count_new_orders ?></span>
+                        <span class="notif-stat-val" data-admin-badge="new_orders"><?= $count_new_orders ?></span>
                         <span class="notif-stat-lbl">Đơn hàng mới</span>
                     </div>
                 </div>

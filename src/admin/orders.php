@@ -316,20 +316,26 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </main>
 
 <script>
-    // Khởi tạo luồng SSE cho Admin để cập nhật trạng thái đơn hàng thời gian thực
-    const sseUrl = new URL('../api/sse_stream.php', window.location.href);
-    const eventSource = new EventSource(sseUrl.toString());
-
-    eventSource.addEventListener('message', function(e) {
-        const data = JSON.parse(e.data);
-        
-        // Cập nhật đơn hàng (nếu có sự thay đổi về trạng thái hoặc đơn hàng mới)
-        if (data.order_update && data.order_update.length > 0) {
-            // Hiển thị toast hoặc alert nhỏ rồi reload trang
-            alert('Có cập nhật đơn hàng mới, hệ thống sẽ tự động làm mới!');
-            setTimeout(() => window.location.reload(), 1000);
+    // SSE real-time cho trang quản lý đơn hàng Admin
+    // Không khởi tạo EventSource mới — dùng SSE chung từ header (admin_sidebar dà include header)
+    // Override các handler trong window để tùy biến xử lý theo trang này
+    window.handleOrderUpdate = function(updates) {
+        if (updates && updates.length > 0) {
+            showToast('Đơn hàng cập nhật', 'Trạng thái ' + updates.length + ' đơn hàng vừa thay đổi. Đang tải lại...');
+            setTimeout(() => window.location.reload(), 2000);
         }
-    });
+    };
+
+    window.handleNewOrder = function(orders) {
+        if (orders && orders.length > 0) {
+            orders.forEach(function(o) {
+                var price = parseInt(o.final_price || 0).toLocaleString('vi-VN');
+                showToast('🛠️ Đơn hàng mới! #' + o.order_id,
+                    (o.fullname || 'Khách') + ' vừa đặt đơn • ' + price + '₫');
+            });
+            setTimeout(() => window.location.reload(), 3000);
+        }
+    };
 </script>
 </body>
 </html>

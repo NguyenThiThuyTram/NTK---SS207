@@ -75,7 +75,7 @@ try {
     error_log("SSE chat error for user $user_id: " . $e->getMessage());
 }
 
-// ── 3. Kiểm tra TRẠNG THÁI ĐƠN HÀNG ─────────────────────────────────────────
+// ── 3. Kiểm tra TRẠNG THÁI ĐƠN HÀNG ───────────────────────────────────────────────
 // KEY phân tách theo user_id để tránh ghi đè state giữa các tài khoản
 $state_key     = 'sse_orders_state_' . $user_id;
 $current_orders = $_SESSION[$state_key] ?? [];
@@ -85,10 +85,16 @@ $new_state      = [];
 try {
     if (isset($conn)) {
         if ($role == 1) {
-            $stmt_ord = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders ORDER BY order_id DESC LIMIT 100");
+            // Admin: lấy thêm thông tin đơn hàng để hiển thị toast
+            $stmt_ord = $conn->prepare("
+                SELECT o.order_id, o.order_status, o.payment_status,
+                       o.order_date, o.final_price, o.fullname
+                FROM orders o
+                ORDER BY o.order_id DESC LIMIT 100
+            ");
             $stmt_ord->execute();
         } else {
-            $stmt_ord = $conn->prepare("SELECT order_id, order_status, payment_status FROM orders WHERE user_id = :uid ORDER BY order_id DESC LIMIT 50");
+            $stmt_ord = $conn->prepare("SELECT order_id, order_status, payment_status, order_date, final_price, fullname FROM orders WHERE user_id = :uid ORDER BY order_id DESC LIMIT 50");
             $stmt_ord->execute(['uid' => $user_id]);
         }
 
@@ -98,9 +104,20 @@ try {
             $new_ps = (int)$ord['payment_status'];
             $new_state[$oid] = ['os' => $new_os, 'ps' => $new_ps];
 
-            // CHỈ phát event nếu KHÔNG phải first_load VÀ state thực sự thay đổi
-            if (!$is_first_load && isset($current_orders[$oid])) {
-                if ($new_os !== $current_orders[$oid]['os'] || $new_ps !== $current_orders[$oid]['ps']) {
+            if (!$is_first_load) {
+                if (!isset($current_orders[$oid])) {
+                    // ĐƠN HÀNG MỚI: order_id chưa từng có trong state
+                    if (!isset($events['new_order'])) $events['new_order'] = [];
+                    $events['new_order'][] = [
+                        'order_id'      => $oid,
+                        'order_status'  => $new_os,
+                        'payment_status'=> $new_ps,
+                        'final_price'   => $ord['final_price'] ?? 0,
+                        'fullname'      => $ord['fullname'] ?? '',
+                        'order_date'    => $ord['order_date'] ?? ''
+                    ];
+                } elseif ($new_os !== $current_orders[$oid]['os'] || $new_ps !== $current_orders[$oid]['ps']) {
+                    // THAY ĐỔI TRẠNG THÁI: order cũ có sự thay đổi
                     if (!isset($events['order_update'])) $events['order_update'] = [];
                     $events['order_update'][] = [
                         'order_id'       => $oid,
