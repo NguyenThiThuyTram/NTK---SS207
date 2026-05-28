@@ -11,12 +11,10 @@ if (!$user_id) {
 // Lấy thông tin user + thống kê
 $stmt = $conn->prepare("
     SELECT u.*, 
-           COUNT(o.order_id) as total_orders, 
-           IFNULL(SUM(o.final_price), 0) as total_spent
+           (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as total_orders, 
+           (SELECT IFNULL(SUM(final_price), 0) FROM orders WHERE user_id = u.user_id AND order_status = 3) as total_spent
     FROM users u
-    LEFT JOIN orders o ON u.user_id = o.user_id AND o.payment_status = 1
     WHERE u.user_id = ?
-    GROUP BY u.user_id
 ");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);

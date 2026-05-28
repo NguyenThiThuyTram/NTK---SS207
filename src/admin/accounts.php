@@ -28,12 +28,10 @@ $whereSql = implode(" AND ", $whereClauses);
 // 2. Truy vấn
 $query = "
     SELECT u.*,
-           COUNT(o.order_id) as total_orders,
-           IFNULL(SUM(o.final_price), 0) as total_spent
+           (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as total_orders,
+           (SELECT IFNULL(SUM(final_price), 0) FROM orders WHERE user_id = u.user_id AND order_status = 3) as total_spent
     FROM users u
-    LEFT JOIN orders o ON u.user_id = o.user_id
     WHERE $whereSql
-    GROUP BY u.user_id
     ORDER BY u.created_at DESC
 ";
 $stmt = $conn->prepare($query);
