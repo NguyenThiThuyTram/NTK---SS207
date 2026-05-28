@@ -278,7 +278,8 @@ $output = [
     'products' => $products
 ];
 
-if (is_dir($cacheDir) && is_writable($cacheDir)) {
+// Chỉ lưu Cache nếu AI nhận diện thành công (Không lưu nếu bị ép dùng Fallback mặc định do lỗi)
+if (!$is_fallback && is_dir($cacheDir) && is_writable($cacheDir)) {
     @file_put_contents($cacheFile, json_encode($output));
 }
 
