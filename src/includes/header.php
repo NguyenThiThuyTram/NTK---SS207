@@ -420,6 +420,7 @@ try {
             if (data.chat_messages && data.chat_messages.length > 0) {
                 let hasNewFromStaff = false;
                 let maxMsgId = lastChatId;
+                const isAdmin = <?= (isset($_SESSION['role']) && $_SESSION['role'] == 1) ? 'true' : 'false' ?>;
 
                 data.chat_messages.forEach(msg => {
                     const msgId = parseInt(msg.id);
@@ -427,15 +428,17 @@ try {
                         maxMsgId = Math.max(maxMsgId, msgId);
                         
                         if (msg.sender_id !== <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>) {
-                            hasNewFromStaff = true;
-                            
-                            const chatbox = document.getElementById('ntk-chatbox');
-                            const chatMode = document.getElementById('chat-mode');
-                            const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && chatMode && chatMode.value === 'human';
+                            if (isAdmin) {
+                                showChatToast('Tin nhắn mới từ ' + (msg.sender_name || 'Khách hàng'), msg.message, msg.sender_id);
+                            } else {
+                                hasNewFromStaff = true;
+                                const chatbox = document.getElementById('ntk-chatbox');
+                                const chatMode = document.getElementById('chat-mode');
+                                const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && chatMode && chatMode.value === 'human';
 
-                            if (!isChatboxOpenAndHuman) {
-                                // Lấy nội dung tin nhắn để hiển thị trên toast
-                                showChatToast('Tin nhắn mới từ nhân viên', msg.message);
+                                if (!isChatboxOpenAndHuman) {
+                                    showChatToast('Tin nhắn mới từ nhân viên', msg.message, msg.sender_id);
+                                }
                             }
                         }
                     }
@@ -505,7 +508,7 @@ try {
             }, 5000);
         }
 
-        function showChatToast(title, message) {
+        function showChatToast(title, message, senderId) {
             const container = document.getElementById('ntk-toast-container');
             if (!container) return;
             const toast = document.createElement('div');
@@ -520,8 +523,13 @@ try {
                 <button class="ntk-toast-close" onclick="event.stopPropagation(); this.parentElement.remove()">&times;</button>
             `;
             toast.onclick = function() {
-                if (typeof window.openUserChat === 'function') {
-                    window.openUserChat();
+                const isAdmin = <?= (isset($_SESSION['role']) && $_SESSION['role'] == 1) ? 'true' : 'false' ?>;
+                if (isAdmin) {
+                    window.location.href = '<?= $_BASE ?>/admin/chat.php?uid=' + senderId;
+                } else {
+                    if (typeof window.openUserChat === 'function') {
+                        window.openUserChat();
+                    }
                 }
                 toast.remove();
             };
