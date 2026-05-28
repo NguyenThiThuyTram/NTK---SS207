@@ -1,9 +1,9 @@
 <?php
 $dirs = [
-    __DIR__ . '/src/assets/uploads',
-    __DIR__ . '/src/assets/uploads/reviews',
-    __DIR__ . '/src/assets/uploads/returns',
-    __DIR__ . '/src/assets/images/products'
+    __DIR__ . '/assets/uploads',
+    __DIR__ . '/assets/uploads/reviews',
+    __DIR__ . '/assets/uploads/returns',
+    __DIR__ . '/assets/images/products'
 ];
 
 echo "<h3>Đang cấp quyền ghi (CHMOD 777) cho các thư mục upload...</h3>";

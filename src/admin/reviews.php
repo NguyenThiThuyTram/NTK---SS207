@@ -101,13 +101,14 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 
                 <?php if (!empty($r['image'])): ?>
                     <div style="margin: 10px 0;">
-                        <img src="../<?= htmlspecialchars($r['image']) ?>" alt="Hình đánh giá" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #eee; object-fit: cover;">
+                        <img src="https://ntkfashion.me/<?= htmlspecialchars($r['image']) ?>" alt="Hình đánh giá" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #eee; object-fit: cover; cursor:pointer;" onclick="window.open(this.src,'_blank')">
                     </div>
                 <?php endif; ?>
                 <?php if (!empty($r['video'])): ?>
                     <div style="margin: 10px 0;">
-                        <video controls style="max-width: 240px; max-height: 180px; border-radius: 8px; border: 1px solid #eee;">
-                            <source src="../<?= htmlspecialchars($r['video']) ?>" type="video/mp4">
+                        <video controls style="max-width: 280px; max-height: 200px; border-radius: 8px; border: 1px solid #eee;">
+                            <source src="https://ntkfashion.me/<?= htmlspecialchars($r['video']) ?>" type="video/mp4">
+                            <source src="https://ntkfashion.me/<?= htmlspecialchars($r['video']) ?>">
                             Trình duyệt không hỗ trợ phát video.
                         </video>
                     </div>
