@@ -61,7 +61,8 @@ $sqls = [
         product_id CHAR(5) NOT NULL,
         viewed_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (product_id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE recent_views"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci" => "CREATE TABLE recent_views",
+    "ALTER TABLE products ADD COLUMN IF NOT EXISTS view_count INT DEFAULT 0" => "products.view_count"
 ];
 
 foreach ($sqls as $sql => $desc) {

@@ -43,6 +43,14 @@ if ($product_id) {
             // Fail silently
         }
 
+        // Increment the total view/click count
+        try {
+            $stmt_click = $conn->prepare("UPDATE products SET view_count = view_count + 1 WHERE product_id = :pid");
+            $stmt_click->execute(['pid' => $product_id]);
+        } catch (PDOException $e) {
+            // Fail silently
+        }
+
         // 4. Lấy Biến thể (Màu, Size, Giá, Tồn kho)
         $sql_variants = "SELECT pv.*, 
                             (SELECT fs.flash_sale_price FROM flash_sales fs WHERE fs.variant_id = pv.variant_id AND fs.status = 1 AND fs.sale_date = CURRENT_DATE() LIMIT 1) as flash_sale_price

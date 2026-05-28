@@ -19,6 +19,7 @@ $stmt = $conn->prepare("
         p.name, 
         p.image, 
         p.sold_count, 
+        p.view_count, 
         p.status,
         c.name as category_name,
         COALESCE(SUM(pv.stock), 0) as total_stock
@@ -214,6 +215,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <th>Sản phẩm</th>
                 <th>Tồn kho</th>
                 <th>Đã bán</th>
+                <th>Lượt xem</th>
                 <th>Trạng thái</th>
                 <th>Hành động</th>
             </tr>
@@ -221,7 +223,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         <tbody>
             <?php if (empty($products)): ?>
             <tr>
-                <td colspan="6" style="text-align:center; padding:40px; color:#aaa;">
+                <td colspan="7" style="text-align:center; padding:40px; color:#aaa;">
                     Chưa có sản phẩm nào
                 </td>
             </tr>
@@ -264,6 +266,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     </td>
                     <td><span style="color: #111; font-weight: 500;"><?= $total_stock ?></span></td>
                     <td><?= number_format($prod['sold_count'] ?? 0) ?></td>
+                    <td><?= number_format($prod['view_count'] ?? 0) ?></td>
                     <td>
                         <span class="status-badge <?= $status_class ?>">
                             <?= $status_text ?>
