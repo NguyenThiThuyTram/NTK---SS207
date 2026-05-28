@@ -148,16 +148,17 @@ if ($fallback_used && !$ai_success) {
     
     if ($rekognition->isConfigured()) {
         $rawBytes = base64_decode($imageData);
-        $awsResult = $rekognition->detectLabels($rawBytes, 5, 70.0);
+        $awsResult = $rekognition->detectLabels($rawBytes, 30, 50.0);
         
         if (!isset($awsResult['error']) && isset($awsResult['Labels'])) {
+            // Chỉ định nghĩa các từ khóa CỤ THỂ, bỏ qua các từ khóa quá chung chung (Clothing, Apparel, Outfit)
             $awsToVn = [
-                'T-Shirt' => 'áo thun', 'Shirt' => 'áo', 'Dress' => 'đầm',
+                'T-Shirt' => 'áo thun', 'Shirt' => 'áo sơ mi', 'Dress' => 'đầm',
                 'Pants' => 'quần', 'Skirt' => 'chân váy', 'Jacket' => 'áo khoác',
                 'Sweater' => 'áo len', 'Shorts' => 'quần short', 'Suit' => 'vest',
-                'Hat' => 'mũ', 'Shoes' => 'giày', 'Clothing' => 'áo',
-                'Apparel' => 'áo', 'Top' => 'áo', 'Outfit' => 'bộ',
-                'Coat' => 'áo khoác', 'Blouse' => 'áo', 'Trousers' => 'quần'
+                'Hat' => 'mũ', 'Shoes' => 'giày', 'Coat' => 'áo khoác', 
+                'Blouse' => 'áo kiểu', 'Trousers' => 'quần tây', 'Jeans' => 'quần jean',
+                'Handbag' => 'túi xách', 'Glasses' => 'kính'
             ];
             
             $colorToVn = [
