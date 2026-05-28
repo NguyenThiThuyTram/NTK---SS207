@@ -527,6 +527,7 @@ require realpath(__DIR__ . '/../../includes/header.php');
         <div class="menu-section-title">Tài khoản</div>
         <ul class="sidebar-menu">
             <li><a href="dashboard.php?view=hoso"       class="<?= $view=='hoso'       ? 'active' : '' ?>"><i class="fa-regular fa-user"></i>Hồ sơ</a></li>
+            <li><a href="dashboard.php?view=hangthanhvien" class="<?= $view=='hangthanhvien' ? 'active' : '' ?>"><i class="fa-solid fa-crown"></i>Hạng thành viên</a></li>
             <li><a href="dashboard.php?view=diachi"     class="<?= $view=='diachi'     ? 'active' : '' ?>"><i class="fa-solid fa-location-dot"></i>Địa chỉ</a></li>
             <li><a href="dashboard.php?view=doimatkhau" class="<?= $view=='doimatkhau' ? 'active' : '' ?>"><i class="fa-solid fa-lock"></i>Đổi mật khẩu</a></li>
             <li><a href="dashboard.php?view=caidat"     class="<?= $view=='caidat'     ? 'active' : '' ?>"><i class="fa-solid fa-gear"></i>Cài đặt thông báo</a></li>
@@ -556,6 +557,7 @@ require realpath(__DIR__ . '/../../includes/header.php');
         <?php
             switch ($view) {
                 case 'hoso':           include 'profile_form.php';         break;
+                case 'hangthanhvien':  include 'tier_info.php';            break;
                 case 'nganhang':       include 'bank_form.php';            break;
                 case 'thongbao':       include 'notifications.php';        break;
                 case 'diachi':         include 'address_list.php';         break;

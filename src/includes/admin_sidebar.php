@@ -255,21 +255,21 @@ try {
         ];
     }
 
-    // 8. Đếm thống kê chính xác toàn bộ trước khi cắt (slice)
-    $count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'orders'; }));
-    $count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'warnings'; }));
-    $count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'products'; }));
-
     // Sort notifications by time descending
     usort($notifications, function($a, $b) {
         return $b['time'] <=> $a['time'];
     });
 
-    // Tính tổng số lượng chưa đọc
-    $total_unread = count(array_filter($notifications, function($n) { return !empty($n['is_unread']); }));
-
     // Giới hạn hiển thị top 20 thông báo mới nhất trong dropdown
     $notifications = array_slice($notifications, 0, 20);
+
+    // 8. Đếm thống kê chính xác (chỉ tính trong 20 thông báo hiển thị)
+    $count_new_orders = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && strpos($n['event_id'], 'new_order_') === 0; }));
+    $count_warnings   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'warnings'; }));
+    $count_products   = count(array_filter($notifications, function($n) { return !empty($n['is_unread']) && $n['group'] === 'products'; }));
+
+    // Tính tổng số lượng chưa đọc
+    $total_unread = count(array_filter($notifications, function($n) { return !empty($n['is_unread']); }));
     $notif_count = $total_unread;
 
 } catch (\Throwable $e) {
