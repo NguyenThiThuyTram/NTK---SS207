@@ -40,7 +40,7 @@ try {
         
         // Max chat id
         try {
-            $stmt_c = $conn->prepare("SELECT MAX(id) FROM chat_messages WHERE receiver_id = :user_id");
+            $stmt_c = $conn->prepare("SELECT MAX(id) FROM chat_messages WHERE receiver_id = :user_id OR sender_id = :user_id");
             $stmt_c->execute(['user_id' => $_SESSION['user_id']]);
             $max_chat_id = $stmt_c->fetchColumn() ?: 0;
         } catch (\Throwable $e) {

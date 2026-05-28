@@ -70,8 +70,7 @@ try {
     }
 
     try {
-        $stmt_max_c = $conn->prepare("SELECT MAX(id) as max_id FROM chat_messages WHERE receiver_id = :uid OR sender_id = :uid");
-        $stmt_max_c->execute(['uid' => $admin_user_id]);
+        $stmt_max_c = $conn->query("SELECT MAX(id) as max_id FROM chat_messages");
         $row_max_c = $stmt_max_c->fetch();
         $max_chat_id = $row_max_c['max_id'] ?: 0;
     } catch (\Throwable $e) {
@@ -1816,8 +1815,10 @@ function markAllNotificationsAsRead(e) {
 
 // ── SSE Toàn cục cho Admin ────────────────────────────────────────────
 const sseUrl = new URL('../api/sse_stream.php', window.location.href);
-sseUrl.searchParams.set('last_notif_id', '<?php echo (int)$max_notif_id; ?>');
-sseUrl.searchParams.set('last_chat_id', '<?php echo (int)$max_chat_id; ?>');
+let lastNotifId = <?php echo (int)$max_notif_id; ?>;
+let lastChatId = <?php echo (int)$max_chat_id; ?>;
+sseUrl.searchParams.set('last_notif_id', lastNotifId);
+sseUrl.searchParams.set('last_chat_id', lastChatId);
 const eventSource = new EventSource(sseUrl.toString());
 
 eventSource.addEventListener('message', function(e) {
@@ -2009,7 +2010,7 @@ function showChatToast(title, message, senderId) {
     var toast = document.createElement('div');
     toast.className = 'ntk-toast';
     toast.style.cursor = 'pointer';
-    toast.innerHTML = '<div class="ntk-toast-title"><i class="fa-solid fa-comments" style="color: #a6825c; margin-right: 6px;"></i>' + title + '</div><div class="ntk-toast-message">' + message + '</div>';
+    toast.innerHTML = '<div class="ntk-toast-title"><i class="fa-solid fa-comments" style="color: #a6825c; margin-right: 6px;"></i>' + title + '</div><div class="ntk-toast-message">' + message + '</div><button class="ntk-toast-close" onclick="event.stopPropagation(); this.parentElement.remove()">&times;</button>';
     
     toast.onclick = function() {
         window.location.href = 'chat.php?uid=' + senderId;
@@ -2034,10 +2035,18 @@ function showChatToast(title, message, senderId) {
         min-width: 300px; transform: translateX(120%);
         transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         display: flex; flex-direction: column; gap: 5px;
+        position: relative;
     }
     .ntk-toast.show { transform: translateX(0); }
-    .ntk-toast-title { font-weight: 600; color: #333; font-size: 15px; }
+    .ntk-toast-title { font-weight: 600; color: #333; font-size: 15px; padding-right: 20px; }
     .ntk-toast-message { color: #666; font-size: 13px; }
+    .ntk-toast-close {
+        position: absolute; right: 12px; top: 10px;
+        border: none; background: none; font-size: 20px;
+        color: #aaa; cursor: pointer; line-height: 1;
+        transition: color 0.2s;
+    }
+    .ntk-toast-close:hover { color: #333; }
 </style>
 
 <!-- Main content starts here -->
