@@ -79,6 +79,21 @@ if ($action === 'submit_comment') {
 
         if (move_uploaded_file($_FILES['review_image']['tmp_name'], $destination)) {
             $review_image = 'assets/uploads/reviews/' . $unique_name;
+            
+            // AWS Rekognition Content Moderation
+            require_once __DIR__ . '/includes/aws_rekognition.php';
+            $rekognition = new AwsRekognition();
+            if ($rekognition->isConfigured()) {
+                $imgData = file_get_contents($destination);
+                $modResult = $rekognition->detectModerationLabels($imgData);
+                
+                if (isset($modResult['ModerationLabels']) && count($modResult['ModerationLabels']) > 0) {
+                    // Xóa file ảnh vi phạm
+                    unlink($destination);
+                    echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Hình ảnh vi phạm tiêu chuẩn cộng đồng (chứa nội dung không phù hợp). Vui lòng chọn ảnh khác.']);
+                    exit;
+                }
+            }
         } else {
             $err = error_get_last();
             echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu ảnh trên server. Lỗi hệ thống: ' . ($err['message'] ?? 'Unknown error') . ' | Destination: ' . $destination]);

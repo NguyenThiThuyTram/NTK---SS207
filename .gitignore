@@ -9,4 +9,7 @@ src/gemini_error_log.txt
 src/controllers/payos_debug.txt
 api_key.php
 src/assets/uploads/
+src/config/aws_credentials.json
+src/test_aws.php
+src/test_rekognition_cli.php
 

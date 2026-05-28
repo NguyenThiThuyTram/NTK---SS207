@@ -1525,6 +1525,9 @@ try {
         <a href="best_sellers.php" class="nav-item <?= ($admin_current_page === 'best_sellers.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-chart-line"></i> Phân tích dữ liệu
         </a>
+        <a href="aws_settings.php" class="nav-item <?= ($admin_current_page === 'aws_settings.php') ? 'active' : '' ?>">
+            <i class="fa-brands fa-aws"></i> AWS Rekognition
+        </a>
     </nav>
 
     <!-- Thoát về trang khách -->

@@ -141,45 +141,58 @@ if (!$result1['error_code']) {
     $fallback_used = true;
 }
 
-// ────── IF PRIMARY FAILED, TRY FALLBACK ANALYSIS (3 seconds) ──────
+// ────── IF PRIMARY FAILED, TRY AWS REKOGNITION (Smart Fallback) ──────
 if ($fallback_used && !$ai_success) {
-    $fallback_payload = [
-        "contents" => [
-            [
-                "parts" => [
-                    ["text" => $fallbackPrompt],
-                    ["inlineData" => [
-                        "mimeType" => $imageType,
-                        "data" => $imageData
-                    ]]
-                ]
-            ]
-        ],
-        "generationConfig" => ["responseMimeType" => "application/json"]
-    ];
+    require_once __DIR__ . '/includes/aws_rekognition.php';
+    $rekognition = new AwsRekognition();
     
-    $result2 = callGeminiAPI($url, $fallback_payload, $FALLBACK_TIMEOUT);
-    
-    if (!$result2['error_code']) {
-        $result = json_decode($result2['response'], true);
-        if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-            $jsonString = $result['candidates'][0]['content']['parts'][0]['text'];
-            $fallbackData = json_decode($jsonString, true);
-            if ($fallbackData && !empty($fallbackData['keyword'])) {
-                $aiData = ['keyword' => $fallbackData['keyword'], 'description' => 'Phân tích nhanh: ' . $fallbackData['keyword']];
-                $ai_success = true;
-                file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Fallback Analysis Success: ' . $fallbackData['keyword'] . PHP_EOL, FILE_APPEND);
-            } else {
-                file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Fallback Empty, using DEFAULT: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL, FILE_APPEND);
-                $aiData = ['keyword' => $DEFAULT_FALLBACK_KEYWORD, 'description' => 'Sử dụng danh mục mặc định do AI không nhận diện được'];
+    if ($rekognition->isConfigured()) {
+        $rawBytes = base64_decode($imageData);
+        $awsResult = $rekognition->detectLabels($rawBytes, 10, 70.0);
+        
+        if (!isset($awsResult['error']) && isset($awsResult['Labels'])) {
+            $awsToVn = [
+                'T-Shirt' => 'áo thun', 'Shirt' => 'áo', 'Dress' => 'đầm',
+                'Pants' => 'quần', 'Skirt' => 'chân váy', 'Jacket' => 'áo khoác',
+                'Sweater' => 'áo len', 'Shorts' => 'quần short', 'Suit' => 'vest',
+                'Hat' => 'mũ', 'Shoes' => 'giày'
+            ];
+            
+            $colorToVn = [
+                'Red' => 'đỏ', 'Blue' => 'xanh dương', 'Black' => 'đen',
+                'White' => 'trắng', 'Green' => 'xanh lá', 'Yellow' => 'vàng',
+                'Pink' => 'hồng', 'Purple' => 'tím', 'Brown' => 'nâu'
+            ];
+            
+            $foundItem = '';
+            $foundColor = '';
+            
+            foreach ($awsResult['Labels'] as $label) {
+                $name = $label['Name'];
+                if (empty($foundItem) && isset($awsToVn[$name])) {
+                    $foundItem = $awsToVn[$name];
+                }
+                if (empty($foundColor) && isset($colorToVn[$name])) {
+                    $foundColor = $colorToVn[$name];
+                }
             }
-        } else {
-            file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Fallback Parse Failed, using DEFAULT: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL, FILE_APPEND);
-            $aiData = ['keyword' => $DEFAULT_FALLBACK_KEYWORD, 'description' => 'Sử dụng danh mục mặc định do lỗi phân tích cấu trúc'];
+            
+            if (!empty($foundItem)) {
+                $fallbackKeyword = $foundItem . ($foundColor ? ' ' . $foundColor : '');
+                $aiData = [
+                    'keyword' => $fallbackKeyword,
+                    'description' => 'AWS AI nhận diện: ' . ucfirst($fallbackKeyword)
+                ];
+                $ai_success = true;
+                file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - AWS Analysis Success: ' . $fallbackKeyword . PHP_EOL, FILE_APPEND);
+            }
         }
-    } else {
-        file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Fallback Timeout/Error (' . $result2['error_code'] . '): ' . $result2['error_msg'] . ' - Using DEFAULT: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL, FILE_APPEND);
-        $aiData = ['keyword' => $DEFAULT_FALLBACK_KEYWORD, 'description' => 'Sử dụng danh mục mặc định do hệ thống quá tải'];
+    }
+    
+    // Nếu AWS cũng thất bại hoặc không cấu hình, dùng mặc định
+    if (!$ai_success) {
+        file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - AWS Fallback Failed, using DEFAULT: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL, FILE_APPEND);
+        $aiData = ['keyword' => $DEFAULT_FALLBACK_KEYWORD, 'description' => 'Sử dụng danh mục mặc định do AI không nhận diện được'];
     }
 }
 
