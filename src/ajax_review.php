@@ -80,7 +80,8 @@ if ($action === 'submit_comment') {
         if (move_uploaded_file($_FILES['review_image']['tmp_name'], $destination)) {
             $review_image = 'assets/uploads/reviews/' . $unique_name;
         } else {
-            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu ảnh trên server (Thư mục assets/uploads/reviews/ không có quyền ghi - Hãy CHMOD 777 hoặc chạy file fix_permissions.php).']);
+            $err = error_get_last();
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu ảnh trên server. Lỗi hệ thống: ' . ($err['message'] ?? 'Unknown error') . ' | Destination: ' . $destination]);
             exit;
         }
     }
@@ -116,7 +117,8 @@ if ($action === 'submit_comment') {
         if (move_uploaded_file($_FILES['review_video']['tmp_name'], $destination)) {
             $review_video = 'assets/uploads/reviews/' . $unique_name;
         } else {
-            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu video trên server (Thư mục assets/uploads/reviews/ không có quyền ghi - Hãy CHMOD 777 hoặc chạy file fix_permissions.php).']);
+            $err = error_get_last();
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu video trên server. Lỗi hệ thống: ' . ($err['message'] ?? 'Unknown error') . ' | Destination: ' . $destination]);
             exit;
         }
     }
