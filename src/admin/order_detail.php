@@ -573,6 +573,12 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <span style="font-weight:500; color:#c0392b;">-<?= number_format($order['discount_value'], 0, ',', '.') ?> đ</span>
                 </div>
                 <?php endif; ?>
+                <?php if (!empty($order['tier_discount_value']) && floatval($order['tier_discount_value']) > 0): ?>
+                <div class="summary-row">
+                    <span>Chiết khấu hạng thành viên:</span>
+                    <span style="font-weight:500; color:#1565c0;">-<?= number_format($order['tier_discount_value'], 0, ',', '.') ?> đ</span>
+                </div>
+                <?php endif; ?>
                 <?php if (!empty($order['freeship_discount_value']) && $order['freeship_discount_value'] > 0): ?>
                 <div class="summary-row">
                     <span>Giảm phí vận chuyển (Freeship):</span>

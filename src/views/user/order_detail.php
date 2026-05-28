@@ -636,6 +636,12 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                     <span>-<?= number_format($order['discount_value'], 0, ',', '.') ?> đ</span>
                 </div>
                 <?php endif; ?>
+                <?php if (!empty($order['tier_discount_value']) && floatval($order['tier_discount_value']) > 0): ?>
+                <div class="od-summary-row" style="color:#1565c0;">
+                    <span>Chiết khấu hạng thành viên:</span>
+                    <span>-<?= number_format($order['tier_discount_value'], 0, ',', '.') ?> đ</span>
+                </div>
+                <?php endif; ?>
                 <?php if (!empty($order['freeship_discount_value']) && floatval($order['freeship_discount_value']) > 0): ?>
                 <div class="od-summary-row" style="color:#00796b;">
                     <span>Giảm phí vận chuyển (Freeship):</span>

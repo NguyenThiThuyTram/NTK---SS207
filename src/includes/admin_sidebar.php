@@ -1816,6 +1816,8 @@ function markAllNotificationsAsRead(e) {
 
 // ── SSE Toàn cục cho Admin ────────────────────────────────────────────
 const sseUrl = new URL('../api/sse_stream.php', window.location.href);
+sseUrl.searchParams.set('last_notif_id', '<?php echo (int)$max_notif_id; ?>');
+sseUrl.searchParams.set('last_chat_id', '<?php echo (int)$max_chat_id; ?>');
 const eventSource = new EventSource(sseUrl.toString());
 
 eventSource.addEventListener('message', function(e) {
@@ -1887,6 +1889,73 @@ eventSource.addEventListener('message', function(e) {
         if (typeof window.handleOrderUpdate === 'function') {
             window.handleOrderUpdate(data.order_update);
         }
+    }
+
+    // Xử lý thông báo mới từ bảng notifications (realtime cho admin)
+    if (data.notifications && data.notifications.length > 0) {
+        data.notifications.forEach(function(notif) {
+            // Chỉ xử lý thông báo dành cho admin (type: new_order, payment_success, ...)
+            var adminTypes = ['new_order', 'payment_success', 'order_placed'];
+            
+            // Hiện toast cho các loại thông báo quan trọng
+            var toastIcon = '🔔';
+            var toastTitle = notif.title || 'Thông báo mới';
+            var toastMsg = notif.message || '';
+            
+            if (notif.type === 'payment_success') toastIcon = '✅';
+            else if (notif.type === 'new_order') toastIcon = '🛒';
+            
+            showToast(toastIcon + ' ' + toastTitle, toastMsg.substring(0, 80) + (toastMsg.length > 80 ? '...' : ''));
+            
+            // Cập nhật badge chuông
+            var bellBadge = document.getElementById('notif-badge-bell');
+            if (!bellBadge) {
+                var bellBtn = document.querySelector('.topbar-icon-btn');
+                if (bellBtn) bellBtn.innerHTML += '<span class="topbar-badge" id="notif-badge-bell">1</span>';
+            } else {
+                var c2 = parseInt(bellBadge.textContent.replace('+', '')) || 0;
+                bellBadge.textContent = c2 < 9 ? (c2 + 1) : '9+';
+            }
+            
+            var fsCount2 = document.getElementById('notif-unread-count-fs');
+            if (fsCount2) {
+                fsCount2.textContent = (parseInt(fsCount2.textContent) || 0) + 1;
+            }
+            
+            // Thêm thông báo vào danh sách
+            var list2 = document.querySelector('.notif-fs-list');
+            if (list2) {
+                var emptyMsg2 = document.querySelector('.notif-fs-empty');
+                if (emptyMsg2) emptyMsg2.remove();
+                
+                var iconMap = { 'payment_success': 'fa-circle-check', 'new_order': 'fa-cart-plus', 'order_placed': 'fa-bag-shopping' };
+                var colorMap = { 'payment_success': '#27ae60', 'new_order': '#e67e22', 'order_placed': '#2980b9' };
+                var iconClass = iconMap[notif.type] || 'fa-bell';
+                var iconColor = colorMap[notif.type] || '#a6825c';
+                
+                var relatedOrderId = notif.related_order_id || '';
+                var eventId2 = 'notif_' + notif.noti_id;
+                var redirectUrl2 = relatedOrderId ? encodeURIComponent('order_detail.php?id=' + relatedOrderId) : encodeURIComponent('#');
+                var html2 = `
+                    <a href="${relatedOrderId ? 'read_notification.php?event_id=' + eventId2 + '&redirect=' + redirectUrl2 : '#'}" data-event-id="${eventId2}" class="notif-fs-item animate-in unread-noti" style="--delay: 0s; background: rgba(166,130,92,0.05); border-left: 3px solid ${iconColor};">
+                        <div class="notif-fs-icon-wrap" style="background:${iconColor}18; color:${iconColor}; box-shadow: 0 0 15px ${iconColor}15;">
+                            <i class="fa-solid ${iconClass}"></i>
+                        </div>
+                        <div class="notif-fs-body-content" style="position: relative;">
+                            <div class="notif-fs-label" style="font-weight: 800; color: #000;">
+                                ${(notif.title || 'Thông báo mới').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+                                <span style="display:inline-block; width:8px; height:8px; background:#e74c3c; border-radius:50%; margin-left:5px; vertical-align:middle;"></span>
+                            </div>
+                            <div class="notif-fs-time" style="font-weight: 600; color: #333;"><i class="fa-regular fa-clock"></i> Vừa xong</div>
+                        </div>
+                        <div class="notif-fs-action">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </a>
+                `;
+                list2.insertAdjacentHTML('afterbegin', html2);
+            }
+        });
     }
 });
 
