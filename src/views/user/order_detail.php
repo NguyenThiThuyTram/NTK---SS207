@@ -351,28 +351,20 @@ body.dark-mode .od-btn-danger:hover {
     background-color: #e74c3c !important;
     border-color: #e74c3c !important;
 }
-body.dark-mode #review-modal-detail,
 body.dark-mode #return-modal-detail {
     background: rgba(0, 0, 0, 0.75) !important;
 }
-body.dark-mode #review-modal-detail > div,
 body.dark-mode #return-modal-detail > div {
     background-color: #1e1e1e !important;
     color: #eeeeee !important;
 }
-body.dark-mode #review-modal-detail h3,
 body.dark-mode #return-modal-detail h3,
-body.dark-mode #review-modal-detail label,
 body.dark-mode #return-modal-detail label {
     color: #ffffff !important;
 }
-body.dark-mode #review-modal-detail p,
 body.dark-mode #return-modal-detail p {
     color: #cccccc !important;
 }
-body.dark-mode #review-modal-detail input,
-body.dark-mode #review-modal-detail select,
-body.dark-mode #review-modal-detail textarea,
 body.dark-mode #return-modal-detail input,
 body.dark-mode #return-modal-detail select,
 body.dark-mode #return-modal-detail textarea {
@@ -380,8 +372,6 @@ body.dark-mode #return-modal-detail textarea {
     border-color: #333333 !important;
     color: #ffffff !important;
 }
-body.dark-mode #review-modal-detail input::placeholder,
-body.dark-mode #review-modal-detail textarea::placeholder,
 body.dark-mode #return-modal-detail input::placeholder,
 body.dark-mode #return-modal-detail textarea::placeholder {
     color: #888888 !important;
@@ -616,9 +606,18 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                     <span class="od-item-price"><?= number_format($item['price'], 0, ',', '.') ?> đ</span>
                 </div>
 
-                <?php if ($os === 3 && !empty($item['product_id']) && !in_array($item['product_id'], $reviewed_products)): ?>
+                <?php if ($os === 3 && !empty($item['product_id'])): ?>
                     <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
-                        <button type="button" class="od-action-btn od-btn-outline" style="padding:8px 12px;" data-product-id="<?= htmlspecialchars($item['product_id']) ?>" data-product-name="<?= htmlspecialchars($item['product_name']) ?>" onclick="openReviewModal(this)">Đánh giá</button>
+                        <?php if (!in_array($item['product_id'], $reviewed_products)): ?>
+                            <a href="../../product_detail.php?id=<?= htmlspecialchars($item['product_id']) ?>&open_review=1"
+                               class="od-action-btn od-btn-outline" style="padding:8px 12px; font-size:13px;">
+                                <i class="fa-regular fa-star"></i> Đánh giá sản phẩm
+                            </a>
+                        <?php else: ?>
+                            <span style="font-size:13px; color:#27ae60; display:flex; align-items:center; gap:5px;">
+                                <i class="fa-solid fa-circle-check"></i> Đã đánh giá
+                            </span>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
             </div>
@@ -744,50 +743,7 @@ body.dark-mode #return-modal-detail textarea::placeholder {
     </div>
 </div>
 
-<!-- Modal đánh giá sản phẩm -->
-<div id="review-modal-detail" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-    <div style="background:#fff; border-radius:10px; width:100%; max-width:520px; padding:26px; box-shadow:0 16px 40px rgba(0,0,0,0.18); position:relative;">
-        <button type="button" onclick="closeReviewModalDetail()" style="position:absolute; top:12px; right:12px; border:none; background:transparent; font-size:18px; color:#555; cursor:pointer;">&times;</button>
-        <h3 style="margin:0 0 16px; font-size:20px; color:#222;">Đánh giá sản phẩm</h3>
-        <p id="review-modal-product-detail" style="margin:0 0 18px; color:#555; font-size:14px;"></p>
-
-        <form id="review-form-detail" enctype="multipart/form-data">
-            <input type="hidden" name="action" value="submit_comment">
-            <input type="hidden" name="product_id" id="review-product-id-detail" value="">
-            <input type="hidden" name="parent_id" value="">
-
-            <label for="review-rating-detail" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Số sao</label>
-            <select id="review-rating-detail" name="rating" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; margin-bottom:16px; font-size:14px;">
-                <option value="">Chọn đánh giá</option>
-                <option value="1">1 sao</option>
-                <option value="2">2 sao</option>
-                <option value="3">3 sao</option>
-                <option value="4">4 sao</option>
-                <option value="5">5 sao</option>
-            </select>
-
-            <label for="review-comment-detail" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Nhận xét</label>
-            <textarea id="review-comment-detail" name="comment" rows="4" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; resize:vertical; font-size:14px; margin-bottom:16px;"></textarea>
-
-            <label for="review-image-detail" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Hình ảnh (tùy chọn)</label>
-            <input type="file" id="review-image-detail" name="review_image" accept="image/*" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px;">
-            <div id="review-image-preview-detail" style="display:none; margin-bottom:16px;">
-                <img src="" alt="Preview" style="max-width:100%; border-radius:8px; border:1px solid #eee;">
-            </div>
-
-            <label for="review-video-detail" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Video (tùy chọn)</label>
-            <input type="file" id="review-video-detail" name="review_video" accept="video/*" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px;">
-            <div id="review-video-preview-detail" style="display:none; margin-bottom:16px;">
-                <video id="review-video-preview-el-detail" controls style="max-width:100%; border-radius:8px; border:1px solid #eee;"></video>
-            </div>
-
-            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
-                <button type="button" onclick="closeReviewModalDetail()" style="flex:1; min-width:120px; padding:12px 16px; border:1px solid #ccc; background:#fff; border-radius:6px; color:#333; cursor:pointer;">Hủy</button>
-                <button type="submit" class="od-action-btn od-btn-primary" style="flex:1; min-width:120px;">Gửi đánh giá</button>
-            </div>
-        </form>
-    </div>
-</div>
+<?php /* Form đánh giá đã được chuyển sang trang chi tiết sản phẩm (product_detail.php) */ ?>
 
 <!-- Modal Trả hàng (chỉ cho status=3) -->
 <?php if ($os === 3): ?>
