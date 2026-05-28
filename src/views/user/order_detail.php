@@ -36,10 +36,14 @@ $stmt_items = $conn->prepare("
 $stmt_items->execute(['oid' => $order_id]);
 $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
 
-// Lấy danh sách sản phẩm đã đánh giá của user
-$stmt_reviewed = $conn->prepare("SELECT DISTINCT product_id FROM reviews WHERE user_id = :uid AND parent_id IS NULL");
+// Lấy danh sách sản phẩm đã đánh giá của user kèm chi tiết đánh giá
+$stmt_reviewed = $conn->prepare("SELECT product_id, rating, comment, image, video, created_at FROM reviews WHERE user_id = :uid AND parent_id IS NULL");
 $stmt_reviewed->execute(['uid' => $_SESSION['user_id']]);
-$reviewed_products = $stmt_reviewed->fetchAll(PDO::FETCH_COLUMN) ?: [];
+$reviewed_raw = $stmt_reviewed->fetchAll(PDO::FETCH_ASSOC);
+$reviewed_products = [];
+foreach ($reviewed_raw as $r) {
+    $reviewed_products[$r['product_id']] = $r;
+}
 
 // Xác định trạng thái để hiển thị Progress
 // 0: Chờ thanh toán (nếu online chưa pass / COD: pending_payment nếu có), 1: Đang xử lý, 2: Đang giao, 3: Hoàn thành, 4: Đã hủy
@@ -608,7 +612,7 @@ body.dark-mode #return-modal-detail textarea::placeholder {
 
                 <?php if ($os === 3 && !empty($item['product_id'])): ?>
                     <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
-                        <?php if (!in_array($item['product_id'], $reviewed_products)): ?>
+                        <?php if (!isset($reviewed_products[$item['product_id']])): ?>
                             <button type="button"
                                class="od-action-btn od-btn-outline" style="padding:8px 12px; font-size:13px;"
                                data-product-id="<?= htmlspecialchars($item['product_id']) ?>"
@@ -617,9 +621,26 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                                 <i class="fa-regular fa-star"></i> Đánh giá sản phẩm
                             </button>
                         <?php else: ?>
-                            <span style="font-size:13px; color:#27ae60; display:flex; align-items:center; gap:5px;">
-                                <i class="fa-solid fa-circle-check"></i> Đã đánh giá
-                            </span>
+                            <?php $my_rev = $reviewed_products[$item['product_id']]; ?>
+                            <div style="width:100%; text-align:left; background:#fbfbfb; padding:12px; border-radius:6px; margin-top:8px; border:1px solid #eee;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <span style="font-size:13px; color:#27ae60; display:flex; align-items:center; gap:5px; font-weight:600;">
+                                        <i class="fa-solid fa-circle-check"></i> Bạn đã đánh giá
+                                    </span>
+                                    <span style="color: #ffc107; font-size:12px;">
+                                        <?php for ($i = 1; $i <= 5; $i++) echo ($i <= $my_rev['rating']) ? '★' : '☆'; ?>
+                                    </span>
+                                </div>
+                                <p style="font-size: 13px; color: #444; margin: 0 0 8px 0;"><?= htmlspecialchars($my_rev['comment']) ?></p>
+                                <div style="display:flex; gap:8px;">
+                                    <?php if (!empty($my_rev['image'])): ?>
+                                        <img src="https://ntkfashion.me/<?= htmlspecialchars($my_rev['image']) ?>" style="max-width:80px; max-height:80px; border-radius:4px; border:1px solid #ddd; object-fit:cover; cursor:pointer;" onclick="window.open(this.src,'_blank')">
+                                    <?php endif; ?>
+                                    <?php if (!empty($my_rev['video'])): ?>
+                                        <video src="https://ntkfashion.me/<?= htmlspecialchars($my_rev['video']) ?>" controls style="max-width:140px; max-height:80px; border-radius:4px; border:1px solid #ddd;"></video>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -747,8 +768,8 @@ body.dark-mode #return-modal-detail textarea::placeholder {
 </div>
 
 <!-- Modal Đánh giá sản phẩm -->
-<div id="review-modal-detail" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-    <div style="background:#fff; border-radius:10px; width:100%; max-width:540px; padding:28px; box-shadow:0 16px 40px rgba(0,0,0,0.2); position:relative; max-height:90vh; overflow-y:auto;">
+<div id="review-modal-detail" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; overflow-y:auto; padding:30px 16px;" onclick="if(event.target===this)closeReviewModalDetail()">
+    <div style="background:#fff; border-radius:10px; width:100%; max-width:540px; margin:0 auto; padding:28px; box-shadow:0 16px 40px rgba(0,0,0,0.2); position:relative;">
         <button type="button" onclick="closeReviewModalDetail()" style="position:absolute; top:12px; right:14px; border:none; background:transparent; font-size:22px; color:#555; cursor:pointer; line-height:1;">&times;</button>
         <h3 style="margin:0 0 6px; font-size:18px; color:#2f1c00;"><i class="fa-regular fa-star" style="color:#f1c40f;"></i> Đánh giá sản phẩm</h3>
         <p id="review-modal-product-detail" style="margin:0 0 18px; color:#888; font-size:13px; font-style:italic;"></p>
@@ -824,7 +845,8 @@ body.dark-mode #return-modal-detail textarea::placeholder {
         var productName = button.getAttribute('data-product-name');
         document.getElementById('review-product-id-detail').value = productId;
         document.getElementById('review-modal-product-detail').innerText = 'Sản phẩm: ' + productName;
-        document.getElementById('review-modal-detail').style.display = 'flex';
+        document.getElementById('review-modal-detail').style.display = 'block';
+        document.body.style.overflow = 'hidden';
         document.getElementById('review-form-detail').reset();
         document.getElementById('review-image-preview-detail').style.display = 'none';
         document.getElementById('review-video-preview-detail').style.display = 'none';
@@ -833,6 +855,7 @@ body.dark-mode #return-modal-detail textarea::placeholder {
 
     function closeReviewModalDetail() {
         document.getElementById('review-modal-detail').style.display = 'none';
+        document.body.style.overflow = '';
     }
 
     document.getElementById('review-image-detail').addEventListener('change', function () {

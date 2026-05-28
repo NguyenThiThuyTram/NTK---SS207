@@ -50,7 +50,12 @@ if ($action === 'submit_comment') {
     }
 
     $review_image = null;
-    if (!empty($_FILES['review_image']['name']) && $_FILES['review_image']['error'] === UPLOAD_ERR_OK) {
+    if (isset($_FILES['review_image']) && $_FILES['review_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['review_image']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Lỗi tải ảnh (Mã lỗi: ' . $_FILES['review_image']['error'] . '). Có thể file vượt quá dung lượng cho phép của máy chủ.']);
+            exit;
+        }
+
         $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         $file_ext = strtolower(pathinfo($_FILES['review_image']['name'], PATHINFO_EXTENSION));
         if (!in_array($file_ext, $allowed_ext, true)) {
@@ -74,11 +79,19 @@ if ($action === 'submit_comment') {
 
         if (move_uploaded_file($_FILES['review_image']['tmp_name'], $destination)) {
             $review_image = 'assets/uploads/reviews/' . $unique_name;
+        } else {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu file ảnh trên máy chủ (Kiểm tra quyền ghi).']);
+            exit;
         }
     }
 
     $review_video = null;
-    if (!empty($_FILES['review_video']['name']) && $_FILES['review_video']['error'] === UPLOAD_ERR_OK) {
+    if (isset($_FILES['review_video']) && $_FILES['review_video']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['review_video']['error'] !== UPLOAD_ERR_OK) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Lỗi tải video (Mã lỗi: ' . $_FILES['review_video']['error'] . '). Có thể file vượt quá dung lượng cho phép của máy chủ.']);
+            exit;
+        }
+
         $allowed_video_ext = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'];
         $file_ext = strtolower(pathinfo($_FILES['review_video']['name'], PATHINFO_EXTENSION));
         if (!in_array($file_ext, $allowed_video_ext, true)) {
@@ -102,6 +115,9 @@ if ($action === 'submit_comment') {
 
         if (move_uploaded_file($_FILES['review_video']['tmp_name'], $destination)) {
             $review_video = 'assets/uploads/reviews/' . $unique_name;
+        } else {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Không thể lưu file video trên máy chủ (Kiểm tra quyền ghi).']);
+            exit;
         }
     }
 

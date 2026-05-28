@@ -375,8 +375,8 @@ try {
     <?php endif; ?>
 
     <!-- Review modal chung cho trang đơn hàng -->
-    <div id="review-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
-        <div style="background:#fff; border-radius:10px; width:100%; max-width:520px; padding:26px; box-shadow:0 16px 40px rgba(0,0,0,0.18); position:relative;">
+    <div id="review-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; overflow-y:auto; padding:30px 16px;" onclick="if(event.target===this)closeReviewModal()">
+        <div style="background:#fff; border-radius:10px; width:100%; max-width:520px; margin:0 auto; padding:26px; box-shadow:0 16px 40px rgba(0,0,0,0.18); position:relative;">
             <button type="button" onclick="closeReviewModal()" style="position:absolute; top:12px; right:12px; border:none; background:transparent; font-size:18px; color:#555; cursor:pointer;">&times;</button>
             <h3 style="margin:0 0 16px; font-size:20px; color:#222;">Đánh giá sản phẩm</h3>
             <p id="review-modal-product" style="margin:0 0 18px; color:#555; font-size:14px;"></p>
@@ -428,7 +428,8 @@ try {
             document.getElementById('review-product-id').value = productId;
             document.getElementById('review-detail-id').value = detailId;
             document.getElementById('review-modal-product').innerText = 'Sản phẩm: ' + productName;
-            document.getElementById('review-modal').style.display = 'flex';
+            document.getElementById('review-modal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
             document.getElementById('review-form').reset();
             document.getElementById('review-image-preview').style.display = 'none';
             document.getElementById('review-video-preview').style.display = 'none';
@@ -437,6 +438,7 @@ try {
 
         function closeReviewModal() {
             document.getElementById('review-modal').style.display = 'none';
+            document.body.style.overflow = '';
         }
 
         document.getElementById('review-image').addEventListener('change', function () {

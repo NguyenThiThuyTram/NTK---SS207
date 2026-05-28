@@ -59,68 +59,66 @@ if (intval($stmt_check->fetchColumn()) === 0) {
     exit;
 }
 
-// ── 5. Xử lý upload ảnh (review_image) ─────────────────────────────────────
-$upload_dir = __DIR__ . '/../assets/uploads/reviews/';
-if (!is_dir($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
-}
-
+// ── 5. Xử lý Upload Hình ảnh ─────────────────────────────────────────────
 $review_image = null;
-if (!empty($_FILES['review_image']['name']) && $_FILES['review_image']['error'] === UPLOAD_ERR_OK) {
-    $allowed_img_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+if (isset($_FILES['review_image']) && $_FILES['review_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+    if ($_FILES['review_image']['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['status' => 'error', 'message' => 'Lỗi tải ảnh (Mã lỗi: ' . $_FILES['review_image']['error'] . '). Có thể file vượt quá dung lượng cho phép của máy chủ.']);
+        exit;
+    }
+
+    $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     $file_ext = strtolower(pathinfo($_FILES['review_image']['name'], PATHINFO_EXTENSION));
 
-    if (!in_array($file_ext, $allowed_img_ext, true)) {
-        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Chỉ cho phép tập tin ảnh JPG, PNG, GIF, WEBP.']);
-        exit;
-    }
-    if ($_FILES['review_image']['size'] > 5 * 1024 * 1024) {
-        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.']);
+    if (!in_array($file_ext, $allowed_ext, true)) {
+        echo json_encode(['status' => 'error', 'message' => 'Chỉ cho phép tập tin ảnh JPG, PNG, GIF, WEBP.']);
         exit;
     }
 
-    // Kiểm tra MIME type thật sự (an toàn)
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime  = finfo_file($finfo, $_FILES['review_image']['tmp_name']);
-    finfo_close($finfo);
-    $allowed_mimes_img = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!in_array($mime, $allowed_mimes_img, true)) {
-        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Tập tin ảnh không hợp lệ!']);
+    // Giới hạn ảnh 5MB
+    if ($_FILES['review_image']['size'] > 5 * 1024 * 1024) {
+        echo json_encode(['status' => 'error', 'message' => 'Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.']);
         exit;
     }
+
+    $upload_dir = __DIR__ . '/../assets/uploads/reviews/';
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
     $unique_name = 'review_img_' . time() . '_' . bin2hex(random_bytes(5)) . '.' . $file_ext;
     $destination = $upload_dir . $unique_name;
 
     if (move_uploaded_file($_FILES['review_image']['tmp_name'], $destination)) {
         $review_image = 'assets/uploads/reviews/' . $unique_name;
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Không thể lưu file ảnh trên máy chủ (Kiểm tra quyền ghi).']);
+        exit;
     }
 }
 
-// ── 6. Xử lý upload video (review_video) ───────────────────────────────────
+// ── 6. Xử lý Upload Video ────────────────────────────────────────────────
 $review_video = null;
-if (!empty($_FILES['review_video']['name']) && $_FILES['review_video']['error'] === UPLOAD_ERR_OK) {
-    $allowed_vid_ext = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'];
+if (isset($_FILES['review_video']) && $_FILES['review_video']['error'] !== UPLOAD_ERR_NO_FILE) {
+    if ($_FILES['review_video']['error'] !== UPLOAD_ERR_OK) {
+        echo json_encode(['status' => 'error', 'message' => 'Lỗi tải video (Mã lỗi: ' . $_FILES['review_video']['error'] . '). Có thể file vượt quá dung lượng cho phép của máy chủ.']);
+        exit;
+    }
+
+    $allowed_video_ext = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'];
     $file_ext = strtolower(pathinfo($_FILES['review_video']['name'], PATHINFO_EXTENSION));
 
-    if (!in_array($file_ext, $allowed_vid_ext, true)) {
-        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Chỉ cho phép tập tin video MP4, MOV, AVI, MKV, WEBM, 3GP.']);
-        exit;
-    }
-    if ($_FILES['review_video']['size'] > 15 * 1024 * 1024) {
-        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Kích thước video quá lớn! Vui lòng chọn video dưới 15MB.']);
+    if (!in_array($file_ext, $allowed_video_ext, true)) {
+        echo json_encode(['status' => 'error', 'message' => 'Chỉ cho phép tập tin video MP4, MOV, AVI, MKV, WEBM.']);
         exit;
     }
 
-    // Kiểm tra MIME type thật sự (an toàn)
-    $finfo = finfo_open(FILEINFO_MIME_TYPE);
-    $mime  = finfo_file($finfo, $_FILES['review_video']['tmp_name']);
-    finfo_close($finfo);
-    $allowed_mimes_vid = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm', 'video/3gpp'];
-    if (!in_array($mime, $allowed_mimes_vid, true)) {
-        echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Tập tin video không hợp lệ!']);
+    // Giới hạn video 15MB
+    if ($_FILES['review_video']['size'] > 15 * 1024 * 1024) {
+        echo json_encode(['status' => 'error', 'message' => 'Kích thước video quá lớn! Vui lòng chọn video dưới 15MB.']);
         exit;
     }
+
+    $upload_dir = __DIR__ . '/../assets/uploads/reviews/';
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
     $unique_name = 'review_vid_' . time() . '_' . bin2hex(random_bytes(5)) . '.' . $file_ext;
     $destination = $upload_dir . $unique_name;
