@@ -369,6 +369,89 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     </div>
 </div>
 
+<?php
+    // Tự chạy một câu lệnh SQL riêng biệt để lọc khách hàng VIP (Mua >= 3 đơn và chi tiêu >= 2 triệu)
+    $stmt_vip = $conn->prepare("
+        SELECT 
+            u.user_id,
+            COALESCE(NULLIF(u.fullname, ''), u.username) as customer_name,
+            u.email,
+            COALESCE(SUM(CASE WHEN o.order_status IN (1, 2, 3) THEN o.final_price ELSE 0 END), 0) AS TotalSpent,
+            COUNT(o.order_id) AS TotalOrders,
+            MAX(o.order_date) AS LastOrderDate,
+            DATEDIFF(NOW(), MAX(o.order_date)) AS DaysSinceLastOrder
+        FROM users u
+        INNER JOIN orders o ON u.user_id = o.user_id
+        GROUP BY u.user_id, u.fullname, u.username, u.email
+        HAVING TotalOrders >= 3 AND TotalSpent >= 2000000
+        ORDER BY TotalSpent DESC
+        LIMIT 10
+    ");
+    $stmt_vip->execute();
+    $vip_customers = $stmt_vip->fetchAll(PDO::FETCH_ASSOC);
+    ?>
+
+    <div class="section-card" style="margin-top: 30px;">
+        <h2 class="section-title">
+            <i class="fa-solid fa-gem" style="color: #f1c40f;"></i> Các Khách Hàng Tiềm Năng
+        </h2>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                       <th>Khách Hàng</th>
+                            <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
+                            <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
+                            <th style="text-align: center; width: 180px;">Ngày Đặt Đơn Cuối</th>
+                            <th style="text-align: right; width: 140px;">Thời Gian Kể Từ Ngày Đặt Đơn Cuối</th>
+                            <th style="padding-left: 30px; width: 180px;">Hạng Dự Kiến</th>
+                            <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($vip_customers)): ?>
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            Chưa tìm thấy khách hàng nào đạt tiêu chí VIP (Mua >= 3 đơn và Chi tiêu >= 2M).
+                        </td>
+                    </tr>
+                    <?php else: ?>
+                        <?php foreach ($vip_customers as $vip): 
+                            $v_days = (int)$vip['DaysSinceLastOrder'];
+                            $v_spent = (float)$vip['TotalSpent'];
+                            $v_orders = (int)$vip['TotalOrders'];
+
+                            if ($v_spent >= 10000000) {
+                                $v_badge = '<span class="badge badge-danger"><i class="fa-solid fa-crown"></i> Đối tác Kim Cương</span>';
+                                $v_recommend = '<span class="recommendation-text text-danger">Tặng Quà Tri Ân Đặc Biệt</span>';
+                            } elseif ($v_spent >= 5000000) {
+                                $v_badge = '<span class="badge badge-warning"><i class="fa-solid fa-star"></i> Khách Hàng Vàng</span>';
+                                $v_recommend = '<span class="recommendation-text text-warning">Mời Vào Nhóm Trải Nghiệm Sớm</span>';
+                            } else {
+                                $v_badge = '<span class="badge badge-success"><i class="fa-solid fa-user-check"></i> Thành Viên Bạc</span>';
+                                $v_recommend = '<span class="recommendation-text text-success">Gửi Khuyến Mãi Độc Quyền</span>';
+                            }
+                        ?>
+                        <tr>
+                            <td>
+                                <a href="account_detail.php?id=<?= urlencode($vip['user_id']) ?>" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.vip-name').style.textDecoration='underline', this.querySelector('.vip-name').style.color='var(--accent-color)'" onmouseout="this.querySelector('.vip-name').style.textDecoration='none', this.querySelector('.vip-name').style.color='var(--text-primary)'">
+                                    <div class="vip-name" style="font-weight: 600; color: var(--text-primary); transition: color 0.2s;"><?= htmlspecialchars($vip['customer_name']) ?></div>
+                                    <div class="customer-meta"><?= htmlspecialchars($vip['email'] ?? 'Không có email') ?></div>
+                                </a>
+                            </td>
+                            <td style="text-align: right; font-weight: 600;"><?= number_format($v_orders) ?></td>
+                            <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($v_spent, 0, ',', '.') ?>đ</td>
+                            <td style="text-align: center; color: var(--text-secondary);"><?= date('d/m/Y', strtotime($vip['LastOrderDate'])) ?></td>
+                            <td style="text-align: right; font-weight: 600; color: var(--text-secondary);"><?= number_format($v_days) ?> ngày trước</td>
+                            <td style="padding-left: 30px;"><?= $v_badge ?></td>
+                            <td style="padding-left: 20px;"><?= $v_recommend ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 <!-- Section 2: Customer Churn Risk Prediction (TOP SECTION) -->
 <div class="section-card">
     <h2 class="section-title">
@@ -381,8 +464,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <th>Khách Hàng</th>
                     <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
                     <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
-                    <th style="text-align: center; width: 180px;">Đơn Cuối Vào Ngày</th>
-                    <th style="text-align: right; width: 140px;">Số Ngày Xa Cách</th>
+                    <th style="text-align: center; width: 180px;">Ngày Đặt Đơn Cuối</th>
+                    <th style="text-align: right; width: 140px;">Thời Gian Kể Từ Ngày Đặt Đơn Cuối</th>
                     <th style="padding-left: 30px; width: 180px;">Trạng Thái Dự Báo</th>
                     <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
                 </tr>
@@ -415,9 +498,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         }
                     ?>
                     <tr>
-                        <td>
+                        <!-- <td>
                             <div style="font-weight: 600; color: var(--text-primary);"><?= htmlspecialchars($cust['customer_name']) ?></div>
                             <div class="customer-meta"><?= htmlspecialchars($cust['email'] ?? 'Không có email') ?></div>
+                        </td> -->
+                        <td>
+                            <a href="account_detail.php?id=<?= urlencode($cust['user_id']) ?>" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.cust-name').style.textDecoration='underline', this.querySelector('.cust-name').style.color='var(--accent-color)'" onmouseout="this.querySelector('.cust-name').style.textDecoration='none', this.querySelector('.cust-name').style.color='var(--text-primary)'">
+                                <div class="cust-name" style="font-weight: 600; color: var(--text-primary); transition: color 0.2s;"><?= htmlspecialchars($cust['customer_name']) ?></div>
+                                <div class="customer-meta"><?= htmlspecialchars($cust['email'] ?? 'Không có email') ?></div>
+                            </a>
                         </td>
                         <td style="text-align: right; font-weight: 600;"><?= number_format($orders_count) ?></td>
                         <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($spent, 0, ',', '.') ?>đ</td>
@@ -487,7 +576,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         }
                     ?>
                     <tr>
-                        <td style="text-align: center;"><span class="prod-rank">#<?= $rank ?></span></td>
+                        <!-- <td style="text-align: center;"><span class="prod-rank">#<?= $rank ?></span></td>
                         <td>
                             <div class="prod-info">
                                 <?php if(!empty($prod['image'])): ?>
@@ -501,6 +590,22 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                                     <div class="prod-cat"><?= htmlspecialchars($prod['category_name'] ?? 'Không có danh mục') ?></div>
                                 </div>
                             </div>
+                        </td> -->
+
+                        <td style="text-align: center;"><span class="prod-rank">#<?= $rank ?></span></td>
+                        <td>
+                            <a href="product_detail.php?id=<?= urlencode($prod['product_id']) ?>" class="prod-info" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;" onmouseover="this.querySelector('.prod-name').style.textDecoration='underline', this.querySelector('.prod-name').style.color='var(--accent-color)'" onmouseout="this.querySelector('.prod-name').style.textDecoration='none', this.querySelector('.prod-name').style.color='var(--text-primary)'">
+                                <?php if(!empty($prod['image'])): ?>
+                                    <?php $img_src = (strpos($prod['image'], 'http') === 0) ? $prod['image'] : '../' . $prod['image']; ?>
+                                    <img src="<?= htmlspecialchars($img_src) ?>" class="prod-image" alt="Product Image" onerror="this.outerHTML='<div class=\'prod-image\' style=\'display:flex;align-items:center;justify-content:center;color:#aaa;\'><i class=\'fa-solid fa-image\'></i></div>';">
+                                <?php else: ?>
+                                    <div class="prod-image" style="display:flex;align-items:center;justify-content:center;color:#aaa;"><i class="fa-solid fa-image"></i></div>
+                                <?php endif; ?>
+                                <div>
+                                    <div class="prod-name"><?= htmlspecialchars($prod['name']) ?></div>
+                                    <div class="prod-cat"><?= htmlspecialchars($prod['category_name'] ?? 'Không có danh mục') ?></div>
+                                </div>
+                            </a>
                         </td>
                         <td style="text-align: right; font-weight: 600;"><?= number_format($sold) ?></td>
                         <td style="text-align: right; font-weight: 600; color: var(--accent-color);"><?= number_format($stock) ?></td>

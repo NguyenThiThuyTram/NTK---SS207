@@ -26,6 +26,38 @@ $total_revenue = $stmt->fetch(PDO::FETCH_ASSOC)['revenue'] ?? 0;
 $stmt = $conn->query("SELECT COUNT(*) as total FROM products WHERE status = 1");
 $total_products = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
+$stmt_dash_calc = $conn->prepare("
+    SELECT 
+        p.product_id, 
+        p.name, 
+        p.sold_count, 
+        MIN(COALESCE(NULLIF(pv.sale_price, 0), pv.original_price)) as min_price
+    FROM products p
+    LEFT JOIN product_variants pv ON p.product_id = pv.product_id
+    WHERE p.status = 1
+    GROUP BY p.product_id, p.name, p.sold_count
+");
+$stmt_dash_calc->execute();
+$dash_prods = $stmt_dash_calc->fetchAll(PDO::FETCH_ASSOC);
+
+$total_items_sold = 0;
+$total_global_revenue = 0;
+$highest_revenue_prod = 'Chưa có dữ liệu';
+$max_prod_revenue = -1;
+
+foreach ($dash_prods as $prod) {
+    $sold = intval($prod['sold_count']);
+    $price = floatval($prod['min_price']);
+    $prod_revenue = $sold * $price;
+
+    $total_items_sold += $sold;
+    $total_global_revenue += $prod_revenue;
+
+    if ($prod_revenue > $max_prod_revenue && $sold > 0) {
+        $max_prod_revenue = $prod_revenue;
+        $highest_revenue_prod = $prod['name'];
+    }
+}
 // 4. Tổng khách hàng
 $stmt = $conn->query("SELECT COUNT(*) as total FROM users WHERE role = 0");
 $total_customers = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
@@ -279,7 +311,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     <div class="page-subtitle">Tổng quan hoạt động kinh doanh</div>
 </div>
 
-<div class="stats-grid">
+<!-- <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-card-top">
             <div class="stat-icon"><i class="fa-solid fa-cart-shopping"></i></div>
@@ -315,6 +347,46 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         <div class="stat-value"><?= number_format($total_customers) ?></div>
         <div class="stat-label">Khách hàng</div>
     </div>
+</div> -->
+
+<div class="stats-grid">
+    <a href="orders.php" class="stat-card" style="text-decoration: none; color: inherit; display: block;">
+        <div class="stat-card-top">
+            <div class="stat-icon"><i class="fa-solid fa-cart-shopping"></i></div>
+            <?= renderGrowthBadge($growth_orders) ?>
+        </div>
+        <div class="stat-value"><?= number_format($total_orders) ?></div>
+        <div class="stat-label">Tổng đơn hàng</div>
+    </a>
+
+    <a href="best_sellers.php" class="stat-card" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.stat-label').style.textDecoration='underline'" onmouseout="this.querySelector('.stat-label').style.textDecoration='none'">
+        <div class="stat-card-top">
+            <div class="stat-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+            <?= renderGrowthBadge($growth_revenue) ?>
+        </div>
+        <div class="stat-value"><?= number_format($total_global_revenue, 0, ',', '.') ?>₫</div>
+        <div class="stat-label">Doanh thu hệ thống</div>
+    </a>
+
+    <a href="products.php" class="stat-card" style="text-decoration: none; color: inherit; display: block;">
+        <div class="stat-card-top">
+            <div class="stat-icon"><i class="fa-solid fa-box-open"></i></div>
+            <span class="stat-change neutral" style="color: var(--accent-color); font-weight: 600; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;" title="Bán chạy nhất: <?= htmlspecialchars($highest_revenue_prod) ?>">
+                ⭐ Top: <?= htmlspecialchars($highest_revenue_prod) ?>
+            </span>
+        </div>
+        <div class="stat-value"><?= number_format($total_items_sold) ?></div>
+        <div class="stat-label">Sản phẩm đã bán</div>
+    </a>
+
+    <a href="accounts.php" class="stat-card" style="text-decoration: none; color: inherit; display: block;">
+        <div class="stat-card-top">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <?= renderGrowthBadge($growth_customers) ?>
+        </div>
+        <div class="stat-value"><?= number_format($total_customers) ?></div>
+        <div class="stat-label">Khách hàng</div>
+    </a>
 </div>
 
 <div class="section-card">
