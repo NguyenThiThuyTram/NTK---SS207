@@ -6,44 +6,27 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../config/database.php';
 
-// ── TASK 2 SECTION 1: METRICS FETCHING ──────────────────────────────────
-
-// Fetch all active products and their minimum price from active variants
-$stmt_all = $conn->query("
+// ── CUSTOMER CHURN RISK PREDICTION QUERY ──────────────────────────────
+$stmt_churn = $conn->prepare("
     SELECT 
-        p.product_id,
-        p.name,
-        p.sold_count,
-        MIN(COALESCE(NULLIF(pv.sale_price, 0), pv.original_price)) as price
-    FROM products p
-    LEFT JOIN product_variants pv ON p.product_id = pv.product_id AND pv.is_active = 1
-    WHERE p.status = 1
-    GROUP BY p.product_id
+        u.user_id,
+        COALESCE(NULLIF(u.fullname, ''), u.username) as customer_name,
+        u.email,
+        COALESCE(SUM(CASE WHEN o.order_status IN (1, 2, 3) THEN o.final_price ELSE 0 END), 0) AS TotalSpent,
+        COUNT(o.order_id) AS TotalOrders,
+        MAX(o.order_date) AS LastOrderDate,
+        DATEDIFF(NOW(), MAX(o.order_date)) AS DaysSinceLastOrder
+    FROM users u
+    INNER JOIN orders o ON u.user_id = o.user_id
+    GROUP BY u.user_id, u.fullname, u.username, u.email
+    HAVING DaysSinceLastOrder > 30
+    ORDER BY DaysSinceLastOrder DESC
+    LIMIT 10
 ");
-$all_active_products = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
+$stmt_churn->execute();
+$churn_customers = $stmt_churn->fetchAll(PDO::FETCH_ASSOC);
 
-$total_global_revenue = 0.0;
-$total_items_sold = 0;
-$highest_revenue = 0.0;
-$highest_revenue_product_name = 'N/A';
-
-foreach ($all_active_products as $ap) {
-    $sold = (int)$ap['sold_count'];
-    $price = (float)($ap['price'] ?? 0);
-    $rev = $sold * $price;
-    
-    $total_global_revenue += $rev;
-    $total_items_sold += $sold;
-    
-    if ($rev > $highest_revenue) {
-        $highest_revenue = $rev;
-        $highest_revenue_product_name = $ap['name'];
-    }
-}
-
-// ── TASK 2 SECTION 2: TABLE FETCHING ─────────────────────────────────────
-
-// Fetch all active products by sold_count DESC with minimum variant price and stock
+// ── PRODUCT PERFORMANCE QUERY (NO LIMIT) ──────────────────────────────────
 $stmt_table = $conn->prepare("
     SELECT 
         p.product_id, 
@@ -63,12 +46,72 @@ $stmt_table = $conn->prepare("
 $stmt_table->execute();
 $products = $stmt_table->fetchAll(PDO::FETCH_ASSOC);
 
+// Calculate global metrics from the product list
+$total_global_revenue = 0.0;
+$total_items_sold = 0;
+$highest_revenue = 0.0;
+$highest_revenue_product_name = 'N/A';
+
+foreach ($products as $prod) {
+    $sold = (int)$prod['sold_count'];
+    $price = (float)($prod['price'] ?? 0);
+    $prod_revenue = $sold * $price;
+    
+    $total_global_revenue += $prod_revenue;
+    $total_items_sold += $sold;
+    
+    if ($prod_revenue > $highest_revenue) {
+        $highest_revenue = $prod_revenue;
+        $highest_revenue_product_name = $prod['name'];
+    }
+}
+
 // Include sidebar
 include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
 
 <style>
-    /* ── Custom Premium Style for Analytics Dashboard ── */
+    /* Theme color system based on CSS variables */
+    :root {
+        --bg-primary: #ffffff;
+        --bg-secondary: #fafaf8;
+        --bg-tertiary: #f5f1eb;
+        --border-color: #e5e5e5;
+        --text-primary: #111111;
+        --text-secondary: #888888;
+        --accent-color: #a6825c;
+        
+        --success-bg: #eafaf1;
+        --success-color: #27ae60;
+        --warning-bg: #fdf6ec;
+        --warning-color: #e6a23c;
+        --danger-bg: #fef0f0;
+        --danger-color: #f56c6c;
+        --info-bg: #eaf2fd;
+        --info-color: #3498db;
+        --ok-bg: #f4f4f5;
+        --ok-color: #909399;
+    }
+
+    body.dark-mode {
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #121212;
+        --bg-tertiary: #252525;
+        --border-color: #2a2a2a;
+        --text-primary: #ffffff;
+        --text-secondary: #aaaaaa;
+        
+        --success-bg: rgba(39, 174, 96, 0.12);
+        --success-color: #2ecc71;
+        --warning-bg: rgba(230, 162, 60, 0.12);
+        --warning-color: #e6a23c;
+        --danger-bg: rgba(245, 108, 108, 0.12);
+        --danger-color: #f56c6c;
+        --ok-bg: rgba(144, 147, 153, 0.12);
+        --ok-color: #a8abb2;
+    }
+
+    /* Base Styling Override for Analytics */
     .page-header {
         display: flex;
         justify-content: space-between;
@@ -78,14 +121,14 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     .page-title {
         font-size: 21px;
         font-weight: 700;
-        color: #111111;
+        color: var(--text-primary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
         margin-bottom: 4px;
     }
     .page-subtitle {
         font-size: 13px;
-        color: #999;
+        color: var(--text-secondary);
     }
 
     /* Metrics Grid */
@@ -96,15 +139,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         margin-bottom: 30px;
     }
     .stat-card {
-        background: #ffffff;
-        border: 1px solid #e5e5e5;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 20px;
         display: flex;
         align-items: center;
         gap: 16px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        transition: transform 0.2s, box-shadow 0.2s;
+        transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s, border-color 0.3s;
     }
     .stat-card:hover {
         transform: translateY(-2px);
@@ -127,7 +170,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     .stat-value {
         font-size: 16px;
         font-weight: 700;
-        color: #111111;
+        color: var(--text-primary);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -136,65 +179,78 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     }
     .stat-label {
         font-size: 12px;
-        color: #888888;
+        color: var(--text-secondary);
         font-weight: 500;
     }
 
     /* Section Card */
     .section-card {
-        background: #ffffff;
-        border: 1px solid #e5e5e5;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 24px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        overflow: hidden;
+        margin-bottom: 30px;
+        transition: background-color 0.3s, border-color 0.3s;
     }
 
     .section-title {
         font-size: 16px;
         font-weight: 700;
-        color: #111111;
+        color: var(--text-primary);
         margin-bottom: 20px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    /* Table */
+    /* Table Responsive Wrapper */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Table Design */
     .data-table {
         width: 100%;
         border-collapse: collapse;
+        min-width: 800px;
     }
     .data-table thead th {
         padding: 14px 20px;
         font-size: 11.5px;
         font-weight: 700;
-        color: #999;
+        color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.8px;
         text-align: left;
-        background: #fafaf8;
-        border-bottom: 1px solid #e5e5e5;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
         white-space: nowrap;
     }
     .data-table tbody td {
         padding: 14px 20px;
         font-size: 14px;
-        color: #111111;
-        border-bottom: 1px solid #f5f1eb;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-color);
         vertical-align: middle;
+        transition: color 0.3s, border-color 0.3s;
     }
     .data-table tbody tr:last-child td {
         border-bottom: none;
     }
     .data-table tbody tr:hover {
-        background: #fafaf8;
+        background: var(--bg-secondary);
     }
 
     /* Custom Elements */
     .prod-rank {
         font-weight: 700;
         font-size: 15px;
-        color: #a6825c;
+        color: var(--accent-color);
         text-align: center;
         display: inline-block;
         width: 24px;
@@ -209,13 +265,13 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         height: 44px;
         border-radius: 6px;
         object-fit: cover;
-        background: #f5f1eb;
-        border: 1px solid #e5e5e5;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
         flex-shrink: 0;
     }
     .prod-name {
         font-weight: 600;
-        color: #111111;
+        color: var(--text-primary);
         line-height: 1.4;
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -225,9 +281,16 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     }
     .prod-cat {
         font-size: 11.5px;
-        color: #888;
+        color: var(--text-secondary);
         margin-top: 2px;
         font-weight: 500;
+    }
+
+    /* Customer block */
+    .customer-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
     }
 
     /* Badges */
@@ -240,51 +303,27 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         font-size: 12px;
         font-weight: 600;
         white-space: nowrap;
+        transition: background-color 0.3s, color 0.3s;
     }
-    .badge-success { background: #eafaf1; color: #27ae60; }
-    .badge-warning { background: #fdf6ec; color: #e6a23c; }
-    .badge-danger { background: #fef0f0; color: #f56c6c; }
-    .badge-ok { background: #f4f4f5; color: #909399; }
+    .badge-success { background: var(--success-bg); color: var(--success-color); }
+    .badge-warning { background: var(--warning-bg); color: var(--warning-color); }
+    .badge-danger { background: var(--danger-bg); color: var(--danger-color); }
+    .badge-info { background: var(--info-bg); color: var(--info-color); }
+    .badge-ok { background: var(--ok-bg); color: var(--ok-color); }
 
-    /* Dark Mode Overrides */
-    body.dark-mode .stat-card {
-        background: #1e1e1e;
-        border-color: #2a2a2a;
+    .recommendation-text {
+        font-weight: 600;
+        font-size: 13.5px;
     }
-    body.dark-mode .stat-value {
-        color: #ffffff;
-    }
-    body.dark-mode .section-card {
-        background: #1e1e1e;
-        border-color: #2a2a2a;
-    }
-    body.dark-mode .section-title {
-        color: #ffffff;
-    }
-    body.dark-mode .data-table thead th {
-        background: #1a1a1a;
-        border-bottom-color: #2a2a2a;
-    }
-    body.dark-mode .data-table tbody td {
-        color: #cccccc;
-        border-bottom-color: #252525;
-    }
-    body.dark-mode .data-table tbody tr:hover {
-        background: #252525;
-    }
-    body.dark-mode .prod-name {
-        color: #ffffff;
-    }
-    body.dark-mode .badge-success { background: rgba(39, 174, 96, 0.12); color: #2ecc71; }
-    body.dark-mode .badge-warning { background: rgba(230, 162, 60, 0.12); color: #e6a23c; }
-    body.dark-mode .badge-danger { background: rgba(245, 108, 108, 0.12); color: #f56c6c; }
-    body.dark-mode .badge-ok { background: rgba(144, 147, 153, 0.12); color: #a8abb2; }
+    .text-warning { color: var(--warning-color); }
+    .text-danger { color: var(--danger-color); }
+    .text-success { color: var(--success-color); }
 </style>
 
 <div class="page-header">
     <div class="page-header-left">
-        <div class="page-title">Phân tích Bán chạy</div>
-        <div class="page-subtitle">Phân tích doanh thu, tỷ trọng đóng góp và hiệu suất bán hàng toàn shop</div>
+        <div class="page-title">Phân tích dữ liệu</div>
+        <div class="page-subtitle">Hệ thống phân tích rủi ro khách hàng rời bỏ và hiệu suất tài chính sản phẩm</div>
     </div>
 </div>
 
@@ -330,10 +369,76 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     </div>
 </div>
 
-<!-- Section 2 & 3: Smart Analysis Table & Actionable Insights -->
+<!-- Section 2: Customer Churn Risk Prediction (TOP SECTION) -->
 <div class="section-card">
-    <h2 class="section-title">Danh sách hiệu suất bán hàng toàn hệ thống</h2>
-    <div style="overflow-x: auto;">
+    <h2 class="section-title">
+        <i class="fa-solid fa-user-minus" style="color: var(--danger-color);"></i> Top 10 Khách Hàng Có Nguy Cơ Rời Bỏ
+    </h2>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Khách Hàng</th>
+                    <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
+                    <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
+                    <th style="text-align: center; width: 180px;">Đơn Cuối Vào Ngày</th>
+                    <th style="text-align: right; width: 140px;">Số Ngày Xa Cách</th>
+                    <th style="padding-left: 30px; width: 180px;">Trạng Thái Dự Báo</th>
+                    <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($churn_customers)): ?>
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        Không phát hiện khách hàng có nguy cơ rời bỏ (DaysSinceLastOrder > 30)
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($churn_customers as $cust): 
+                        $days = (int)$cust['DaysSinceLastOrder'];
+                        $spent = (float)$cust['TotalSpent'];
+                        $orders_count = (int)$cust['TotalOrders'];
+
+                        $status_badge = '';
+                        $recommendation = '';
+
+                        if ($days >= 31 && $days <= 90 && ($spent >= 2000000 || $orders_count >= 2)) {
+                            $status_badge = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Nguy cơ rời bỏ </span>';
+                            $recommendation = '<span class="recommendation-text text-warning">Gửi Mail Tặng Voucher 15% </span>';
+                        } elseif ($days > 90) {
+                            $status_badge = '<span class="badge badge-danger"><i class="fa-solid fa-snowflake"></i> Đã rời bỏ </span>';
+                            $recommendation = '<span class="recommendation-text text-danger">Chiến dịch Re-marketing </span>';
+                        } else {
+                            $status_badge = '<span class="badge badge-ok"><i class="fa-solid fa-circle-check"></i> Vận hành ổn định </span>';
+                            $recommendation = '<span class="recommendation-text text-success">Chăm sóc &amp; Duy trì liên hệ</span>';
+                        }
+                    ?>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600; color: var(--text-primary);"><?= htmlspecialchars($cust['customer_name']) ?></div>
+                            <div class="customer-meta"><?= htmlspecialchars($cust['email'] ?? 'Không có email') ?></div>
+                        </td>
+                        <td style="text-align: right; font-weight: 600;"><?= number_format($orders_count) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($spent, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: center; color: var(--text-secondary);"><?= date('d/m/Y', strtotime($cust['LastOrderDate'])) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: var(--danger-color);"><?= number_format($days) ?> ngày</td>
+                        <td style="padding-left: 30px;"><?= $status_badge ?></td>
+                        <td style="padding-left: 20px;"><?= $recommendation ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Section 3: Product Financial Performance (BOTTOM SECTION) -->
+<div class="section-card">
+    <h2 class="section-title">
+        <i class="fa-solid fa-chart-pie" style="color: var(--accent-color);"></i> Danh sách hiệu suất tài chính sản phẩm toàn hệ thống
+    </h2>
+    <div class="table-responsive">
         <table class="data-table">
             <thead>
                 <tr>
@@ -344,14 +449,14 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <th style="text-align: right; width: 120px;">Giá bán</th>
                     <th style="text-align: right; width: 140px;">Doanh thu</th>
                     <th style="text-align: right; width: 160px;">Tỷ trọng doanh thu</th>
-                    <th style="padding-left: 30px;">Nhận định & Khuyến nghị</th>
+                    <th style="padding-left: 30px;">Nhận định &amp; Khuyến nghị</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($products)): ?>
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 40px; color: #aaa;">
-                        Không có sản phẩm nào
+                    <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        Không có sản phẩm nào đang hoạt động
                     </td>
                 </tr>
                 <?php else: ?>
@@ -368,20 +473,17 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         // Actionable Insight Badges Logic
                         $badges = [];
                         if ($rank <= 3) {
-                            $badges[] = '<span class="badge badge-success"><i class="fa-solid fa-star"></i> Best Seller ⭐</span>';
+                            $badges[] = '<span class="badge badge-success"><i class="fa-solid fa-star"></i> Best Seller </span>';
                         }
-                        if ($revenue_contribution > 15 && $stock >= 5) {
-                            $badges[] = '<span class="badge badge-warning" style="background: rgba(241, 196, 15, 0.1); color: #f1c40f;"><i class="fa-solid fa-money-bill-wave"></i> Chiếm tỷ trọng doanh thu lớn </span>';
+                        if ($revenue_contribution > 8) {
+                            $badges[] = '<span class="badge badge-warning"><i class="fa-solid fa-money-bill-wave"></i> Tỷ trọng doanh thu cao </span>';
                         }
-                        if ($sold > 10 && $stock < 5) {
-                            $badges[] = '<span class="badge badge-danger" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;"><i class="fa-solid fa-triangle-exclamation"></i> Đã hết hàng! </span>';
-                        }
-                        if ($revenue_contribution < 3 && $stock > 20) {
-                            $badges[] = '<span class="badge badge-danger" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;"><i class="fa-solid fa-chart-line-down"></i> Cần Kích Cầu </span>';
+                        if ($revenue_contribution < 1 && $sold < 50 && $stock > 300) {
+                            $badges[] = '<span class="badge badge-danger"><i class="fa-solid fa-chart-line-down"></i> Cần Kích Cầu </span>';
                         }
                         
                         if (empty($badges)) {
-                            $badges[] = '<span class="badge badge-ok"><i class="fa-solid fa-check"></i> Vận hành ổn định ✅</span>';
+                            $badges[] = '<span class="badge badge-ok"><i class="fa-solid fa-check"></i> Vận Hành Ổn Định </span>';
                         }
                     ?>
                     <tr>
@@ -401,8 +503,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             </div>
                         </td>
                         <td style="text-align: right; font-weight: 600;"><?= number_format($sold) ?></td>
-                        <td style="text-align: right; font-weight: 600; color: #a6825c;"><?= number_format($stock) ?></td>
-                        <td style="text-align: right; color: #666;"><?= number_format($price, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: right; font-weight: 600; color: var(--accent-color);"><?= number_format($stock) ?></td>
+                        <td style="text-align: right; color: var(--text-secondary);"><?= number_format($price, 0, ',', '.') ?>đ</td>
                         <td style="text-align: right; font-weight: 600;"><?= number_format($prod_revenue, 0, ',', '.') ?>đ</td>
                         <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($revenue_contribution, 2) ?>%</td>
                         <td style="padding-left: 30px;">

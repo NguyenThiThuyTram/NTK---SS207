@@ -15,7 +15,7 @@ $page_titles = [
     'flash_sales.php'=> 'Flash Sale',
     'accounts.php'   => 'Tài khoản',
     'chat.php'       => 'Live Chat',
-    'best_sellers.php' => 'Phân tích Bán chạy',
+    'best_sellers.php' => 'Phân tích dữ liệu',
 ];
 $current_page_title = $page_titles[$admin_current_page] ?? '';
 // ── THÔNG BÁO ADMIN ────────────────────────────────────────────
@@ -1523,7 +1523,7 @@ try {
             <i class="fa-solid fa-comments"></i> Live Chat
         </a>
         <a href="best_sellers.php" class="nav-item <?= ($admin_current_page === 'best_sellers.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-chart-line"></i> Phân tích Bán chạy
+            <i class="fa-solid fa-chart-line"></i> Phân tích dữ liệu
         </a>
     </nav>
 
