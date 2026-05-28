@@ -124,6 +124,15 @@ if ($user_id_session && $product) {
     $is_in_wishlist = (intval($stmt_wl->fetchColumn()) > 0);
 }
 
+// HÀM ẨN BỚT KÝ TỰ TÊN NGƯỜI DÙNG (dạng b***e)
+function maskUsername($name) {
+    if (empty($name)) return 'Ẩn danh';
+    $name = trim($name);
+    $len = mb_strlen($name, 'UTF-8');
+    if ($len <= 2) return mb_substr($name, 0, 1, 'UTF-8') . '***';
+    return mb_substr($name, 0, 1, 'UTF-8') . '***' . mb_substr($name, -1, 1, 'UTF-8');
+}
+
 // 8. HÀM ĐỆ QUY HIỂN THỊ LUỒNG TƯƠNG TÁC CON
 function renderReviewReplies($conn, $parent_id, $product_id, $user_id_session, $user_role_session) {
     $sql = "SELECT r.*, u.fullname, u.role,
@@ -155,7 +164,7 @@ function renderReviewReplies($conn, $parent_id, $product_id, $user_id_session, $
 
         echo '<div class="review-item reply-item" style="background:'.$bg_color.'; border-left:'.$border_left.'; padding:12px; margin-bottom:10px; border-radius:4px;">';
         echo '  <div style="display:flex; justify-content:space-between; font-size:13px;">';
-        echo '      <b>' . htmlspecialchars($reply['fullname'] ?? 'Khách hàng') . $label . '</b>';
+        echo '      <b>' . htmlspecialchars($reply['role'] == 1 ? ($reply['fullname'] ?? 'Quản trị viên') : maskUsername($reply['fullname'])) . $label . '</b>';
         echo '      <small style="color:#aaa;">' . date('d/m/Y H:i', strtotime($reply['created_at'])) . '</small>';
         echo '  </div>';
         echo '  <p style="font-size:13.5px; color:#444; margin:5px 0;">' . htmlspecialchars($reply['comment']) . '</p>';
@@ -590,7 +599,7 @@ include 'includes/header.php';
                             ?>
                                 <div class="review-item root-item" style="margin-bottom: 20px; border-bottom: 1px solid #f5f1eb; padding-bottom: 15px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <b><?= htmlspecialchars($rev['fullname'] ?: 'Khách hàng ẩn danh') ?></b>
+                                        <b><?= htmlspecialchars(maskUsername($rev['fullname'])) ?></b>
                                         <span style="color: #ffc107; font-size:13px;">
                                             <?php for ($i = 1; $i <= 5; $i++) echo ($i <= $rev['rating']) ? '★' : '☆'; ?>
                                             <small style="color: #999; margin-left:10px; font-family:sans-serif;"><?= date('d/m/Y', strtotime($rev['created_at'])) ?></small>
@@ -599,14 +608,14 @@ include 'includes/header.php';
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
                                     <?php if (!empty($rev['image'])): ?>
                                         <div style="margin: 10px 0; display: inline-block;">
-                                            <a href="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" target="_blank">
-                                                <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover; cursor: zoom-in;">
-                                            </a>
+                                            <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" 
+                                                 onclick="openReviewLightbox(this.src)" 
+                                                 style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover; cursor: zoom-in;">
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($rev['video'])): ?>
                                         <div style="margin: 10px 0; display: inline-block; vertical-align: top; margin-left: 10px;">
-                                            <video controls style="max-width: 200px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover;">
+                                            <video controls width="150" height="150" style="border-radius: 6px; border: 1px solid #eee; object-fit: cover;">
                                                 <source src="<?= $_BASE ?>/<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
                                                 Trình duyệt không hỗ trợ phát video.
                                             </video>
@@ -1043,6 +1052,28 @@ include 'includes/header.php';
             }
         });
     }
+</script>
+
+<!-- Lightbox phóng to ảnh đánh giá -->
+<div id="review-lightbox" onclick="closeReviewLightbox()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; align-items:center; justify-content:center; cursor:zoom-out;">
+    <img id="review-lightbox-img" src="" alt="Phóng to ảnh đánh giá" style="max-width:90%; max-height:90%; border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,0.5); object-fit:contain;">
+    <button onclick="closeReviewLightbox()" style="position:absolute; top:20px; right:30px; background:none; border:none; color:#fff; font-size:32px; cursor:pointer; font-weight:300; line-height:1;">&times;</button>
+</div>
+
+<script>
+    function openReviewLightbox(src) {
+        var lb = document.getElementById('review-lightbox');
+        document.getElementById('review-lightbox-img').src = src;
+        lb.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    function closeReviewLightbox() {
+        document.getElementById('review-lightbox').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeReviewLightbox();
+    });
 </script>
 
 <?php include 'includes/footer.php'; ?>
