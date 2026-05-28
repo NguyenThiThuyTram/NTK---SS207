@@ -1,28 +1,19 @@
 <?php
-$dirs = [
-    __DIR__ . '/assets/uploads',
-    __DIR__ . '/assets/uploads/reviews',
-    __DIR__ . '/assets/uploads/returns',
-    __DIR__ . '/assets/images/products'
-];
-
-echo "<h3>Đang cấp quyền ghi (CHMOD 777) cho các thư mục upload...</h3>";
-echo "<ul>";
-foreach ($dirs as $dir) {
-    if (!is_dir($dir)) {
-        if (@mkdir($dir, 0777, true)) {
-            echo "<li>Đã TẠO và cấp quyền: $dir</li>";
-        } else {
-            echo "<li style='color:red;'>KHÔNG THỂ tạo thư mục: $dir (Bạn cần tạo thủ công)</li>";
-        }
-    } else {
-        if (@chmod($dir, 0777)) {
-            echo "<li>Đã CẤP QUYỀN 777: $dir</li>";
-        } else {
-            echo "<li style='color:orange;'>Không thể CHMOD tự động: $dir (Hãy cấp quyền ghi thủ công)</li>";
-        }
-    }
+echo "<h3>System Diagnostics</h3>";
+echo "PHP User: " . exec('whoami') . "<br>";
+$dir = __DIR__ . '/assets/uploads/reviews';
+echo "Target Dir: $dir <br>";
+echo "Exists? " . (is_dir($dir) ? "YES" : "NO") . "<br>";
+if (is_dir($dir)) {
+    echo "Permissions: " . substr(sprintf('%o', fileperms($dir)), -4) . "<br>";
+    echo "Is Writable? " . (is_writable($dir) ? "YES" : "NO") . "<br>";
 }
-echo "</ul>";
-echo "<p style='color:green; font-weight:bold;'>Xong! Bây giờ bạn có thể quay lại upload ảnh bình thường.</p>";
-echo "<p><em>Ghi chú: Sau khi upload thành công, bạn có thể xóa file này khỏi server để bảo mật.</em></p>";
+$test_file = $dir . '/test.txt';
+$res = @file_put_contents($test_file, 'test');
+if ($res !== false) {
+    echo "Test Write: SUCCESS<br>";
+    @unlink($test_file);
+} else {
+    $err = error_get_last();
+    echo "Test Write: FAILED - " . ($err['message'] ?? 'Unknown error') . "<br>";
+}
