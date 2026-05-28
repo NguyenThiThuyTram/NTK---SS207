@@ -882,6 +882,18 @@ body.dark-mode #return-modal-detail textarea::placeholder {
     document.getElementById('review-form-detail').addEventListener('submit', function (e) {
         e.preventDefault();
         var form = e.currentTarget;
+
+        var imageFile = document.getElementById('review-image-detail').files[0];
+        var videoFile = document.getElementById('review-video-detail').files[0];
+        if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+            alert('Hình ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
+            return;
+        }
+        if (videoFile && videoFile.size > 15 * 1024 * 1024) {
+            alert('Video quá lớn! Vui lòng chọn video dưới 15MB.');
+            return;
+        }
+
         var formData = new FormData(form);
 
         fetch('../../ajax_review.php', {

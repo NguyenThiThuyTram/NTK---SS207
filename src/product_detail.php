@@ -589,14 +589,16 @@ include 'includes/header.php';
                                         </span>
                                     </div>
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
-                                    <?php /* if (!empty($rev['image'])): ?>
+                                    <?php if (!empty($rev['image'])): ?>
                                         <div style="margin: 10px 0; display: inline-block;">
-                                            <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 190px; max-height: 190px; border-radius: 10px; border: 1px solid #eee; object-fit: cover;">
+                                            <a href="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" target="_blank">
+                                                <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover; cursor: zoom-in;">
+                                            </a>
                                         </div>
-                                    <?php endif; */ ?>
+                                    <?php endif; ?>
                                     <?php if (!empty($rev['video'])): ?>
                                         <div style="margin: 10px 0; display: inline-block; vertical-align: top; margin-left: 10px;">
-                                            <video controls style="max-width: 240px; max-height: 190px; border-radius: 10px; border: 1px solid #eee; object-fit: cover;">
+                                            <video controls style="max-width: 200px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover;">
                                                 <source src="<?= $_BASE ?>/<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
                                                 Trình duyệt không hỗ trợ phát video.
                                             </video>
@@ -962,6 +964,15 @@ include 'includes/header.php';
         }
 
         if (!comment) { alert('Vui lòng nhập nội dung!'); return; }
+
+        if (reviewImage && reviewImage.size > 5 * 1024 * 1024) {
+            alert('Hình ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
+            return;
+        }
+        if (reviewVideo && reviewVideo.size > 15 * 1024 * 1024) {
+            alert('Video quá lớn! Vui lòng chọn video dưới 15MB.');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('action', 'submit_comment');

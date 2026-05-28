@@ -58,6 +58,12 @@ if ($action === 'submit_comment') {
             exit;
         }
 
+        // Giới hạn kích thước ảnh tối đa 5MB
+        if ($_FILES['review_image']['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.']);
+            exit;
+        }
+
         $upload_dir = __DIR__ . '/assets/uploads/reviews/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
@@ -77,6 +83,12 @@ if ($action === 'submit_comment') {
         $file_ext = strtolower(pathinfo($_FILES['review_video']['name'], PATHINFO_EXTENSION));
         if (!in_array($file_ext, $allowed_video_ext, true)) {
             echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Chỉ cho phép tập tin video MP4, MOV, AVI, MKV, WEBM.']);
+            exit;
+        }
+
+        // Giới hạn kích thước video tối đa 15MB
+        if ($_FILES['review_video']['size'] > 15 * 1024 * 1024) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Kích thước video quá lớn! Vui lòng chọn video dưới 15MB.']);
             exit;
         }
 
