@@ -478,7 +478,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         if ($revenue_contribution > 8) {
                             $badges[] = '<span class="badge badge-warning"><i class="fa-solid fa-money-bill-wave"></i> Tỷ trọng doanh thu cao </span>';
                         }
-                        if ($revenue_contribution < 1 && $sold < 50 && $stock > 300) {
+                        if ($revenue_contribution < 1.5  && $stock > 300) {
                             $badges[] = '<span class="badge badge-danger"><i class="fa-solid fa-chart-line-down"></i> Cần Kích Cầu </span>';
                         }
                         
