@@ -609,10 +609,13 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                 <?php if ($os === 3 && !empty($item['product_id'])): ?>
                     <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
                         <?php if (!in_array($item['product_id'], $reviewed_products)): ?>
-                            <a href="../../product_detail.php?id=<?= htmlspecialchars($item['product_id']) ?>&open_review=1"
-                               class="od-action-btn od-btn-outline" style="padding:8px 12px; font-size:13px;">
+                            <button type="button"
+                               class="od-action-btn od-btn-outline" style="padding:8px 12px; font-size:13px;"
+                               data-product-id="<?= htmlspecialchars($item['product_id']) ?>"
+                               data-product-name="<?= htmlspecialchars($item['product_name']) ?>"
+                               onclick="openReviewModal(this)">
                                 <i class="fa-regular fa-star"></i> Đánh giá sản phẩm
-                            </a>
+                            </button>
                         <?php else: ?>
                             <span style="font-size:13px; color:#27ae60; display:flex; align-items:center; gap:5px;">
                                 <i class="fa-solid fa-circle-check"></i> Đã đánh giá
@@ -743,7 +746,157 @@ body.dark-mode #return-modal-detail textarea::placeholder {
     </div>
 </div>
 
-<?php /* Form đánh giá đã được chuyển sang trang chi tiết sản phẩm (product_detail.php) */ ?>
+<!-- Modal Đánh giá sản phẩm -->
+<div id="review-modal-detail" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#fff; border-radius:10px; width:100%; max-width:540px; padding:28px; box-shadow:0 16px 40px rgba(0,0,0,0.2); position:relative; max-height:90vh; overflow-y:auto;">
+        <button type="button" onclick="closeReviewModalDetail()" style="position:absolute; top:12px; right:14px; border:none; background:transparent; font-size:22px; color:#555; cursor:pointer; line-height:1;">&times;</button>
+        <h3 style="margin:0 0 6px; font-size:18px; color:#2f1c00;"><i class="fa-regular fa-star" style="color:#f1c40f;"></i> Đánh giá sản phẩm</h3>
+        <p id="review-modal-product-detail" style="margin:0 0 18px; color:#888; font-size:13px; font-style:italic;"></p>
+
+        <div id="review-modal-msg" style="display:none; padding:10px 14px; border-radius:6px; margin-bottom:14px; font-size:13px;"></div>
+
+        <form id="review-form-detail" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="submit_comment">
+            <input type="hidden" name="product_id" id="review-product-id-detail" value="">
+            <input type="hidden" name="parent_id" value="">
+
+            <label style="display:block; font-weight:600; margin-bottom:6px; color:#333; font-size:14px;">Số sao <span style="color:#e74c3c;">*</span></label>
+            <select id="review-rating-detail" name="rating" required
+                    style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; margin-bottom:14px; font-size:14px;">
+                <option value="">-- Chọn số sao --</option>
+                <option value="5">5 ★★★★★ - Tuyệt vời</option>
+                <option value="4">4 ★★★★☆ - Tốt</option>
+                <option value="3">3 ★★★☆☆ - Bình thường</option>
+                <option value="2">2 ★★☆☆☆ - Không tốt</option>
+                <option value="1">1 ★☆☆☆☆ - Rất tệ</option>
+            </select>
+
+            <label style="display:block; font-weight:600; margin-bottom:6px; color:#333; font-size:14px;">Nhận xét <span style="color:#e74c3c;">*</span></label>
+            <textarea id="review-comment-detail" name="comment" rows="4" required
+                      style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; resize:vertical; font-size:14px; margin-bottom:14px; outline:none;"
+                      placeholder="Chia sẻ cảm nhận về sản phẩm..."></textarea>
+
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                <div style="flex:1; min-width:200px;">
+                    <label style="display:block; font-weight:600; margin-bottom:6px; color:#333; font-size:13px;">
+                        <i class="fa-regular fa-image" style="color:#a6825c;"></i> Hình ảnh (tùy chọn) — +50 điểm
+                    </label>
+                    <input type="file" id="review-image-detail" name="review_image" accept="image/*"
+                           style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+                    <div id="review-image-preview-detail" style="display:none; margin-top:8px;">
+                        <img src="" alt="Preview" style="max-width:100%; border-radius:6px; border:1px solid #eee; max-height:140px; object-fit:cover;">
+                    </div>
+                </div>
+                <div style="flex:1; min-width:200px;">
+                    <label style="display:block; font-weight:600; margin-bottom:6px; color:#333; font-size:13px;">
+                        <i class="fa-regular fa-circle-play" style="color:#a6825c;"></i> Video (tùy chọn) — +50 điểm
+                    </label>
+                    <input type="file" id="review-video-detail" name="review_video" accept="video/*"
+                           style="width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px;">
+                    <div id="review-video-preview-detail" style="display:none; margin-top:8px;">
+                        <video id="review-video-el-detail" controls style="max-width:100%; border-radius:6px; border:1px solid #eee; max-height:140px;"></video>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#fffbf0; border:1px solid #f5e6b2; border-radius:6px; padding:10px 14px; font-size:12px; color:#b8860b; margin-bottom:16px;">
+                <i class="fa-solid fa-circle-info"></i>
+                Viết đánh giá <strong>+50 điểm</strong> &bull;
+                Đính kèm ảnh <strong>+50 điểm</strong> &bull;
+                Đính kèm video <strong>+50 điểm</strong>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="closeReviewModalDetail()"
+                        style="flex:1; padding:12px; border:1px solid #ccc; background:#fff; border-radius:6px; color:#555; cursor:pointer; font-size:14px;">Hủy</button>
+                <button type="submit" id="review-submit-btn"
+                        style="flex:2; padding:12px; background:#2f1c00; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:600;">
+                    <i class="fa-regular fa-paper-plane"></i> Gửi Đánh Giá
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openReviewModal(button) {
+        var productId = button.getAttribute('data-product-id');
+        var productName = button.getAttribute('data-product-name');
+        document.getElementById('review-product-id-detail').value = productId;
+        document.getElementById('review-modal-product-detail').innerText = 'Sản phẩm: ' + productName;
+        document.getElementById('review-modal-detail').style.display = 'flex';
+        document.getElementById('review-form-detail').reset();
+        document.getElementById('review-image-preview-detail').style.display = 'none';
+        document.getElementById('review-video-preview-detail').style.display = 'none';
+        document.getElementById('review-modal-msg').style.display = 'none';
+    }
+
+    function closeReviewModalDetail() {
+        document.getElementById('review-modal-detail').style.display = 'none';
+    }
+
+    document.getElementById('review-image-detail').addEventListener('change', function () {
+        var file = this.files[0];
+        var preview = document.querySelector('#review-image-preview-detail img');
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) { preview.src = e.target.result; document.getElementById('review-image-preview-detail').style.display = 'block'; };
+            reader.readAsDataURL(file);
+        } else {
+            document.getElementById('review-image-preview-detail').style.display = 'none'; preview.src = '';
+        }
+    });
+
+    document.getElementById('review-video-detail').addEventListener('change', function () {
+        var file = this.files[0];
+        var previewEl = document.getElementById('review-video-el-detail');
+        var previewCtn = document.getElementById('review-video-preview-detail');
+        if (file) {
+            previewEl.src = URL.createObjectURL(file);
+            previewCtn.style.display = 'block';
+        } else {
+            previewCtn.style.display = 'none'; previewEl.src = '';
+        }
+    });
+
+    document.getElementById('review-form-detail').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var imageFile = document.getElementById('review-image-detail').files[0];
+        var videoFile = document.getElementById('review-video-detail').files[0];
+        if (imageFile && imageFile.size > 5 * 1024 * 1024) { alert('Hình ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.'); return; }
+        if (videoFile && videoFile.size > 15 * 1024 * 1024) { alert('Video quá lớn! Vui lòng chọn video dưới 15MB.'); return; }
+
+        var btn = document.getElementById('review-submit-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
+
+        var formData = new FormData(this);
+
+        fetch('../../ajax_review.php', { method: 'POST', body: formData })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var msgEl = document.getElementById('review-modal-msg');
+            if (data.status === 'success') {
+                msgEl.style.background = '#eafbf0'; msgEl.style.color = '#1e8449'; msgEl.style.border = '1px solid #a9dfbf';
+                var pts = data.points_earned > 0 ? ' Bạn được cộng ' + data.points_earned + ' điểm Loyalty!' : '';
+                msgEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> Gửi đánh giá thành công!' + pts;
+                msgEl.style.display = 'block';
+                setTimeout(function () { window.location.reload(); }, 1800);
+            } else {
+                msgEl.style.background = '#fff0f0'; msgEl.style.color = '#c0392b'; msgEl.style.border = '1px solid #f5c6cb';
+                msgEl.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> ' + (data.message || 'Không thể gửi đánh giá.');
+                msgEl.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> Gửi Đánh Giá';
+            }
+        })
+        .catch(function () {
+            alert('Có lỗi xảy ra. Vui lòng thử lại.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-regular fa-paper-plane"></i> Gửi Đánh Giá';
+        });
+    });
+</script>
 
 <!-- Modal Trả hàng (chỉ cho status=3) -->
 <?php if ($os === 3): ?>

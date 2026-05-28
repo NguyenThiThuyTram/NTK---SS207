@@ -167,8 +167,9 @@ try {
 
     // ── 9. Cộng điểm thưởng Loyalty ────────────────────────────────────────
     $reward_points = 0;
-    if (!empty($comment)) $reward_points += 50;
-    if (!empty($review_image) || !empty($review_video)) $reward_points += 50;
+    if (!empty($comment)) $reward_points += 50;         // +50 điểm viết đánh giá
+    if (!empty($review_image)) $reward_points += 50;   // +50 điểm đính kèm hình ảnh
+    if (!empty($review_video)) $reward_points += 50;   // +50 điểm đính kèm video
 
     if ($reward_points > 0) {
         addLoyaltyPoints($conn, $user_id, $reward_points, "đánh giá sản phẩm");

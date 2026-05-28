@@ -537,39 +537,7 @@ include 'includes/header.php';
                 <div class="product-feedback" style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
                     <h3 style="color: #a6825c; margin-bottom: 25px;">Đánh giá và tương tác từ khách hàng</h3>
                     
-                    <?php if ($can_user_review): ?>
-                        <div class="main-review-form" style="margin-bottom: 30px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
-                            <p style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Viết đánh giá của bạn:</p>
-                            <textarea id="main_comment_text" style="width:100%; height:70px; padding:10px; border:1px solid #ddd; outline:none; resize:none;" placeholder="Chia sẻ cảm nhận về sản phẩm..."></textarea>
-                            <div style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px;">
-                                <div style="flex:1; min-width:180px;">
-                                    <label style="font-size:13px; color:#666;">Số sao: </label>
-                                    <select id="main_rating_val" style="padding:8px 10px; border:1px solid #ddd; border-radius:4px; width:100%;">
-                                        <option value="5">5 ★</option>
-                                        <option value="4">4 ★</option>
-                                        <option value="3">3 ★</option>
-                                        <option value="2">2 ★</option>
-                                        <option value="1">1 ★</option>
-                                    </select>
-                                </div>
-                                <div style="flex:1; min-width:240px;">
-                                    <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">Hình ảnh (tùy chọn):</label>
-                                    <input id="main_review_image" type="file" accept="image/*" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
-                                    <div id="main_review_image_preview" style="display:none; margin-top:10px;"><img src="" alt="Preview" style="max-width:100%; border-radius:6px; border:1px solid #eee;"></div>
-                                </div>
-                                <div style="flex:1; min-width:240px;">
-                                    <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">Video (tùy chọn):</label>
-                                    <input id="main_review_video" type="file" accept="video/*" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
-                                    <div id="main_review_video_preview" style="display:none; margin-top:10px;"><video controls style="max-width:100%; border-radius:6px; border:1px solid #eee;"><source src="" type="video/mp4"></video></div>
-                                </div>
-                                <button type="button" onclick="submitReview(0)" style="background:#2f1c00; color:#fff; border:none; padding:12px 24px; border-radius:4px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Gửi Đánh Giá</button>
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <div style="background: #fffbf0; color: #b8860b; padding: 12px 16px; border-radius: 6px; font-size: 13.5px; margin-bottom: 25px; border: 1px solid #f5e6b2;">
-                            <i class="fa-solid fa-circle-info"></i> Chỉ những khách hàng đã mua và nhận sản phẩm thành công tại NTK Fashion mới có quyền để lại đánh giá.
-                        </div>
-                    <?php endif; ?>
+
 
                     <div class="review-list">
                         <?php if (empty($root_reviews)): ?>
@@ -594,7 +562,7 @@ include 'includes/header.php';
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
                                     <?php if (!empty($rev['image'])): ?>
                                         <div style="margin: 10px 0; display: inline-block;">
-                                            <img src="<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" 
+                                            <img src="https://ntkfashion.me/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" 
                                                  onclick="openReviewLightbox(this.src)" 
                                                  style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover; cursor: zoom-in;">
                                         </div>
@@ -602,8 +570,8 @@ include 'includes/header.php';
                                     <?php if (!empty($rev['video'])): ?>
                                         <div style="margin: 10px 0; display: inline-block; vertical-align: top; margin-left: 10px;">
                                             <video controls width="200" style="border-radius: 6px; border: 1px solid #eee; max-width: 100%;">
-                                                <source src="<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
-                                                <source src="<?= htmlspecialchars($rev['video']) ?>">
+                                                <source src="https://ntkfashion.me/<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
+                                                <source src="https://ntkfashion.me/<?= htmlspecialchars($rev['video']) ?>">
                                                 Trình duyệt không hỗ trợ phát video.
                                             </video>
                                         </div>
