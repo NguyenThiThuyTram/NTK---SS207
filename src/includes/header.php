@@ -416,13 +416,28 @@ try {
                 sseUrl.searchParams.set('last_notif_id', lastNotifId);
             }
 
-            // 2. Nhận tin nhắn chat mới (Sẽ xử lý sâu hơn ở phần Chat)
+            // 2. Nhận tin nhắn chat mới
             if (data.chat_messages && data.chat_messages.length > 0) {
-                if (typeof window.handleNewChatMessage === 'function') {
-                    window.handleNewChatMessage(data.chat_messages);
-                } else {
-                    // Nếu chưa mở khung chat, hiển thị thông báo
-                    showToast('Tin nhắn mới', 'Bạn có tin nhắn chưa đọc.');
+                const last = data.chat_messages[data.chat_messages.length - 1];
+                lastChatId = Math.max(lastChatId, parseInt(last.id));
+                sseUrl.searchParams.set('last_chat_id', lastChatId);
+
+                const hasNewFromStaff = data.chat_messages.some(msg => msg.sender_id !== <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>);
+                
+                if (hasNewFromStaff) {
+                    const chatbox = document.getElementById('ntk-chatbox');
+                    const chatMode = document.getElementById('chat-mode');
+                    const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && chatMode && chatMode.value === 'human';
+
+                    if (isChatboxOpenAndHuman) {
+                        if (typeof window.handleNewChatMessage === 'function') {
+                            window.handleNewChatMessage(data.chat_messages);
+                        }
+                    } else {
+                        // Lấy nội dung tin nhắn cuối cùng để hiển thị trên toast
+                        const lastMsgContent = last.message;
+                        showChatToast('Tin nhắn mới từ nhân viên', lastMsgContent);
+                    }
                 }
             }
 
@@ -471,6 +486,33 @@ try {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 5000);
+        }
+
+        function showChatToast(title, message) {
+            const container = document.getElementById('ntk-toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'ntk-toast';
+            toast.style.cursor = 'pointer';
+            toast.innerHTML = `
+                <i class="fa-solid fa-comments" style="color: #f39c12; margin-top: 2px;"></i>
+                <div class="ntk-toast-content">
+                    <div class="ntk-toast-title">${title}</div>
+                    <div class="ntk-toast-msg">${message}</div>
+                </div>
+                <button class="ntk-toast-close" onclick="event.stopPropagation(); this.parentElement.remove()">&times;</button>
+            `;
+            toast.onclick = function() {
+                if (typeof window.openUserChat === 'function') {
+                    window.openUserChat();
+                }
+                toast.remove();
+            };
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
         }
     </script>
     <?php endif; ?>

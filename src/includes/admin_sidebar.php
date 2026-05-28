@@ -1957,6 +1957,27 @@ eventSource.addEventListener('message', function(e) {
             }
         });
     }
+
+    // Xử lý tin nhắn chat mới (realtime cho admin)
+    if (data.chat_messages && data.chat_messages.length > 0) {
+        data.chat_messages.forEach(function(m) {
+            // Chỉ xử lý tin nhắn gửi tới admin (receiver_id == '0')
+            if (m.receiver_id == '0') {
+                const isChattingWithSameUser = window.location.pathname.includes('chat.php') && 
+                                               typeof window.currentChatUserId !== 'undefined' && 
+                                               window.currentChatUserId === m.sender_id;
+                
+                if (!isChattingWithSameUser) {
+                    showChatToast('Tin nhắn mới từ ' + (m.sender_name || 'Khách hàng'), m.message, m.sender_id);
+                }
+            }
+        });
+        
+        // Cập nhật lại mốc lastChatId trên URL EventSource để tránh nhận lại tin cũ
+        const lastChat = data.chat_messages[data.chat_messages.length - 1];
+        const lastChatIdVal = parseInt(lastChat.id);
+        sseUrl.searchParams.set('last_chat_id', lastChatIdVal);
+    }
 });
 
 function showToast(title, message) {
@@ -1974,6 +1995,28 @@ function showToast(title, message) {
         toast.classList.remove('show');
         setTimeout(() => { toast.remove(); }, 300);
     }, 4000);
+}
+
+function showChatToast(title, message, senderId) {
+    var container = document.getElementById('toast-container');
+    if (!container) return;
+    
+    var toast = document.createElement('div');
+    toast.className = 'ntk-toast';
+    toast.style.cursor = 'pointer';
+    toast.innerHTML = '<div class="ntk-toast-title"><i class="fa-solid fa-comments" style="color: #a6825c; margin-right: 6px;"></i>' + title + '</div><div class="ntk-toast-message">' + message + '</div>';
+    
+    toast.onclick = function() {
+        window.location.href = 'chat.php?uid=' + senderId;
+    };
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => { toast.classList.add('show'); }, 10);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => { toast.remove(); }, 300);
+    }, 5000);
 }
 </script>
 

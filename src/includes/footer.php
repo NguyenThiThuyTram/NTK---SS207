@@ -484,6 +484,25 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         }
     }
 
+    // Hàm mở khung chat và focus ô nhập liệu khi click thông báo
+    window.openUserChat = function() {
+        const chatbox = document.getElementById('ntk-chatbox');
+        const selectMode = document.getElementById('chat-mode');
+        if (chatbox) {
+            chatbox.style.display = 'flex';
+        }
+        if (selectMode && selectMode.value !== 'human') {
+            selectMode.value = 'human';
+            loadChatHistory();
+        } else {
+            loadChatHistory(true);
+        }
+        setTimeout(() => {
+            const input = document.getElementById('ntk-chat-input');
+            if (input) input.focus();
+        }, 150);
+    };
+
     // Hook nhận tin nhắn từ SSE
     if (typeof window.handleNewChatMessage === 'undefined' || window.handleNewChatMessage.name !== 'globalHandleNewChatMessage') {
         window.handleNewChatMessage = function globalHandleNewChatMessage(messages) {
@@ -498,15 +517,11 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
             });
 
             if (hasNewFromStaff) {
-                // Tự động mở hộp chat nếu chưa mở
-                if (chatbox.style.display !== 'flex') {
-                    chatbox.style.display = 'flex';
+                // Chỉ tự động tải lịch sử nếu hộp chat đang mở và đang ở tab nhân viên (đảm bảo real-time không cần reload)
+                const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && selectMode && selectMode.value === 'human';
+                if (isChatboxOpenAndHuman) {
+                    loadChatHistory(true);
                 }
-                // Tự chuyển sang tab chat nhân viên và load lại
-                if (selectMode && selectMode.value !== 'human') {
-                    selectMode.value = 'human';
-                }
-                loadChatHistory(true);
             }
         };
     }

@@ -545,10 +545,17 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </div>
 
 <script>
-    // Cuộn xuống cuối khung chat
+    // Đăng ký biến currentChatUserId toàn cục để admin_sidebar nhận biết
+    window.currentChatUserId = <?= json_encode($current_user) ?>;
+
+    // Cuộn xuống cuối khung chat và focus ô nhập liệu
     const chatContainer = document.getElementById('chat-messages-container');
     if (chatContainer) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    const msgInput = document.getElementById('msg-input');
+    if (msgInput) {
+        msgInput.focus();
     }
 
     // Lọc danh sách khách hàng tại sidebar
@@ -598,6 +605,12 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             const data = await response.json();
             if (!data.success) {
                 console.error("Gửi tin thất bại: ", data.message);
+                chatContainer.innerHTML += `
+                    <div class="msg-group system-error" style="align-self: center; background: #fdf0ef; color: #c0392b; font-size: 11px; padding: 6px 12px; border-radius: 8px; margin: 4px 0; border: 1px solid #f87171;">
+                        <i class="fa-solid fa-circle-exclamation"></i> Gửi tin thất bại: ${data.message}
+                    </div>
+                `;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             } else {
                 // Cập nhật preview của sidebar
                 const previewEl = document.getElementById('preview-' + <?= json_encode($current_user) ?>);
@@ -614,6 +627,12 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             }
         } catch (e) {
             console.error("Lỗi kết nối gửi tin: ", e);
+            chatContainer.innerHTML += `
+                <div class="msg-group system-error" style="align-self: center; background: #fdf0ef; color: #c0392b; font-size: 11px; padding: 6px 12px; border-radius: 8px; margin: 4px 0; border: 1px solid #f87171;">
+                    <i class="fa-solid fa-circle-exclamation"></i> Lỗi kết nối gửi tin nhắn.
+                </div>
+            `;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     }
 
