@@ -9,7 +9,7 @@ function format_admin_chat_message($msg) {
     $escaped = htmlspecialchars($msg);
     // Thay thế product_detail.php?id=XX bằng link bấm được
     $escaped = preg_replace(
-        '/product_detail\.php\?id=(\d+)/i',
+        '/product_detail\.php\?id=([a-zA-Z0-9_-]+)/i',
         '<a href="../product_detail.php?id=$1" target="_blank" style="color: #a6825c; text-decoration: underline; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Xem sản phẩm <i class="fa-solid fa-up-right-from-square" style="font-size: 10px;"></i></a>',
         $escaped
     );
@@ -783,7 +783,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         let escaped = escapeHTML(msg);
         const pathPrefix = isForAdmin ? '../' : '';
         escaped = escaped.replace(
-            /product_detail\.php\?id=(\d+)/gi,
+            /product_detail\.php\?id=([a-zA-Z0-9_-]+)/gi,
             `<a href="${pathPrefix}product_detail.php?id=$1" target="_blank" style="color: #a6825c; text-decoration: underline; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Xem sản phẩm <i class="fa-solid fa-up-right-from-square" style="font-size: 10px;"></i></a>`
         );
         escaped = escaped.replace(

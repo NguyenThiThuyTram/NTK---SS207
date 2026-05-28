@@ -381,7 +381,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         if (!msg) return '';
         let escaped = escapeHTML(msg);
         escaped = escaped.replace(
-            /product_detail\.php\?id=(\d+)/gi,
+            /product_detail\.php\?id=([a-zA-Z0-9_-]+)/gi,
             `<a href="product_detail.php?id=$1" target="_blank" style="color: #a6825c; text-decoration: underline; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Xem sản phẩm <i class="fa-solid fa-up-right-from-square" style="font-size: 10px;"></i></a>`
         );
         escaped = escaped.replace(
