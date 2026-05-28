@@ -34,7 +34,8 @@ $sqls = [
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(100) DEFAULT NULL" => "orders.tracking_number",
     "ALTER TABLE order_returns ADD COLUMN IF NOT EXISTS admin_note VARCHAR(500) DEFAULT NULL" => "order_returns.admin_note",
     "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS parent_id INT(11) DEFAULT NULL" => "reviews.parent_id",
-    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS video VARCHAR(255) DEFAULT NULL" => "reviews.video",
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS image VARCHAR(500) DEFAULT NULL" => "reviews.image",
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS video VARCHAR(500) DEFAULT NULL" => "reviews.video",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tier_discount_value DECIMAL(12,2) DEFAULT 0 AFTER discount_value" => "orders.tier_discount_value",
     "CREATE TABLE IF NOT EXISTS notifications (
         noti_id INT(11) NOT NULL AUTO_INCREMENT,
