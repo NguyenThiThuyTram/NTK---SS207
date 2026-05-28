@@ -1960,23 +1960,28 @@ eventSource.addEventListener('message', function(e) {
 
     // Xử lý tin nhắn chat mới (realtime cho admin)
     if (data.chat_messages && data.chat_messages.length > 0) {
+        let maxMsgId = lastChatId;
         data.chat_messages.forEach(function(m) {
-            // Chỉ xử lý tin nhắn gửi tới admin (receiver_id == '0')
-            if (m.receiver_id == '0') {
-                const isChattingWithSameUser = window.location.pathname.includes('chat.php') && 
-                                               typeof window.currentChatUserId !== 'undefined' && 
-                                               window.currentChatUserId === m.sender_id;
+            const msgId = parseInt(m.id);
+            if (msgId > lastChatId) {
+                maxMsgId = Math.max(maxMsgId, msgId);
                 
-                if (!isChattingWithSameUser) {
-                    showChatToast('Tin nhắn mới từ ' + (m.sender_name || 'Khách hàng'), m.message, m.sender_id);
+                // Chỉ xử lý tin nhắn gửi tới admin (receiver_id == '0')
+                if (m.receiver_id == '0') {
+                    const isChattingWithSameUser = window.location.pathname.includes('chat.php') && 
+                                                   typeof window.currentChatUserId !== 'undefined' && 
+                                                   window.currentChatUserId === m.sender_id;
+                    
+                    if (!isChattingWithSameUser) {
+                        showChatToast('Tin nhắn mới từ ' + (m.sender_name || 'Khách hàng'), m.message, m.sender_id);
+                    }
                 }
             }
         });
         
         // Cập nhật lại mốc lastChatId trên URL EventSource để tránh nhận lại tin cũ
-        const lastChat = data.chat_messages[data.chat_messages.length - 1];
-        const lastChatIdVal = parseInt(lastChat.id);
-        sseUrl.searchParams.set('last_chat_id', lastChatIdVal);
+        lastChatId = maxMsgId;
+        sseUrl.searchParams.set('last_chat_id', lastChatId);
     }
 });
 

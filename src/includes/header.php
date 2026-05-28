@@ -418,11 +418,32 @@ try {
 
             // 2. Nhận tin nhắn chat mới
             if (data.chat_messages && data.chat_messages.length > 0) {
-                const last = data.chat_messages[data.chat_messages.length - 1];
-                lastChatId = Math.max(lastChatId, parseInt(last.id));
-                sseUrl.searchParams.set('last_chat_id', lastChatId);
+                let hasNewFromStaff = false;
+                let maxMsgId = lastChatId;
 
-                const hasNewFromStaff = data.chat_messages.some(msg => msg.sender_id !== <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>);
+                data.chat_messages.forEach(msg => {
+                    const msgId = parseInt(msg.id);
+                    if (msgId > lastChatId) {
+                        maxMsgId = Math.max(maxMsgId, msgId);
+                        
+                        if (msg.sender_id !== <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>) {
+                            hasNewFromStaff = true;
+                            
+                            const chatbox = document.getElementById('ntk-chatbox');
+                            const chatMode = document.getElementById('chat-mode');
+                            const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && chatMode && chatMode.value === 'human';
+
+                            if (!isChatboxOpenAndHuman) {
+                                // Lấy nội dung tin nhắn để hiển thị trên toast
+                                showChatToast('Tin nhắn mới từ nhân viên', msg.message);
+                            }
+                        }
+                    }
+                });
+
+                // Cập nhật lại lastChatId trong bộ nhớ JS để tránh nhận lại tin cũ ở các đợt sau
+                lastChatId = maxMsgId;
+                sseUrl.searchParams.set('last_chat_id', lastChatId);
                 
                 if (hasNewFromStaff) {
                     const chatbox = document.getElementById('ntk-chatbox');
@@ -433,10 +454,6 @@ try {
                         if (typeof window.handleNewChatMessage === 'function') {
                             window.handleNewChatMessage(data.chat_messages);
                         }
-                    } else {
-                        // Lấy nội dung tin nhắn cuối cùng để hiển thị trên toast
-                        const lastMsgContent = last.message;
-                        showChatToast('Tin nhắn mới từ nhân viên', lastMsgContent);
                     }
                 }
             }

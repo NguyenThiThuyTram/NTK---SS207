@@ -669,105 +669,115 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         const data = JSON.parse(e.data);
         if (data.chat_messages) {
             let receivedActiveUserMsg = false;
+            let maxMsgId = lastChatId;
             
             data.chat_messages.forEach(m => {
-                const senderId = m.sender_id;
-                const activeId = <?= json_encode($current_user) ?>;
-                
-                // Nếu khách hàng gửi tin nhắn chưa có trong sidebar thì tự động thêm mới vào DOM tức thì
-                if (m.receiver_id == '0') {
-                    let itemEl = document.querySelector(`.user-item[data-id="${senderId}"]`);
-                    if (!itemEl) {
-                        const initials = m.sender_name ? m.sender_name.charAt(0).toUpperCase() : 'U';
-                        const name = m.sender_name || 'Khách hàng';
-                        const listItems = document.getElementById('user-list-items');
-                        if (listItems) {
-                            const newHtml = `
-                                <a href="?uid=${senderId}" class="user-item ${senderId === activeId ? 'active' : ''}" data-id="${senderId}" data-name="${name.toLowerCase()}">
-                                    <div class="user-avatar">${initials}</div>
-                                    <div class="user-info">
-                                        <div class="user-name-row">
-                                            <span class="user-fullname">${name}</span>
-                                            <span class="msg-time" id="time-${senderId}"></span>
+                const msgId = parseInt(m.id);
+                if (msgId > lastChatId) {
+                    maxMsgId = Math.max(maxMsgId, msgId);
+                    
+                    const senderId = m.sender_id;
+                    const activeId = <?= json_encode($current_user) ?>;
+                    
+                    // Nếu khách hàng gửi tin nhắn chưa có trong sidebar thì tự động thêm mới vào DOM tức thì
+                    if (m.receiver_id == '0') {
+                        let itemEl = document.querySelector(`.user-item[data-id="${senderId}"]`);
+                        if (!itemEl) {
+                            const initials = m.sender_name ? m.sender_name.charAt(0).toUpperCase() : 'U';
+                            const name = m.sender_name || 'Khách hàng';
+                            const listItems = document.getElementById('user-list-items');
+                            if (listItems) {
+                                const newHtml = `
+                                    <a href="?uid=${senderId}" class="user-item ${senderId === activeId ? 'active' : ''}" data-id="${senderId}" data-name="${name.toLowerCase()}">
+                                        <div class="user-avatar">${initials}</div>
+                                        <div class="user-info">
+                                            <div class="user-name-row">
+                                                <span class="user-fullname">${name}</span>
+                                                <span class="msg-time" id="time-${senderId}"></span>
+                                            </div>
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <span class="msg-preview" id="preview-${senderId}"></span>
+                                                <span class="unread-badge" id="unread-${senderId}" style="display:none;">0</span>
+                                            </div>
                                         </div>
-                                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                                            <span class="msg-preview" id="preview-${senderId}"></span>
-                                            <span class="unread-badge" id="unread-${senderId}" style="display:none;">0</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            `;
-                            // Prepend vào danh sách
-                            listItems.insertAdjacentHTML('afterbegin', newHtml);
+                                    </a>
+                                `;
+                                // Prepend vào danh sách
+                                listItems.insertAdjacentHTML('afterbegin', newHtml);
+                            }
+                        }
+                    }
+
+                    // Nếu tin nhắn là từ khách hàng ta đang chat
+                    if (senderId === activeId && m.receiver_id == '0') {
+                        receivedActiveUserMsg = true;
+                        
+                        const hintNode = document.getElementById('no-msg-hint');
+                        if (hintNode) hintNode.remove();
+                        
+                        const dateObj = new Date(m.created_at);
+                        const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0') + ' ' + dateObj.getDate().toString().padStart(2, '0') + '/' + (dateObj.getMonth()+1).toString().padStart(2, '0') + '/' + dateObj.getFullYear();
+                        
+                        chatContainer.innerHTML += `
+                            <div class="msg-group user">
+                                <div class="msg-bubble">${escapeHTML(m.message)}</div>
+                                <span class="msg-time-stamp">${timeStr}</span>
+                            </div>
+                        `;
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        
+                        // Cập nhật preview ở sidebar
+                        const previewEl = document.getElementById('preview-' + activeId);
+                        if (previewEl) {
+                            previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
+                        }
+                        const timeEl = document.getElementById('time-' + activeId);
+                        if (timeEl) {
+                            timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+                        }
+                        
+                        // Đưa user lên top
+                        moveUserToTop(activeId);
+                    } else if (m.receiver_id == '0') {
+                        // Tin nhắn từ khách hàng khác
+                        // Cập nhật badge chưa đọc ở sidebar
+                        const badgeEl = document.getElementById('unread-' + senderId);
+                        if (badgeEl) {
+                            let count = parseInt(badgeEl.innerText) || 0;
+                            count += 1;
+                            badgeEl.innerText = count;
+                            badgeEl.style.display = 'inline-block';
+                        }
+                        
+                        // Cập nhật preview ở sidebar
+                        const previewEl = document.getElementById('preview-' + senderId);
+                        if (previewEl) {
+                            previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
+                        }
+                        const timeEl = document.getElementById('time-' + senderId);
+                        if (timeEl) {
+                            const dateObj = new Date(m.created_at);
+                            timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+                        }
+                        
+                        // Đưa user lên top
+                        moveUserToTop(senderId);
+                        
+                        // Hiện Toast Notification đẹp đẽ
+                        if (typeof showNtkToast === 'function') {
+                            showNtkToast(
+                                "Tin nhắn mới", 
+                                `Bạn nhận được tin nhắn mới từ khách hàng.`,
+                                "fa-comments"
+                            );
                         }
                     }
                 }
-
-                // Nếu tin nhắn là từ khách hàng ta đang chat
-                if (senderId === activeId && m.receiver_id == '0') {
-                    receivedActiveUserMsg = true;
-                    
-                    const hintNode = document.getElementById('no-msg-hint');
-                    if (hintNode) hintNode.remove();
-                    
-                    const dateObj = new Date(m.created_at);
-                    const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0') + ' ' + dateObj.getDate().toString().padStart(2, '0') + '/' + (dateObj.getMonth()+1).toString().padStart(2, '0') + '/' + dateObj.getFullYear();
-                    
-                    chatContainer.innerHTML += `
-                        <div class="msg-group user">
-                            <div class="msg-bubble">${escapeHTML(m.message)}</div>
-                            <span class="msg-time-stamp">${timeStr}</span>
-                        </div>
-                    `;
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                    
-                    // Cập nhật preview ở sidebar
-                    const previewEl = document.getElementById('preview-' + activeId);
-                    if (previewEl) {
-                        previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
-                    }
-                    const timeEl = document.getElementById('time-' + activeId);
-                    if (timeEl) {
-                        timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
-                    }
-                    
-                    // Đưa user lên top
-                    moveUserToTop(activeId);
-                } else if (m.receiver_id == '0') {
-                    // Tin nhắn từ khách hàng khác
-                    // Cập nhật badge chưa đọc ở sidebar
-                    const badgeEl = document.getElementById('unread-' + senderId);
-                    if (badgeEl) {
-                        let count = parseInt(badgeEl.innerText) || 0;
-                        count += 1;
-                        badgeEl.innerText = count;
-                        badgeEl.style.display = 'inline-block';
-                    }
-                    
-                    // Cập nhật preview ở sidebar
-                    const previewEl = document.getElementById('preview-' + senderId);
-                    if (previewEl) {
-                        previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
-                    }
-                    const timeEl = document.getElementById('time-' + senderId);
-                    if (timeEl) {
-                        const dateObj = new Date(m.created_at);
-                        timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
-                    }
-                    
-                    // Đưa user lên top
-                    moveUserToTop(senderId);
-                    
-                    // Hiện Toast Notification đẹp đẽ
-                    if (typeof showNtkToast === 'function') {
-                        showNtkToast(
-                            "Tin nhắn mới", 
-                            `Bạn nhận được tin nhắn mới từ khách hàng.`,
-                            "fa-comments"
-                        );
-                    }
-                }
             });
+            
+            // Cập nhật mốc ID cuối trong bộ nhớ JS
+            lastChatId = maxMsgId;
+            sseUrl.searchParams.set('last_chat_id', lastChatId);
             
             // Nếu có tin nhắn của khách hàng đang chat, ta gọi API để đánh dấu đã đọc luôn
             if (receivedActiveUserMsg) {
@@ -775,11 +785,6 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 fd.append('user_id', <?= json_encode($current_user) ?>);
                 fetch('../api/chat_mark_read.php', { method: 'POST', body: fd });
             }
-            
-            // Cập nhật mốc ID cuối
-            const last = data.chat_messages[data.chat_messages.length - 1];
-            lastChatId = Math.max(lastChatId, parseInt(last.id));
-            sseUrl.searchParams.set('last_chat_id', lastChatId);
         }
     });
 
