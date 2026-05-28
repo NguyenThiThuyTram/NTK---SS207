@@ -634,10 +634,10 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                                 <p style="font-size: 13px; color: #444; margin: 0 0 8px 0;"><?= htmlspecialchars($my_rev['comment']) ?></p>
                                 <div style="display:flex; gap:8px;">
                                     <?php if (!empty($my_rev['image'])): ?>
-                                        <img src="https://ntkfashion.me/<?= htmlspecialchars($my_rev['image']) ?>" style="max-width:80px; max-height:80px; border-radius:4px; border:1px solid #ddd; object-fit:cover; cursor:pointer;" onclick="window.open(this.src,'_blank')">
+                                        <img src="../../<?= htmlspecialchars($my_rev['image']) ?>" style="max-width:80px; max-height:80px; border-radius:4px; border:1px solid #ddd; object-fit:cover; cursor:pointer;" onclick="window.open(this.src,'_blank')">
                                     <?php endif; ?>
                                     <?php if (!empty($my_rev['video'])): ?>
-                                        <video src="https://ntkfashion.me/<?= htmlspecialchars($my_rev['video']) ?>" controls style="max-width:140px; max-height:80px; border-radius:4px; border:1px solid #ddd;"></video>
+                                        <video src="../../<?= htmlspecialchars($my_rev['video']) ?>" controls style="max-width:140px; max-height:80px; border-radius:4px; border:1px solid #ddd;"></video>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -964,92 +964,7 @@ body.dark-mode #return-modal-detail textarea::placeholder {
 </div>
 <?php endif; ?>
 
-<script>
-    function openReviewModal(button) {
-        var productId = button.getAttribute('data-product-id');
-        var productName = button.getAttribute('data-product-name');
-        document.getElementById('review-product-id-detail').value = productId;
-        document.getElementById('review-modal-product-detail').innerText = 'Sản phẩm: ' + productName;
-        document.getElementById('review-modal-detail').style.display = 'flex';
-        document.getElementById('review-form-detail').reset();
-        document.getElementById('review-image-preview-detail').style.display = 'none';
-        document.getElementById('review-video-preview-detail').style.display = 'none';
-        document.getElementById('review-video-preview-el-detail').src = '';
-    }
 
-    function closeReviewModalDetail() {
-        document.getElementById('review-modal-detail').style.display = 'none';
-    }
-
-    document.getElementById('review-image-detail').addEventListener('change', function () {
-        var file = this.files[0];
-        var preview = document.querySelector('#review-image-preview-detail img');
-        if (file) {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                preview.src = e.target.result;
-                document.getElementById('review-image-preview-detail').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            document.getElementById('review-image-preview-detail').style.display = 'none';
-            preview.src = '';
-        }
-    });
-
-    document.getElementById('review-video-detail').addEventListener('change', function () {
-        var file = this.files[0];
-        var previewContainer = document.getElementById('review-video-preview-detail');
-        var previewEl = document.getElementById('review-video-preview-el-detail');
-        if (file) {
-            var url = URL.createObjectURL(file);
-            previewEl.src = url;
-            previewContainer.style.display = 'block';
-        } else {
-            previewContainer.style.display = 'none';
-            previewEl.src = '';
-        }
-    });
-
-    document.getElementById('review-form-detail').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var form = e.currentTarget;
-
-        var imageFile = document.getElementById('review-image-detail').files[0];
-        var videoFile = document.getElementById('review-video-detail').files[0];
-        if (imageFile && imageFile.size > 5 * 1024 * 1024) {
-            alert('Hình ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
-            return;
-        }
-        if (videoFile && videoFile.size > 15 * 1024 * 1024) {
-            alert('Video quá lớn! Vui lòng chọn video dưới 15MB.');
-            return;
-        }
-
-        var formData = new FormData(form);
-
-        fetch('../../ajax_review.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            if (data.success) {
-                alert('Cảm ơn bạn! Đánh giá đã được gửi.');
-                if (formData.get('product_id')) {
-                    window.location.href = '../../product_detail.php?id=' + encodeURIComponent(formData.get('product_id')) + '&open_review=0';
-                } else {
-                    closeReviewModalDetail();
-                }
-            } else {
-                alert(data.message || 'Không thể gửi đánh giá. Vui lòng thử lại.');
-            }
-        })
-        .catch(function () {
-            alert('Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại.');
-        });
-    });
-</script>
 
 <style>
 .od-action-btn {
