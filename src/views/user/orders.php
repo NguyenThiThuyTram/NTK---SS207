@@ -55,7 +55,7 @@ $sql = "
     SELECT 
         o.order_id, o.order_status, o.final_price, o.order_date,
         o.payment_method, o.payment_status, o.tracking_number,
-        od.quantity, od.price, p.product_id,
+        od.quantity, od.price, od.is_reviewed, od.detail_id, p.product_id,
         p.name AS product_name, p.image AS product_image,
         v.color, v.size, v.image AS variant_image
     FROM orders o
@@ -228,9 +228,9 @@ try {
                             ₫<?= number_format($item['price'], 0, ',', '.') ?>
                         </div>
                     </div>
-                    <?php if ($st === 3 && !in_array($item['product_id'], $reviewed_products)): ?>
+                    <?php if ($st === 3): ?>
                         <div style="padding:0 16px 12px 16px; display:flex; gap:8px; justify-content:flex-end;">
-                            <button type="button" class="btn btn-outline" style="min-width:120px;" data-product-id="<?= htmlspecialchars($item['product_id']) ?>" data-product-name="<?= htmlspecialchars($item['product_name']) ?>" onclick="openReviewModal(this)">Đánh giá</button>
+                            <button type="button" class="btn btn-outline" style="min-width:120px;" data-product-id="<?= htmlspecialchars($item['product_id']) ?>" data-product-name="<?= htmlspecialchars($item['product_name']) ?>" data-detail-id="<?= htmlspecialchars($item['detail_id']) ?>" onclick="openReviewModal(this)">Đánh giá</button>
                         </div>
                     <?php endif; ?>
                 <?php endforeach; ?>
@@ -385,6 +385,7 @@ try {
                 <input type="hidden" name="action" value="submit_comment">
                 <input type="hidden" name="product_id" id="review-product-id" value="">
                 <input type="hidden" name="parent_id" value="">
+                <input type="hidden" name="detail_id" id="review-detail-id" value="">
 
                 <label for="review-rating" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Số sao</label>
                 <select id="review-rating" name="rating" required style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; margin-bottom:16px; font-size:14px;">
@@ -423,7 +424,9 @@ try {
         function openReviewModal(button) {
             var productId = button.getAttribute('data-product-id');
             var productName = button.getAttribute('data-product-name');
+            var detailId = button.getAttribute('data-detail-id');
             document.getElementById('review-product-id').value = productId;
+            document.getElementById('review-detail-id').value = detailId;
             document.getElementById('review-modal-product').innerText = 'Sản phẩm: ' + productName;
             document.getElementById('review-modal').style.display = 'flex';
             document.getElementById('review-form').reset();

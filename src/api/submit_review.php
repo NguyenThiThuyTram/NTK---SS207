@@ -59,15 +59,6 @@ if (intval($stmt_check->fetchColumn()) === 0) {
     exit;
 }
 
-// ── 4. Kiểm tra đã đánh giá chưa ───────────────────────────────────────────
-$sql_already = "SELECT COUNT(*) FROM reviews WHERE user_id = :uid AND product_id = :pid AND parent_id IS NULL";
-$stmt_already = $conn->prepare($sql_already);
-$stmt_already->execute(['uid' => $user_id, 'pid' => $product_id]);
-if (intval($stmt_already->fetchColumn()) > 0) {
-    echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Bạn đã đánh giá sản phẩm này rồi!']);
-    exit;
-}
-
 // ── 5. Xử lý upload ảnh (review_image) ─────────────────────────────────────
 $upload_dir = __DIR__ . '/../assets/uploads/reviews/';
 if (!is_dir($upload_dir)) {

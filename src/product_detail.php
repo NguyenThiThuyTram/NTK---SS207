@@ -93,7 +93,6 @@ if ($product_id) {
 
 // 7. KIỂM TRA QUYỀN ĐƯỢC VIẾT ĐÁNH GIÁ GỐC (Đã mua và Hoàn thành = 3)
 $can_user_review = false;
-$has_reviewed = false;
 if ($user_id_session && $product) {
     $sql_verify_buy = "SELECT COUNT(*) FROM orders o 
                        JOIN order_details od ON o.order_id = od.order_id 
@@ -104,15 +103,6 @@ if ($user_id_session && $product) {
     $stmt_v_buy->execute(['uid' => $user_id_session, 'pid' => $product_id]);
     if (intval($stmt_v_buy->fetchColumn()) > 0) {
         $can_user_review = true;
-    }
-    
-    if ($can_user_review) {
-        $sql_check_reviewed = "SELECT COUNT(*) FROM reviews WHERE user_id = :uid AND product_id = :pid AND parent_id IS NULL";
-        $stmt_checked = $conn->prepare($sql_check_reviewed);
-        $stmt_checked->execute(['uid' => $user_id_session, 'pid' => $product_id]);
-        if (intval($stmt_checked->fetchColumn()) > 0) {
-            $has_reviewed = true;
-        }
     }
 }
 
@@ -547,7 +537,7 @@ include 'includes/header.php';
                 <div class="product-feedback" style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
                     <h3 style="color: #a6825c; margin-bottom: 25px;">Đánh giá và tương tác từ khách hàng</h3>
                     
-                    <?php if ($can_user_review && !$has_reviewed): ?>
+                    <?php if ($can_user_review): ?>
                         <div class="main-review-form" style="margin-bottom: 30px; background: #fafafa; padding: 15px; border-radius: 6px; border: 1px solid #eee;">
                             <p style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Viết đánh giá của bạn:</p>
                             <textarea id="main_comment_text" style="width:100%; height:70px; padding:10px; border:1px solid #ddd; outline:none; resize:none;" placeholder="Chia sẻ cảm nhận về sản phẩm..."></textarea>
@@ -574,10 +564,6 @@ include 'includes/header.php';
                                 </div>
                                 <button type="button" onclick="submitReview(0)" style="background:#2f1c00; color:#fff; border:none; padding:12px 24px; border-radius:4px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Gửi Đánh Giá</button>
                             </div>
-                        </div>
-                    <?php elseif ($has_reviewed): ?>
-                        <div style="background: #e8f5e9; color: #2e7d32; padding: 12px 16px; border-radius: 6px; font-size: 13.5px; margin-bottom: 25px; border: 1px solid #c8e6c9;">
-                            <i class="fa-solid fa-circle-check"></i> Cảm ơn bạn đã để lại đánh giá cho sản phẩm này!
                         </div>
                     <?php else: ?>
                         <div style="background: #fffbf0; color: #b8860b; padding: 12px 16px; border-radius: 6px; font-size: 13.5px; margin-bottom: 25px; border: 1px solid #f5e6b2;">
