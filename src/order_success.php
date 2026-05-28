@@ -26,10 +26,17 @@ $stmt_items = $conn->prepare("
     LEFT JOIN product_variants v ON od.variant_id = v.variant_id
     WHERE od.order_id = :oid
 ");
-$stmt_items->execute(['oid' => $order_id]);
-$order_items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+    $stmt_items->execute(['oid' => $order_id]);
+    $order_items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
 
-$is_online  = ($order['payment_method'] == 2);
+    $reviewed_products = [];
+    if (isset($_SESSION['user_id'])) {
+        $stmt_reviewed = $conn->prepare("SELECT DISTINCT product_id FROM reviews WHERE user_id = :uid AND parent_id IS NULL");
+        $stmt_reviewed->execute(['uid' => $_SESSION['user_id']]);
+        $reviewed_products = $stmt_reviewed->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    }
+
+    $is_online  = ($order['payment_method'] == 2);
 $is_paid    = ($order['payment_status'] == 1);
 $has_qr     = (!empty($order['payos_qr_code']));
 $checkout_url = $order['payos_checkout_url'] ?? '';
@@ -359,7 +366,7 @@ include 'includes/header.php';
                         <div class="prod-price">
                             <?= number_format($item['price'] * $item['quantity'], 0, ',', '.') ?> VNĐ
                         </div>
-                        <?php if ((intval($order['order_status']) === 3 || isset($_GET['force_review'])) && !empty($item['product_id'])): ?>
+                        <?php if ((intval($order['order_status']) === 3 || isset($_GET['force_review'])) && !empty($item['product_id']) && !in_array($item['product_id'], $reviewed_products)): ?>
                             <div>
                                 <a href="product_detail.php?id=<?= intval($item['product_id']) ?>&open_review=1" class="cta-btn secondary" style="padding:8px 12px; font-size:13px; text-decoration:none;">Đánh giá</a>
                             </div>

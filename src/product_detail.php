@@ -589,11 +589,11 @@ include 'includes/header.php';
                                         </span>
                                     </div>
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
-                                    <?php if (!empty($rev['image'])): ?>
+                                    <?php /* if (!empty($rev['image'])): ?>
                                         <div style="margin: 10px 0; display: inline-block;">
                                             <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 190px; max-height: 190px; border-radius: 10px; border: 1px solid #eee; object-fit: cover;">
                                         </div>
-                                    <?php endif; ?>
+                                    <?php endif; */ ?>
                                     <?php if (!empty($rev['video'])): ?>
                                         <div style="margin: 10px 0; display: inline-block; vertical-align: top; margin-left: 10px;">
                                             <video controls style="max-width: 240px; max-height: 190px; border-radius: 10px; border: 1px solid #eee; object-fit: cover;">

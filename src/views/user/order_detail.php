@@ -36,6 +36,11 @@ $stmt_items = $conn->prepare("
 $stmt_items->execute(['oid' => $order_id]);
 $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
 
+// Lấy danh sách sản phẩm đã đánh giá của user
+$stmt_reviewed = $conn->prepare("SELECT DISTINCT product_id FROM reviews WHERE user_id = :uid AND parent_id IS NULL");
+$stmt_reviewed->execute(['uid' => $_SESSION['user_id']]);
+$reviewed_products = $stmt_reviewed->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
 // Xác định trạng thái để hiển thị Progress
 // 0: Chờ thanh toán (nếu online chưa pass / COD: pending_payment nếu có), 1: Đang xử lý, 2: Đang giao, 3: Hoàn thành, 4: Đã hủy
 $status = (int)$order['order_status']; 
@@ -611,7 +616,7 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                     <span class="od-item-price"><?= number_format($item['price'], 0, ',', '.') ?> đ</span>
                 </div>
 
-                <?php if ($os === 3 && !empty($item['product_id'])): ?>
+                <?php if ($os === 3 && !empty($item['product_id']) && !in_array($item['product_id'], $reviewed_products)): ?>
                     <div style="margin-top:8px; display:flex; gap:8px; justify-content:flex-end;">
                         <button type="button" class="od-action-btn od-btn-outline" style="padding:8px 12px;" data-product-id="<?= htmlspecialchars($item['product_id']) ?>" data-product-name="<?= htmlspecialchars($item['product_name']) ?>" onclick="openReviewModal(this)">Đánh giá</button>
                     </div>
@@ -770,6 +775,12 @@ body.dark-mode #return-modal-detail textarea::placeholder {
                 <img src="" alt="Preview" style="max-width:100%; border-radius:8px; border:1px solid #eee;">
             </div>
 
+            <label for="review-video-detail" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Video (tùy chọn)</label>
+            <input type="file" id="review-video-detail" name="review_video" accept="video/*" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px;">
+            <div id="review-video-preview-detail" style="display:none; margin-bottom:16px;">
+                <video id="review-video-preview-el-detail" controls style="max-width:100%; border-radius:8px; border:1px solid #eee;"></video>
+            </div>
+
             <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
                 <button type="button" onclick="closeReviewModalDetail()" style="flex:1; min-width:120px; padding:12px 16px; border:1px solid #ccc; background:#fff; border-radius:6px; color:#333; cursor:pointer;">Hủy</button>
                 <button type="submit" class="od-action-btn od-btn-primary" style="flex:1; min-width:120px;">Gửi đánh giá</button>
@@ -830,6 +841,8 @@ body.dark-mode #return-modal-detail textarea::placeholder {
         document.getElementById('review-modal-detail').style.display = 'flex';
         document.getElementById('review-form-detail').reset();
         document.getElementById('review-image-preview-detail').style.display = 'none';
+        document.getElementById('review-video-preview-detail').style.display = 'none';
+        document.getElementById('review-video-preview-el-detail').src = '';
     }
 
     function closeReviewModalDetail() {
@@ -849,6 +862,20 @@ body.dark-mode #return-modal-detail textarea::placeholder {
         } else {
             document.getElementById('review-image-preview-detail').style.display = 'none';
             preview.src = '';
+        }
+    });
+
+    document.getElementById('review-video-detail').addEventListener('change', function () {
+        var file = this.files[0];
+        var previewContainer = document.getElementById('review-video-preview-detail');
+        var previewEl = document.getElementById('review-video-preview-el-detail');
+        if (file) {
+            var url = URL.createObjectURL(file);
+            previewEl.src = url;
+            previewContainer.style.display = 'block';
+        } else {
+            previewContainer.style.display = 'none';
+            previewEl.src = '';
         }
     });
 

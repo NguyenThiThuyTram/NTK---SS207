@@ -71,6 +71,11 @@ try {
     $stmt->execute($params);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Lấy danh sách sản phẩm đã đánh giá của user
+    $stmt_reviewed = $conn->prepare("SELECT DISTINCT product_id FROM reviews WHERE user_id = :uid AND parent_id IS NULL");
+    $stmt_reviewed->execute(['uid' => $user_id]);
+    $reviewed_products = $stmt_reviewed->fetchAll(PDO::FETCH_COLUMN) ?: [];
+
     // Gom nhóm theo đơn hàng
     $orders = [];
     foreach ($results as $row) {
@@ -223,7 +228,7 @@ try {
                             ₫<?= number_format($item['price'], 0, ',', '.') ?>
                         </div>
                     </div>
-                    <?php if ($st === 3): ?>
+                    <?php if ($st === 3 && !in_array($item['product_id'], $reviewed_products)): ?>
                         <div style="padding:0 16px 12px 16px; display:flex; gap:8px; justify-content:flex-end;">
                             <button type="button" class="btn btn-outline" style="min-width:120px;" data-product-id="<?= htmlspecialchars($item['product_id']) ?>" data-product-name="<?= htmlspecialchars($item['product_name']) ?>" onclick="openReviewModal(this)">Đánh giá</button>
                         </div>
@@ -400,6 +405,12 @@ try {
                     <img src="" alt="Preview" style="max-width:100%; border-radius:8px; border:1px solid #eee;">
                 </div>
 
+                <label for="review-video" style="display:block; font-weight:600; margin-bottom:8px; color:#333;">Video (tùy chọn)</label>
+                <input type="file" id="review-video" name="review_video" accept="video/*" style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px;">
+                <div id="review-video-preview" style="display:none; margin-bottom:16px;">
+                    <video id="review-video-preview-el" controls style="max-width:100%; border-radius:8px; border:1px solid #eee;"></video>
+                </div>
+
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;">
                     <button type="button" onclick="closeReviewModal()" style="flex:1; min-width:120px; padding:12px 16px; border:1px solid #ccc; background:#fff; border-radius:6px; color:#333; cursor:pointer;">Hủy</button>
                     <button type="submit" class="btn btn-primary" style="flex:1; min-width:120px;">Gửi đánh giá</button>
@@ -417,6 +428,8 @@ try {
             document.getElementById('review-modal').style.display = 'flex';
             document.getElementById('review-form').reset();
             document.getElementById('review-image-preview').style.display = 'none';
+            document.getElementById('review-video-preview').style.display = 'none';
+            document.getElementById('review-video-preview-el').src = '';
         }
 
         function closeReviewModal() {
@@ -436,6 +449,20 @@ try {
             } else {
                 document.getElementById('review-image-preview').style.display = 'none';
                 preview.src = '';
+            }
+        });
+
+        document.getElementById('review-video').addEventListener('change', function () {
+            var file = this.files[0];
+            var previewContainer = document.getElementById('review-video-preview');
+            var previewEl = document.getElementById('review-video-preview-el');
+            if (file) {
+                var url = URL.createObjectURL(file);
+                previewEl.src = url;
+                previewContainer.style.display = 'block';
+            } else {
+                previewContainer.style.display = 'none';
+                previewEl.src = '';
             }
         });
 
