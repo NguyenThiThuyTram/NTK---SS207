@@ -8,40 +8,57 @@ require_once __DIR__ . '/../config/database.php';
 
 // ── TASK 2 SECTION 1: METRICS FETCHING ──────────────────────────────────
 
-// 1. Top Seller
-$stmt_top = $conn->query("SELECT name, sold_count FROM products WHERE status = 1 ORDER BY sold_count DESC LIMIT 1");
-$top_seller = $stmt_top->fetch(PDO::FETCH_ASSOC);
+// Fetch all active products and their minimum price from active variants
+$stmt_all = $conn->query("
+    SELECT 
+        p.product_id,
+        p.name,
+        p.sold_count,
+        MIN(COALESCE(NULLIF(pv.sale_price, 0), pv.original_price)) as price
+    FROM products p
+    LEFT JOIN product_variants pv ON p.product_id = pv.product_id AND pv.is_active = 1
+    WHERE p.status = 1
+    GROUP BY p.product_id
+");
+$all_active_products = $stmt_all->fetchAll(PDO::FETCH_ASSOC);
 
-// 2. Most Viewed
-$stmt_viewed = $conn->query("SELECT name, view_count FROM products WHERE status = 1 ORDER BY view_count DESC LIMIT 1");
-$most_viewed = $stmt_viewed->fetch(PDO::FETCH_ASSOC);
+$total_global_revenue = 0.0;
+$total_items_sold = 0;
+$highest_revenue = 0.0;
+$highest_revenue_product_name = 'N/A';
 
-// 3. Global Store Conversion Rate
-$stmt_global = $conn->query("SELECT SUM(sold_count) as total_sold, SUM(view_count) as total_views FROM products WHERE status = 1");
-$global_stats = $stmt_global->fetch(PDO::FETCH_ASSOC);
-
-$total_sold = (float)($global_stats['total_sold'] ?? 0);
-$total_views = (float)($global_stats['total_views'] ?? 0);
-$global_conversion_rate = $total_views > 0 ? ($total_sold / $total_views) * 100 : 0;
+foreach ($all_active_products as $ap) {
+    $sold = (int)$ap['sold_count'];
+    $price = (float)($ap['price'] ?? 0);
+    $rev = $sold * $price;
+    
+    $total_global_revenue += $rev;
+    $total_items_sold += $sold;
+    
+    if ($rev > $highest_revenue) {
+        $highest_revenue = $rev;
+        $highest_revenue_product_name = $ap['name'];
+    }
+}
 
 // ── TASK 2 SECTION 2: TABLE FETCHING ─────────────────────────────────────
 
+// Fetch all active products by sold_count DESC with minimum variant price and stock
 $stmt_table = $conn->prepare("
     SELECT 
         p.product_id, 
         p.name, 
         p.image, 
         p.sold_count, 
-        p.view_count, 
         c.name as category_name,
-        COALESCE(SUM(pv.stock), 0) as total_stock
+        COALESCE(SUM(pv.stock), 0) as total_stock,
+        MIN(COALESCE(NULLIF(pv.sale_price, 0), pv.original_price)) as price
     FROM products p
     LEFT JOIN categories c ON p.category_id = c.category_id
-    LEFT JOIN product_variants pv ON p.product_id = pv.product_id
+    LEFT JOIN product_variants pv ON p.product_id = pv.product_id AND pv.is_active = 1
     WHERE p.status = 1
     GROUP BY p.product_id
-    ORDER BY p.sold_count DESC, p.view_count DESC
-    LIMIT 10
+    ORDER BY p.sold_count DESC
 ");
 $stmt_table->execute();
 $products = $stmt_table->fetchAll(PDO::FETCH_ASSOC);
@@ -267,55 +284,55 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 <div class="page-header">
     <div class="page-header-left">
         <div class="page-title">Phân tích Bán chạy</div>
-        <div class="page-subtitle">Hiệu suất kinh doanh và hành vi xem sản phẩm của khách hàng</div>
+        <div class="page-subtitle">Phân tích doanh thu, tỷ trọng đóng góp và hiệu suất bán hàng toàn shop</div>
     </div>
 </div>
 
 <!-- Section 1: Metric Cards -->
 <div class="metrics-grid">
-    <!-- Card 1: Top Seller -->
+    <!-- Card 1: Top Revenue Product -->
     <div class="stat-card">
         <div class="stat-icon" style="background: rgba(166, 130, 92, 0.1); color: #a6825c;">
             <i class="fa-solid fa-crown"></i>
         </div>
         <div class="stat-details">
-            <span class="stat-value" title="<?= htmlspecialchars($top_seller['name'] ?? 'N/A') ?>">
-                <?= htmlspecialchars($top_seller['name'] ?? 'N/A') ?>
+            <span class="stat-value" title="<?= htmlspecialchars($highest_revenue_product_name) ?>">
+                <?= htmlspecialchars($highest_revenue_product_name) ?>
             </span>
-            <span class="stat-label">Bán chạy nhất (<?= number_format($top_seller['sold_count'] ?? 0) ?> sản phẩm)</span>
+            <span class="stat-label">Sản phẩm mang lại doanh thu cao nhất (<?= number_format($highest_revenue, 0, ',', '.') ?>đ)</span>
         </div>
     </div>
 
-    <!-- Card 2: Most Viewed -->
+    <!-- Card 2: Total Items Sold -->
     <div class="stat-card">
         <div class="stat-icon" style="background: rgba(52, 152, 219, 0.1); color: #3498db;">
-            <i class="fa-solid fa-eye"></i>
-        </div>
-        <div class="stat-details">
-            <span class="stat-value" title="<?= htmlspecialchars($most_viewed['name'] ?? 'N/A') ?>">
-                <?= htmlspecialchars($most_viewed['name'] ?? 'N/A') ?>
-            </span>
-            <span class="stat-label">Xem nhiều nhất (<?= number_format($most_viewed['view_count'] ?? 0) ?> lượt xem)</span>
-        </div>
-    </div>
-
-    <!-- Card 3: Global Conversion Rate -->
-    <div class="stat-card">
-        <div class="stat-icon" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
-            <i class="fa-solid fa-percent"></i>
+            <i class="fa-solid fa-cart-shopping"></i>
         </div>
         <div class="stat-details">
             <span class="stat-value" style="font-size: 20px;">
-                <?= number_format($global_conversion_rate, 2) ?>%
+                <?= number_format($total_items_sold) ?> sản phẩm
             </span>
-            <span class="stat-label">Tỷ lệ chuyển đổi toàn cửa hàng</span>
+            <span class="stat-label">Tổng số lượng đã bán toàn shop</span>
+        </div>
+    </div>
+
+    <!-- Card 3: Total Global Revenue -->
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(46, 204, 113, 0.1); color: #2ecc71;">
+            <i class="fa-solid fa-money-bill-trend-up"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-value" style="font-size: 20px;">
+                <?= number_format($total_global_revenue, 0, ',', '.') ?>đ
+            </span>
+            <span class="stat-label">Tổng doanh thu toàn hệ thống</span>
         </div>
     </div>
 </div>
 
 <!-- Section 2 & 3: Smart Analysis Table & Actionable Insights -->
 <div class="section-card">
-    <h2 class="section-title">Danh sách 10 sản phẩm hàng đầu</h2>
+    <h2 class="section-title">Danh sách hiệu suất bán hàng toàn hệ thống</h2>
     <div style="overflow-x: auto;">
         <table class="data-table">
             <thead>
@@ -323,15 +340,17 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <th style="width: 60px; text-align: center;">Hạng</th>
                     <th>Sản phẩm</th>
                     <th style="text-align: right; width: 110px;">Đã bán</th>
-                    <th style="text-align: right; width: 110px;">Lượt xem</th>
-                    <th style="text-align: right; width: 140px;">Tỷ lệ chuyển đổi</th>
+                    <th style="text-align: right; width: 110px;">Tồn kho</th>
+                    <th style="text-align: right; width: 120px;">Giá bán</th>
+                    <th style="text-align: right; width: 140px;">Doanh thu</th>
+                    <th style="text-align: right; width: 160px;">Tỷ trọng doanh thu</th>
                     <th style="padding-left: 30px;">Nhận định & Khuyến nghị</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($products)): ?>
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #aaa;">
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #aaa;">
                         Không có sản phẩm nào
                     </td>
                 </tr>
@@ -340,21 +359,25 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     $rank = 1;
                     foreach ($products as $prod): 
                         $sold = (int)$prod['sold_count'];
-                        $views = (int)$prod['view_count'];
+                        $price = (float)$prod['price'];
                         $stock = (int)$prod['total_stock'];
                         
-                        $conversion = $views > 0 ? ($sold / $views) * 100 : 0;
+                        $prod_revenue = $sold * $price;
+                        $revenue_contribution = $total_global_revenue > 0 ? ($prod_revenue / $total_global_revenue) * 100 : 0;
                         
                         // Actionable Insight Badges Logic
                         $badges = [];
                         if ($rank <= 3) {
                             $badges[] = '<span class="badge badge-success"><i class="fa-solid fa-star"></i> Best Seller ⭐</span>';
                         }
-                        if ($views > 40 && $conversion < 5) {
-                            $badges[] = '<span class="badge badge-warning"><i class="fa-solid fa-triangle-exclamation"></i> Tối ưu hình ảnh/Giá ⚠️</span>';
+                        if ($revenue_contribution > 15 && $stock >= 5) {
+                            $badges[] = '<span class="badge badge-warning" style="background: rgba(241, 196, 15, 0.1); color: #f1c40f;"><i class="fa-solid fa-money-bill-wave"></i> Chiếm tỷ trọng doanh thu lớn </span>';
                         }
-                        if ($stock < 5 && $sold > 10) {
-                            $badges[] = '<span class="badge badge-danger"><i class="fa-solid fa-triangle-exclamation"></i> Hết hàng 🚨</span>';
+                        if ($sold > 10 && $stock < 5) {
+                            $badges[] = '<span class="badge badge-danger" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;"><i class="fa-solid fa-triangle-exclamation"></i> Đã hết hàng! </span>';
+                        }
+                        if ($revenue_contribution < 3 && $stock > 20) {
+                            $badges[] = '<span class="badge badge-danger" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;"><i class="fa-solid fa-chart-line-down"></i> Cần Kích Cầu </span>';
                         }
                         
                         if (empty($badges)) {
@@ -378,8 +401,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             </div>
                         </td>
                         <td style="text-align: right; font-weight: 600;"><?= number_format($sold) ?></td>
-                        <td style="text-align: right; color: #666;"><?= number_format($views) ?></td>
-                        <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($conversion, 2) ?>%</td>
+                        <td style="text-align: right; font-weight: 600; color: #a6825c;"><?= number_format($stock) ?></td>
+                        <td style="text-align: right; color: #666;"><?= number_format($price, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: right; font-weight: 600;"><?= number_format($prod_revenue, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($revenue_contribution, 2) ?>%</td>
                         <td style="padding-left: 30px;">
                             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                                 <?= implode(' ', $badges) ?>
