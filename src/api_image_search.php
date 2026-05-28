@@ -148,14 +148,16 @@ if ($fallback_used && !$ai_success) {
     
     if ($rekognition->isConfigured()) {
         $rawBytes = base64_decode($imageData);
-        $awsResult = $rekognition->detectLabels($rawBytes, 10, 70.0);
+        $awsResult = $rekognition->detectLabels($rawBytes, 30, 50.0);
         
         if (!isset($awsResult['error']) && isset($awsResult['Labels'])) {
             $awsToVn = [
                 'T-Shirt' => 'áo thun', 'Shirt' => 'áo', 'Dress' => 'đầm',
                 'Pants' => 'quần', 'Skirt' => 'chân váy', 'Jacket' => 'áo khoác',
                 'Sweater' => 'áo len', 'Shorts' => 'quần short', 'Suit' => 'vest',
-                'Hat' => 'mũ', 'Shoes' => 'giày'
+                'Hat' => 'mũ', 'Shoes' => 'giày', 'Clothing' => 'áo',
+                'Apparel' => 'áo', 'Top' => 'áo', 'Outfit' => 'bộ',
+                'Coat' => 'áo khoác', 'Blouse' => 'áo', 'Trousers' => 'quần'
             ];
             
             $colorToVn = [
