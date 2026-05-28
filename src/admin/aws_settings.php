@@ -50,18 +50,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if (!empty($accessKey) && !empty($secretKey)) {
-            // Smart region detection
+            // Default Learner Lab Region is us-east-1
             $region = 'us-east-1';
             if (preg_match('/(?:aws_region|region)\s*=\s*(\S+)/i', $raw, $m)) {
                 $region = $m[1];
-            } elseif (!empty($sessionToken)) {
-                $decoded = base64_decode($sessionToken);
-                foreach (['us-east-1', 'us-west-2', 'us-east-2', 'us-west-1', 'ap-southeast-1', 'ap-northeast-1', 'eu-west-1'] as $r) {
-                    if (strpos($decoded, $r) !== false) {
-                        $region = $r;
-                        break;
-                    }
-                }
             }
 
             $saved = AwsRekognition::saveCredentials($accessKey, $secretKey, $sessionToken, $region);
