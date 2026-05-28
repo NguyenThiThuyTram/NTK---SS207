@@ -594,15 +594,16 @@ include 'includes/header.php';
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
                                     <?php if (!empty($rev['image'])): ?>
                                         <div style="margin: 10px 0; display: inline-block;">
-                                            <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" 
+                                            <img src="<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" 
                                                  onclick="openReviewLightbox(this.src)" 
                                                  style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover; cursor: zoom-in;">
                                         </div>
                                     <?php endif; ?>
                                     <?php if (!empty($rev['video'])): ?>
                                         <div style="margin: 10px 0; display: inline-block; vertical-align: top; margin-left: 10px;">
-                                            <video controls width="150" height="150" style="border-radius: 6px; border: 1px solid #eee; object-fit: cover;">
-                                                <source src="<?= $_BASE ?>/<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
+                                            <video controls width="200" style="border-radius: 6px; border: 1px solid #eee; max-width: 100%;">
+                                                <source src="<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
+                                                <source src="<?= htmlspecialchars($rev['video']) ?>">
                                                 Trình duyệt không hỗ trợ phát video.
                                             </video>
                                         </div>

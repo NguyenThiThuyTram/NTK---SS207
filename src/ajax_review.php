@@ -122,8 +122,9 @@ if ($action === 'submit_comment') {
         // Cộng điểm thưởng nếu là đánh giá gốc
         $reward_points = 0;
         if (empty($parent_id)) {
-            if (!empty($comment)) $reward_points += 50;
-            if (!empty($review_image) || !empty($review_video)) $reward_points += 50;
+            if (!empty($comment)) $reward_points += 50;          // +50 điểm cho nội dung text
+            if (!empty($review_image)) $reward_points += 50;     // +50 điểm khi đính kèm hình ảnh
+            if (!empty($review_video)) $reward_points += 50;     // +50 điểm khi đính kèm video
             
             if ($reward_points > 0) {
                 addLoyaltyPoints($conn, $user_id, $reward_points, "đánh giá sản phẩm");
