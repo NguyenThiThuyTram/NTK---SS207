@@ -29,12 +29,17 @@ function addLoyaltyPoints($conn, $user_id, $points, $reason) {
 }
 
 function checkTierUpgrade($conn, $user_id, $accumulated_points, $current_tier) {
+    // Tính tổng chi tiêu của khách hàng
+    $stmt = $conn->prepare("SELECT IFNULL(SUM(final_price), 0) FROM orders WHERE user_id = :uid AND order_status = 3");
+    $stmt->execute(['uid' => $user_id]);
+    $total_spent = (float)$stmt->fetchColumn();
+
     $new_tier = 'Member';
-    if ($accumulated_points >= 5000) {
+    if ($accumulated_points >= 5000 || $total_spent >= 50000000) {
         $new_tier = 'Diamond';
-    } elseif ($accumulated_points >= 1500) {
+    } elseif ($accumulated_points >= 1500 || $total_spent >= 15000000) {
         $new_tier = 'Gold';
-    } elseif ($accumulated_points >= 500) {
+    } elseif ($accumulated_points >= 500 || $total_spent >= 5000000) {
         $new_tier = 'Silver';
     }
 
@@ -58,13 +63,12 @@ function checkTierUpgrade($conn, $user_id, $accumulated_points, $current_tier) {
             elseif ($new_tier === 'Silver') $voucher_amount = 20000;
 
             if ($voucher_amount > 0) {
-                $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_amount, discount_type, min_spend, start_date, end_date, usage_limit, status, user_id) 
-                    VALUES (:cid, :code, :amt, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, :uid)");
+                $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_value, discount_type, min_order_value, start_date, end_date, quantity, status, coupon_type) 
+                    VALUES (:cid, :code, :amt, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, 0)");
                 $stmt_cp->execute([
                     'cid' => $coupon_id,
                     'code' => $coupon_code,
-                    'amt' => $voucher_amount,
-                    'uid' => $user_id
+                    'amt' => $voucher_amount
                 ]);
 
                 $msg_voucher = "Hệ thống tặng bạn một Voucher giảm ".number_format($voucher_amount, 0, ',', '.')."đ (Mã: $coupon_code) tri ân thăng hạng $new_tier. Bạn có thể sử dụng cho đơn hàng tiếp theo!";

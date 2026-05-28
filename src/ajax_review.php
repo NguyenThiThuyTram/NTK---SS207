@@ -58,12 +58,18 @@ if ($action === 'submit_comment') {
             exit;
         }
 
+        // Giới hạn kích thước ảnh tối đa 5MB
+        if ($_FILES['review_image']['size'] > 5 * 1024 * 1024) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Kích thước ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.']);
+            exit;
+        }
+
         $upload_dir = __DIR__ . '/assets/uploads/reviews/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
 
-        $unique_name = 'review_' . time() . '_' . bin2hex(random_bytes(5)) . '.' . $file_ext;
+        $unique_name = 'review_img_' . time() . '_' . bin2hex(random_bytes(5)) . '.' . $file_ext;
         $destination = $upload_dir . $unique_name;
 
         if (move_uploaded_file($_FILES['review_image']['tmp_name'], $destination)) {
@@ -71,9 +77,37 @@ if ($action === 'submit_comment') {
         }
     }
 
+    $review_video = null;
+    if (!empty($_FILES['review_video']['name']) && $_FILES['review_video']['error'] === UPLOAD_ERR_OK) {
+        $allowed_video_ext = ['mp4', 'mov', 'avi', 'mkv', 'webm', '3gp'];
+        $file_ext = strtolower(pathinfo($_FILES['review_video']['name'], PATHINFO_EXTENSION));
+        if (!in_array($file_ext, $allowed_video_ext, true)) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Chỉ cho phép tập tin video MP4, MOV, AVI, MKV, WEBM.']);
+            exit;
+        }
+
+        // Giới hạn kích thước video tối đa 15MB
+        if ($_FILES['review_video']['size'] > 15 * 1024 * 1024) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Kích thước video quá lớn! Vui lòng chọn video dưới 15MB.']);
+            exit;
+        }
+
+        $upload_dir = __DIR__ . '/assets/uploads/reviews/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+
+        $unique_name = 'review_vid_' . time() . '_' . bin2hex(random_bytes(5)) . '.' . $file_ext;
+        $destination = $upload_dir . $unique_name;
+
+        if (move_uploaded_file($_FILES['review_video']['tmp_name'], $destination)) {
+            $review_video = 'assets/uploads/reviews/' . $unique_name;
+        }
+    }
+
     try {
-        $sql = "INSERT INTO reviews (user_id, product_id, parent_id, rating, comment, image, created_at) 
-                VALUES (:uid, :pid, :parent, :rate, :text, :img, NOW())";
+        $sql = "INSERT INTO reviews (user_id, product_id, parent_id, rating, comment, image, video, created_at) 
+                VALUES (:uid, :pid, :parent, :rate, :text, :img, :vid, NOW())";
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             'uid'    => $user_id,
@@ -82,13 +116,14 @@ if ($action === 'submit_comment') {
             'rate'   => $rating,
             'text'   => $comment,
             'img'    => $review_image,
+            'vid'    => $review_video,
         ]);
 
         // Cộng điểm thưởng nếu là đánh giá gốc
         $reward_points = 0;
         if (empty($parent_id)) {
-            if (!empty($comment)) $reward_points += 100;
-            if (!empty($review_image)) $reward_points += 100;
+            if (!empty($comment)) $reward_points += 50;
+            if (!empty($review_image) || !empty($review_video)) $reward_points += 50;
             
             if ($reward_points > 0) {
                 addLoyaltyPoints($conn, $user_id, $reward_points, "đánh giá sản phẩm");

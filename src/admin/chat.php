@@ -5,6 +5,23 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once __DIR__ . '/../config/database.php';
 
+function format_admin_chat_message($msg) {
+    $escaped = htmlspecialchars($msg);
+    // Thay thế product_detail.php?id=XX bằng link bấm được
+    $escaped = preg_replace(
+        '/product_detail\.php\?id=([a-zA-Z0-9_-]+)/i',
+        '<a href="../product_detail.php?id=$1" target="_blank" style="color: #a6825c; text-decoration: underline; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Xem sản phẩm <i class="fa-solid fa-up-right-from-square" style="font-size: 10px;"></i></a>',
+        $escaped
+    );
+    // Thay thế link http/https thường bằng thẻ a
+    $escaped = preg_replace(
+        '/(https?:\/\/[^\s]+)/i',
+        '<a href="$1" target="_blank" style="color: #a6825c; text-decoration: underline;">$1</a>',
+        $escaped
+    );
+    return $escaped;
+}
+
 $admin_user_id = $_SESSION['user_id'];
 
 // Lấy danh sách user đã nhắn tin
@@ -58,6 +75,10 @@ if (!empty($current_user)) {
 // Tìm max_id tuyệt đối để làm mốc SSE
 $stmt_max = $conn->query("SELECT MAX(id) FROM chat_messages");
 $max_chat_id = (int)$stmt_max->fetchColumn() ?: 0;
+
+// Lấy danh sách sản phẩm hoạt động để gửi link
+$stmt_prod = $conn->query("SELECT product_id, name, image FROM products WHERE status = 1 ORDER BY name ASC");
+$all_products = $stmt_prod->fetchAll(PDO::FETCH_ASSOC);
 
 $admin_current_page = 'chat.php';
 include __DIR__ . '/../includes/admin_sidebar.php';
@@ -447,6 +468,157 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     body.dark-mode .no-chat-icon {
         color: #2a2a2a !important;
     }
+
+    /* Product Selector in Input Area */
+    .product-link-dropdown-container {
+        position: relative;
+    }
+    .btn-product-link-toggle {
+        background: #fafaf9;
+        border: 1px solid #e5e5e5;
+        color: #777;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        transition: all 0.2s;
+    }
+    body.dark-mode .btn-product-link-toggle {
+        background: #252525 !important;
+        border-color: #333333 !important;
+        color: #aaa !important;
+    }
+    .btn-product-link-toggle:hover {
+        background: #f0e9df;
+        border-color: #2f1c00;
+        color: #2f1c00;
+        transform: scale(1.05);
+    }
+    body.dark-mode .btn-product-link-toggle:hover {
+        background: #2c2217 !important;
+        border-color: #a6825c !important;
+        color: #a6825c !important;
+    }
+
+    .product-link-dropdown {
+        display: none;
+        position: absolute;
+        bottom: 50px;
+        left: 0;
+        width: 280px;
+        max-height: 350px;
+        background: #ffffff;
+        border: 1px solid #e5e5e5;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        z-index: 1000;
+        flex-direction: column;
+        overflow: hidden;
+        animation: slideUpFade 0.2s ease;
+    }
+    body.dark-mode .product-link-dropdown {
+        background: #1e1e1e !important;
+        border-color: #2a2a2a !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.4) !important;
+    }
+    @keyframes slideUpFade {
+        from { transform: translateY(10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .prod-search-box {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e5e5e5;
+        background: #fafaf9;
+    }
+    body.dark-mode .prod-search-box {
+        background: #181818 !important;
+        border-bottom-color: #2a2a2a !important;
+    }
+    .prod-search-box input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        font-size: 12.5px;
+        outline: none;
+        background: #fff;
+    }
+    body.dark-mode .prod-search-box input {
+        background: #252525 !important;
+        border-color: #333333 !important;
+        color: #fff !important;
+    }
+    .prod-list-container {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 290px;
+    }
+    .prod-dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        border-bottom: 1px solid #f9f9f9;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    body.dark-mode .prod-dropdown-item {
+        border-bottom-color: #252525 !important;
+    }
+    .prod-dropdown-item:hover {
+        background: #fafaf9;
+    }
+    body.dark-mode .prod-dropdown-item:hover {
+        background: #252525 !important;
+    }
+    .prod-dropdown-item img {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 1px solid #e5e5e5;
+    }
+    body.dark-mode .prod-dropdown-item img {
+        border-color: #2a2a2a !important;
+    }
+    .prod-no-img {
+        width: 32px;
+        height: 32px;
+        border-radius: 4px;
+        background: #f0e9df;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #a6825c;
+        flex-shrink: 0;
+    }
+    .prod-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .prod-name-text {
+        font-size: 12px;
+        font-weight: 500;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    body.dark-mode .prod-name-text {
+        color: #eee !important;
+    }
+    .prod-id-tag {
+        font-size: 10px;
+        color: #999;
+        margin-top: 1px;
+    }
 </style>
 
 <div class="page-title">Hệ thống Live Chat</div>
@@ -522,7 +694,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     ?>
                         <div class="msg-group <?= $group_class ?>">
                             <div class="msg-bubble">
-                                <?= htmlspecialchars($m['message']) ?>
+                                <?= format_admin_chat_message($m['message']) ?>
                             </div>
                             <span class="msg-time-stamp"><?= $time_label ?></span>
                         </div>
@@ -530,8 +702,39 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <?php endif; ?>
             </div>
             
-            <div class="chat-input-area">
-                <input type="text" class="chat-input-field" id="msg-input" placeholder="Nhập câu trả lời..." onkeypress="if(event.key === 'Enter') sendAdminMsg()">
+            <div class="chat-input-area" style="position: relative;">
+                <!-- Công cụ chọn nhanh sản phẩm để gửi link -->
+                <div class="product-link-dropdown-container">
+                    <button class="btn-product-link-toggle" onclick="toggleProductDropdown()" title="Gửi link sản phẩm">
+                        <i class="fa-solid fa-tags"></i>
+                    </button>
+                    <div class="product-link-dropdown" id="product-link-dropdown">
+                        <div class="prod-search-box">
+                            <input type="text" id="prod-search-input" placeholder="Tìm sản phẩm..." onkeyup="filterProducts()">
+                        </div>
+                        <div class="prod-list-container">
+                            <?php if (empty($all_products)): ?>
+                                <div style="padding:15px; text-align:center; color:#999; font-size:12px;">Không có sản phẩm nào</div>
+                            <?php else: ?>
+                                <?php foreach ($all_products as $p): ?>
+                                    <div class="prod-dropdown-item" onclick="insertProductLink('product_detail.php?id=<?= $p['product_id'] ?>')" data-name="<?= htmlspecialchars(strtolower($p['name'])) ?>">
+                                        <?php if (!empty($p['image'])): ?>
+                                            <img src="../<?= htmlspecialchars($p['image']) ?>" alt="" onerror="this.src='../assets/images/logo-ntk.png'">
+                                        <?php else: ?>
+                                            <div class="prod-no-img"><i class="fa-solid fa-image"></i></div>
+                                        <?php endif; ?>
+                                        <div class="prod-info">
+                                            <div class="prod-name-text"><?= htmlspecialchars($p['name']) ?></div>
+                                            <div class="prod-id-tag">ID: <?= $p['product_id'] ?></div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="text" class="chat-input-field" id="msg-input" placeholder="Nhập câu trả lời..." onkeydown="if(event.key === 'Enter') { event.preventDefault(); sendAdminMsg(); }">
                 <button class="btn-send" onclick="sendAdminMsg()" title="Gửi"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         <?php else: ?>
@@ -545,10 +748,18 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </div>
 
 <script>
-    // Cuộn xuống cuối khung chat
+(function() {
+    // Đăng ký biến currentChatUserId toàn cục để admin_sidebar nhận biết
+    window.currentChatUserId = <?= json_encode($current_user) ?>;
+
+    // Cuộn xuống cuối khung chat và focus ô nhập liệu
     const chatContainer = document.getElementById('chat-messages-container');
     if (chatContainer) {
         chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+    const msgInput = document.getElementById('msg-input');
+    if (msgInput) {
+        msgInput.focus();
     }
 
     // Lọc danh sách khách hàng tại sidebar
@@ -564,6 +775,92 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             }
         });
     }
+    window.filterUserList = filterUserList;
+
+    // Định dạng tin nhắn chứa link sản phẩm để hiển thị đẹp đẽ
+    function formatChatMessage(msg, isForAdmin = false) {
+        if (!msg) return '';
+        let escaped = escapeHTML(msg);
+        const pathPrefix = isForAdmin ? '../' : '';
+        escaped = escaped.replace(
+            /product_detail\.php\?id=([a-zA-Z0-9_-]+)/gi,
+            `<a href="${pathPrefix}product_detail.php?id=$1" target="_blank" style="color: #a6825c; text-decoration: underline; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Xem sản phẩm <i class="fa-solid fa-up-right-from-square" style="font-size: 10px;"></i></a>`
+        );
+        escaped = escaped.replace(
+            /(https?:\/\/[^\s]+)/gi,
+            `<a href="$1" target="_blank" style="color: #a6825c; text-decoration: underline;">$1</a>`
+        );
+        return escaped;
+    }
+    window.formatChatMessage = formatChatMessage;
+
+    // Hàm chèn link sản phẩm tại vị trí con trỏ chuột
+    function insertProductLink(link) {
+        const input = document.getElementById('msg-input');
+        if (input) {
+            const currentVal = input.value;
+            const cursorPos = input.selectionStart || currentVal.length;
+            const textBefore = currentVal.substring(0, cursorPos);
+            const textAfter = currentVal.substring(cursorPos);
+            const spaceBefore = (cursorPos > 0 && !textBefore.endsWith(' ')) ? ' ' : '';
+            const spaceAfter = (!textAfter.startsWith(' ')) ? ' ' : '';
+            
+            input.value = textBefore + spaceBefore + link + spaceAfter + textAfter;
+            input.focus();
+            
+            const newCursorPos = cursorPos + spaceBefore.length + link.length + spaceAfter.length;
+            input.setSelectionRange(newCursorPos, newCursorPos);
+        }
+        const dropdown = document.getElementById('product-link-dropdown');
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+    }
+    window.insertProductLink = insertProductLink;
+
+    // Toggle dropdown chọn sản phẩm
+    function toggleProductDropdown() {
+        const dropdown = document.getElementById('product-link-dropdown');
+        if (dropdown) {
+            const isShown = (dropdown.style.display === 'flex');
+            dropdown.style.display = isShown ? 'none' : 'flex';
+            if (!isShown) {
+                const search = document.getElementById('prod-search-input');
+                if (search) {
+                    search.value = '';
+                    filterProducts();
+                    search.focus();
+                }
+            }
+        }
+    }
+    window.toggleProductDropdown = toggleProductDropdown;
+
+    // Tìm kiếm/lọc sản phẩm trong dropdown
+    function filterProducts() {
+        const query = document.getElementById('prod-search-input').value.toLowerCase().trim();
+        const items = document.querySelectorAll('.prod-dropdown-item');
+        items.forEach(item => {
+            const name = item.getAttribute('data-name');
+            if (name.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    window.filterProducts = filterProducts;
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function(event) {
+        const container = document.querySelector('.product-link-dropdown-container');
+        if (container && !container.contains(event.target)) {
+            const dropdown = document.getElementById('product-link-dropdown');
+            if (dropdown) {
+                dropdown.style.display = 'none';
+            }
+        }
+    });
 
     // Gửi tin nhắn từ Admin
     async function sendAdminMsg() {
@@ -581,7 +878,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         
         chatContainer.innerHTML += `
             <div class="msg-group admin">
-                <div class="msg-bubble">${escapeHTML(msg)}</div>
+                <div class="msg-bubble">${formatChatMessage(msg, true)}</div>
                 <span class="msg-time-stamp">${timeStr}</span>
             </div>
         `;
@@ -598,6 +895,12 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             const data = await response.json();
             if (!data.success) {
                 console.error("Gửi tin thất bại: ", data.message);
+                chatContainer.innerHTML += `
+                    <div class="msg-group system-error" style="align-self: center; background: #fdf0ef; color: #c0392b; font-size: 11px; padding: 6px 12px; border-radius: 8px; margin: 4px 0; border: 1px solid #f87171;">
+                        <i class="fa-solid fa-circle-exclamation"></i> Gửi tin thất bại: ${data.message}
+                    </div>
+                `;
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             } else {
                 // Cập nhật preview của sidebar
                 const previewEl = document.getElementById('preview-' + <?= json_encode($current_user) ?>);
@@ -614,8 +917,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             }
         } catch (e) {
             console.error("Lỗi kết nối gửi tin: ", e);
+            chatContainer.innerHTML += `
+                <div class="msg-group system-error" style="align-self: center; background: #fdf0ef; color: #c0392b; font-size: 11px; padding: 6px 12px; border-radius: 8px; margin: 4px 0; border: 1px solid #f87171;">
+                    <i class="fa-solid fa-circle-exclamation"></i> Lỗi kết nối gửi tin nhắn.
+                </div>
+            `;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
     }
+    window.sendAdminMsg = sendAdminMsg;
 
     // Di chuyển user lên đầu danh sách
     function moveUserToTop(uid) {
@@ -625,6 +935,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             list.insertBefore(item, list.firstChild);
         }
     }
+    window.moveUserToTop = moveUserToTop;
 
     // Tránh XSS
     function escapeHTML(str) {
@@ -640,127 +951,131 @@ include __DIR__ . '/../includes/admin_sidebar.php';
     }
 
     // ── XỬ LÝ CHAT SSE REAL-TIME ────────────────────────────
-    let lastChatId = <?= $max_chat_id ?>;
+    lastChatId = <?= $max_chat_id ?>;
     
-    const sseUrl = new URL('../api/sse_stream.php', window.location.href);
-    sseUrl.searchParams.set('last_chat_id', lastChatId);
+    const localSseUrl = new URL('../api/sse_stream.php', window.location.href);
+    localSseUrl.searchParams.set('last_chat_id', lastChatId);
     
-    const sse = new EventSource(sseUrl);
+    const sse = new EventSource(localSseUrl);
     sse.addEventListener('message', function(e) {
         const data = JSON.parse(e.data);
         if (data.chat_messages) {
             let receivedActiveUserMsg = false;
+            let maxMsgId = lastChatId;
             
             data.chat_messages.forEach(m => {
-                const senderId = m.sender_id;
-                const activeId = <?= json_encode($current_user) ?>;
-                
-                // Nếu khách hàng gửi tin nhắn chưa có trong sidebar thì tự động thêm mới vào DOM tức thì
-                if (m.receiver_id == '0') {
-                    let itemEl = document.querySelector(`.user-item[data-id="${senderId}"]`);
-                    if (!itemEl) {
-                        const initials = m.sender_name ? m.sender_name.charAt(0).toUpperCase() : 'U';
-                        const name = m.sender_name || 'Khách hàng';
-                        const listItems = document.getElementById('user-list-items');
-                        if (listItems) {
-                            const newHtml = `
-                                <a href="?uid=${senderId}" class="user-item ${senderId === activeId ? 'active' : ''}" data-id="${senderId}" data-name="${name.toLowerCase()}">
-                                    <div class="user-avatar">${initials}</div>
-                                    <div class="user-info">
-                                        <div class="user-name-row">
-                                            <span class="user-fullname">${name}</span>
-                                            <span class="msg-time" id="time-${senderId}"></span>
+                const msgId = parseInt(m.id);
+                if (msgId > lastChatId) {
+                    maxMsgId = Math.max(maxMsgId, msgId);
+                    
+                    const senderId = m.sender_id;
+                    const activeId = <?= json_encode($current_user) ?>;
+                    
+                    // Nếu khách hàng gửi tin nhắn chưa có trong sidebar thì tự động thêm mới vào DOM tức thì
+                    if (m.receiver_id == '0') {
+                        let itemEl = document.querySelector(`.user-item[data-id="${senderId}"]`);
+                        if (!itemEl) {
+                            const initials = m.sender_name ? m.sender_name.charAt(0).toUpperCase() : 'U';
+                            const name = m.sender_name || 'Khách hàng';
+                            const listItems = document.getElementById('user-list-items');
+                            if (listItems) {
+                                const newHtml = `
+                                    <a href="?uid=${senderId}" class="user-item ${senderId === activeId ? 'active' : ''}" data-id="${senderId}" data-name="${name.toLowerCase()}">
+                                        <div class="user-avatar">${initials}</div>
+                                        <div class="user-info">
+                                            <div class="user-name-row">
+                                                <span class="user-fullname">${name}</span>
+                                                <span class="msg-time" id="time-${senderId}"></span>
+                                            </div>
+                                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                                <span class="msg-preview" id="preview-${senderId}"></span>
+                                                <span class="unread-badge" id="unread-${senderId}" style="display:none;">0</span>
+                                            </div>
                                         </div>
-                                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                                            <span class="msg-preview" id="preview-${senderId}"></span>
-                                            <span class="unread-badge" id="unread-${senderId}" style="display:none;">0</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            `;
-                            // Prepend vào danh sách
-                            listItems.insertAdjacentHTML('afterbegin', newHtml);
+                                    </a>
+                                `;
+                                listItems.insertAdjacentHTML('afterbegin', newHtml);
+                            }
                         }
                     }
-                }
 
-                // Nếu tin nhắn là từ khách hàng ta đang chat
-                if (senderId === activeId && m.receiver_id == '0') {
-                    receivedActiveUserMsg = true;
-                    
-                    const hintNode = document.getElementById('no-msg-hint');
-                    if (hintNode) hintNode.remove();
-                    
-                    const dateObj = new Date(m.created_at);
-                    const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0') + ' ' + dateObj.getDate().toString().padStart(2, '0') + '/' + (dateObj.getMonth()+1).toString().padStart(2, '0') + '/' + dateObj.getFullYear();
-                    
-                    chatContainer.innerHTML += `
-                        <div class="msg-group user">
-                            <div class="msg-bubble">${escapeHTML(m.message)}</div>
-                            <span class="msg-time-stamp">${timeStr}</span>
-                        </div>
-                    `;
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                    
-                    // Cập nhật preview ở sidebar
-                    const previewEl = document.getElementById('preview-' + activeId);
-                    if (previewEl) {
-                        previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
-                    }
-                    const timeEl = document.getElementById('time-' + activeId);
-                    if (timeEl) {
-                        timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
-                    }
-                    
-                    // Đưa user lên top
-                    moveUserToTop(activeId);
-                } else if (m.receiver_id == '0') {
-                    // Tin nhắn từ khách hàng khác
-                    // Cập nhật badge chưa đọc ở sidebar
-                    const badgeEl = document.getElementById('unread-' + senderId);
-                    if (badgeEl) {
-                        let count = parseInt(badgeEl.innerText) || 0;
-                        count += 1;
-                        badgeEl.innerText = count;
-                        badgeEl.style.display = 'inline-block';
-                    }
-                    
-                    // Cập nhật preview ở sidebar
-                    const previewEl = document.getElementById('preview-' + senderId);
-                    if (previewEl) {
-                        previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
-                    }
-                    const timeEl = document.getElementById('time-' + senderId);
-                    if (timeEl) {
+                    // Nếu tin nhắn là từ khách hàng ta đang chat
+                    if (senderId === activeId && m.receiver_id == '0') {
+                        receivedActiveUserMsg = true;
+                        
+                        const hintNode = document.getElementById('no-msg-hint');
+                        if (hintNode) hintNode.remove();
+                        
                         const dateObj = new Date(m.created_at);
-                        timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
-                    }
-                    
-                    // Đưa user lên top
-                    moveUserToTop(senderId);
-                    
-                    // Hiện Toast Notification đẹp đẽ
-                    if (typeof showNtkToast === 'function') {
-                        showNtkToast(
-                            "Tin nhắn mới", 
-                            `Bạn nhận được tin nhắn mới từ khách hàng.`,
-                            "fa-comments"
-                        );
+                        const timeStr = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0') + ' ' + dateObj.getDate().toString().padStart(2, '0') + '/' + (dateObj.getMonth()+1).toString().padStart(2, '0') + '/' + dateObj.getFullYear();
+                        
+                        chatContainer.innerHTML += `
+                            <div class="msg-group user">
+                                <div class="msg-bubble">${formatChatMessage(m.message, true)}</div>
+                                <span class="msg-time-stamp">${timeStr}</span>
+                            </div>
+                        `;
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        
+                        // Cập nhật preview ở sidebar
+                        const previewEl = document.getElementById('preview-' + activeId);
+                        if (previewEl) {
+                            previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
+                        }
+                        const timeEl = document.getElementById('time-' + activeId);
+                        if (timeEl) {
+                            timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+                        }
+                        
+                        // Đưa user lên top
+                        moveUserToTop(activeId);
+                    } else if (m.receiver_id == '0') {
+                        // Tin nhắn từ khách hàng khác
+                        const badgeEl = document.getElementById('unread-' + senderId);
+                        if (badgeEl) {
+                            let count = parseInt(badgeEl.innerText) || 0;
+                            count += 1;
+                            badgeEl.innerText = count;
+                            badgeEl.style.display = 'inline-block';
+                        }
+                        
+                        // Cập nhật preview ở sidebar
+                        const previewEl = document.getElementById('preview-' + senderId);
+                        if (previewEl) {
+                            previewEl.innerText = m.message.length > 30 ? m.message.substring(0,30) + '...' : m.message;
+                        }
+                        const timeEl = document.getElementById('time-' + senderId);
+                        if (timeEl) {
+                            const dateObj = new Date(m.created_at);
+                            timeEl.innerText = dateObj.getHours().toString().padStart(2, '0') + ':' + dateObj.getMinutes().toString().padStart(2, '0');
+                        }
+                        
+                        // Đưa user lên top
+                        moveUserToTop(senderId);
+                        
+                        // Hiện Toast
+                        if (typeof showNtkToast === 'function') {
+                            showNtkToast(
+                                "Tin nhắn mới", 
+                                `Bạn nhận được tin nhắn mới từ khách hàng.`,
+                                "fa-comments"
+                            );
+                        }
                     }
                 }
             });
             
-            // Nếu có tin nhắn của khách hàng đang chat, ta gọi API để đánh dấu đã đọc luôn
+            // Cập nhật mốc ID cuối trong bộ nhớ JS
+            lastChatId = maxMsgId;
+            if (typeof sseUrl !== 'undefined') {
+                sseUrl.searchParams.set('last_chat_id', lastChatId);
+            }
+            
             if (receivedActiveUserMsg) {
                 const fd = new FormData();
                 fd.append('user_id', <?= json_encode($current_user) ?>);
                 fetch('../api/chat_mark_read.php', { method: 'POST', body: fd });
             }
-            
-            // Cập nhật mốc ID cuối
-            const last = data.chat_messages[data.chat_messages.length - 1];
-            lastChatId = Math.max(lastChatId, parseInt(last.id));
-            sseUrl.searchParams.set('last_chat_id', lastChatId);
         }
     });
 
@@ -781,12 +1096,13 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         `;
         container.appendChild(toast);
         
-        // Tự biến mất sau 5s
         setTimeout(() => {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
         }, 5000);
     }
+    window.showNtkToast = showNtkToast;
+})();
 </script>
 
 </div><!-- /.admin-content -->

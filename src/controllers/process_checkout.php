@@ -182,8 +182,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $initial_payment_status = ($wallet_used >= $total_price && $payment_method !== 'online') ? 1 : 0;
         $initial_order_status = ($payment_method === 'online') ? 0 : 1;
 
-        $sql_order = "INSERT INTO orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value, shipping_method_id, freeship_coupon_id, freeship_discount_value) 
-                      VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv, :smid, :fcsid, :fcsval)";
+        $sql_order = "INSERT INTO orders (order_id, user_id, fullname, phone, address, note, payment_method, wallet_used_amount, total_price, final_price, shipping_fee, payos_order_code, payment_status, order_status, coupon_id, discount_value, tier_discount_value, shipping_method_id, freeship_coupon_id, freeship_discount_value) 
+                      VALUES (:oid, :uid, :fname, :phone, :addr, :note, :pay, :wallet_used, :tp, :fp, :sf, :poc, :ps, :os, :cpid, :dv, :tdv, :smid, :fcsid, :fcsval)";
         $stmt_order = $conn->prepare($sql_order);
         $stmt_order->execute([
             'oid'         => $order_id,
@@ -202,6 +202,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'os'          => $initial_order_status,
             'cpid'        => $verified_coupon_id,
             'dv'          => $verified_coupon_discount,
+            'tdv'         => $tier_discount,
             'smid'        => $shipping_method_id,
             'fcsid'       => $verified_freeship_id,
             'fcsval'      => $verified_freeship_discount

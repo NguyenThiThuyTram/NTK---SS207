@@ -19,12 +19,11 @@ if (isset($_POST['submit_reply'])) {
         if ($give_voucher && $user_id_of_review) {
             $coupon_id = 'V' . substr(str_shuffle("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 4);
             $coupon_code = 'REWARD30K_' . time();
-            $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_amount, discount_type, min_spend, start_date, end_date, usage_limit, status, user_id) 
-                VALUES (:cid, :code, 30000, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, :uid)");
+            $stmt_cp = $conn->prepare("INSERT INTO coupons (coupon_id, code, discount_value, discount_type, min_order_value, start_date, end_date, quantity, status, coupon_type) 
+                VALUES (:cid, :code, 30000, 0, 0, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1, 1, 0)");
             $stmt_cp->execute([
                 'cid' => $coupon_id,
-                'code' => $coupon_code,
-                'uid' => $user_id_of_review
+                'code' => $coupon_code
             ]);
             
             $msg = "Người bán đã phản hồi đánh giá của bạn và tặng bạn một Voucher giảm 30K (Mã: $coupon_code) cho đơn hàng tiếp theo.";
@@ -99,6 +98,20 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                     <div class="rac-prod">Sản phẩm: <?= htmlspecialchars($r['product_name']) ?></div>
                 </div>
                 <div class="rac-text">“ <?= htmlspecialchars($r['comment']) ?> ”</div>
+                
+                <?php if (!empty($r['image'])): ?>
+                    <div style="margin: 10px 0;">
+                        <img src="../<?= htmlspecialchars($r['image']) ?>" alt="Hình đánh giá" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #eee; object-fit: cover;">
+                    </div>
+                <?php endif; ?>
+                <?php if (!empty($r['video'])): ?>
+                    <div style="margin: 10px 0;">
+                        <video controls style="max-width: 240px; max-height: 180px; border-radius: 8px; border: 1px solid #eee;">
+                            <source src="../<?= htmlspecialchars($r['video']) ?>" type="video/mp4">
+                            Trình duyệt không hỗ trợ phát video.
+                        </video>
+                    </div>
+                <?php endif; ?>
                 
                 <form action="" method="POST" class="reply-form-admin">
                     <input type="hidden" name="parent_id" value="<?= $r['review_id'] ?>">

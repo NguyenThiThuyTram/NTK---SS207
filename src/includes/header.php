@@ -13,19 +13,21 @@ $_BASE = $_protocol . '://' . $_host . $_src_path;
 
 $cart_count = 0;
 try {
-    if (isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['user_id']) && isset($conn)) {
         $stmt = $conn->prepare("SELECT SUM(quantity) as total_items FROM cart WHERE user_id = :user_id");
         $stmt->execute(['user_id' => $_SESSION['user_id']]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $cart_count = $row['total_items'] ?: 0;
     }
-} catch (PDOException $e) {}
+} catch (\Throwable $e) {
+    error_log($e->getMessage());
+}
 
 $unread_noti_count = 0;
 $max_notif_id = 0;
 $max_chat_id = 0;
 try {
-    if (isset($_SESSION['user_id'])) {
+    if (isset($_SESSION['user_id']) && isset($conn)) {
         $stmt_n = $conn->prepare("SELECT COUNT(*) as unread, MAX(noti_id) as max_id FROM notifications WHERE user_id = :user_id");
         $stmt_n->execute(['user_id' => $_SESSION['user_id']]);
         $row_n = $stmt_n->fetch(PDO::FETCH_ASSOC);
@@ -38,12 +40,16 @@ try {
         
         // Max chat id
         try {
-            $stmt_c = $conn->prepare("SELECT MAX(id) FROM chat_messages WHERE receiver_id = :user_id");
+            $stmt_c = $conn->prepare("SELECT MAX(id) FROM chat_messages WHERE receiver_id = :user_id OR sender_id = :user_id");
             $stmt_c->execute(['user_id' => $_SESSION['user_id']]);
             $max_chat_id = $stmt_c->fetchColumn() ?: 0;
-        } catch (Exception $e) {}
+        } catch (\Throwable $e) {
+            error_log($e->getMessage());
+        }
     }
-} catch (PDOException $e) {}
+} catch (\Throwable $e) {
+    error_log($e->getMessage());
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -134,7 +140,7 @@ try {
                             <?= intval($unread_noti_count) ?>
                         </span>
                     </a>
-                    <a href="<?= ($_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản"><i class="fa-solid fa-user"></i></a>
+                    <a href="<?= (isset($_SESSION['role']) && $_SESSION['role'] == 1) ? $_BASE . '/admin/dashboard.php' : $_BASE . '/views/user/dashboard.php'; ?>" title="Tài khoản"><i class="fa-solid fa-user"></i></a>
                 <?php else: ?>
                     <a href="<?= $_BASE ?>/views/login.php" title="Đăng nhập"><i class="fa-regular fa-user"></i></a>
                 <?php endif; ?>
@@ -410,13 +416,48 @@ try {
                 sseUrl.searchParams.set('last_notif_id', lastNotifId);
             }
 
-            // 2. Nhận tin nhắn chat mới (Sẽ xử lý sâu hơn ở phần Chat)
+            // 2. Nhận tin nhắn chat mới
             if (data.chat_messages && data.chat_messages.length > 0) {
-                if (typeof window.handleNewChatMessage === 'function') {
-                    window.handleNewChatMessage(data.chat_messages);
-                } else {
-                    // Nếu chưa mở khung chat, hiển thị thông báo
-                    showToast('Tin nhắn mới', 'Bạn có tin nhắn chưa đọc.');
+                let hasNewFromStaff = false;
+                let maxMsgId = lastChatId;
+                const isAdmin = <?= (isset($_SESSION['role']) && $_SESSION['role'] == 1) ? 'true' : 'false' ?>;
+
+                data.chat_messages.forEach(msg => {
+                    const msgId = parseInt(msg.id);
+                    if (msgId > lastChatId) {
+                        maxMsgId = Math.max(maxMsgId, msgId);
+                        
+                        if (msg.sender_id !== <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>) {
+                            if (isAdmin) {
+                                showChatToast('Tin nhắn mới từ ' + (msg.sender_name || 'Khách hàng'), msg.message, msg.sender_id);
+                            } else {
+                                hasNewFromStaff = true;
+                                const chatbox = document.getElementById('ntk-chatbox');
+                                const chatMode = document.getElementById('chat-mode');
+                                const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && chatMode && chatMode.value === 'human';
+
+                                if (!isChatboxOpenAndHuman) {
+                                    showChatToast('Tin nhắn mới từ nhân viên', msg.message, msg.sender_id);
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Cập nhật lại lastChatId trong bộ nhớ JS để tránh nhận lại tin cũ ở các đợt sau
+                lastChatId = maxMsgId;
+                sseUrl.searchParams.set('last_chat_id', lastChatId);
+                
+                if (hasNewFromStaff) {
+                    const chatbox = document.getElementById('ntk-chatbox');
+                    const chatMode = document.getElementById('chat-mode');
+                    const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && chatMode && chatMode.value === 'human';
+
+                    if (isChatboxOpenAndHuman) {
+                        if (typeof window.handleNewChatMessage === 'function') {
+                            window.handleNewChatMessage(data.chat_messages);
+                        }
+                    }
                 }
             }
 
@@ -424,6 +465,26 @@ try {
             if (data.order_update) {
                 if (typeof window.handleOrderUpdate === 'function') {
                     window.handleOrderUpdate(data.order_update);
+                }
+            }
+
+            // 4. Đơn hàng MỚI được đặt (chỉ admin nhận)
+            if (data.new_order && data.new_order.length > 0) {
+                data.new_order.forEach(function(o) {
+                    var price = parseInt(o.final_price || 0).toLocaleString('vi-VN');
+                    showToast(
+                        '🛒 Đơn hàng mới #' + o.order_id,
+                        (o.fullname || 'Khách') + ' vừa đặt hàng • ' + price + '₫'
+                    );
+                    // Cập nhật badge "Đơn hàng mới" trong admin sidebar nếu có
+                    var badge = document.querySelector('[data-admin-badge="new_orders"]');
+                    if (badge) {
+                        badge.textContent = (parseInt(badge.textContent) || 0) + 1;
+                        badge.style.display = 'inline-block';
+                    }
+                });
+                if (typeof window.handleNewOrder === 'function') {
+                    window.handleNewOrder(data.new_order);
                 }
             }
         });
@@ -445,6 +506,38 @@ try {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 5000);
+        }
+
+        function showChatToast(title, message, senderId) {
+            const container = document.getElementById('ntk-toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'ntk-toast';
+            toast.style.cursor = 'pointer';
+            toast.innerHTML = `
+                <i class="fa-solid fa-comments" style="color: #f39c12; margin-top: 2px;"></i>
+                <div class="ntk-toast-content">
+                    <div class="ntk-toast-title">${title}</div>
+                    <div class="ntk-toast-msg">${message}</div>
+                </div>
+                <button class="ntk-toast-close" onclick="event.stopPropagation(); this.parentElement.remove()">&times;</button>
+            `;
+            toast.onclick = function() {
+                const isAdmin = <?= (isset($_SESSION['role']) && $_SESSION['role'] == 1) ? 'true' : 'false' ?>;
+                if (isAdmin) {
+                    window.location.href = '<?= $_BASE ?>/admin/chat.php?uid=' + senderId;
+                } else {
+                    if (typeof window.openUserChat === 'function') {
+                        window.openUserChat();
+                    }
+                }
+                toast.remove();
+            };
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
         }
     </script>
     <?php endif; ?>

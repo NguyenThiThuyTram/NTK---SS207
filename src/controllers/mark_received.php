@@ -46,12 +46,10 @@ try {
     $conn->prepare("UPDATE orders SET order_status = 3, payment_status = 1 WHERE order_id = :oid")
          ->execute(['oid' => $order_id]);
 
-    // Thưởng điểm Loyalty
+    // Thưởng điểm Loyalty: cố định +20 điểm khi hoàn tất đơn hàng
     require_once '../includes/loyalty_utils.php';
-    $points_earned = floor((float)$order['final_price'] / 10000);
-    if ($points_earned > 0) {
-        addLoyaltyPoints($conn, $user_id, $points_earned, "hoàn thành đơn hàng #{$order_id}");
-    }
+    $points_earned = 20;
+    addLoyaltyPoints($conn, $user_id, $points_earned, "hoàn thành đơn hàng #{$order_id}");
 
     // Tạo thông báo cho User
     try {

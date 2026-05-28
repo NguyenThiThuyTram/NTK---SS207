@@ -364,6 +364,33 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
 </div>
 
 <script>
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag)
+        );
+    }
+
+    function formatChatMessage(msg) {
+        if (!msg) return '';
+        let escaped = escapeHTML(msg);
+        escaped = escaped.replace(
+            /product_detail\.php\?id=([a-zA-Z0-9_-]+)/gi,
+            `<a href="product_detail.php?id=$1" target="_blank" style="color: #a6825c; text-decoration: underline; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">Xem sản phẩm <i class="fa-solid fa-up-right-from-square" style="font-size: 10px;"></i></a>`
+        );
+        escaped = escaped.replace(
+            /(https?:\/\/[^\s]+)/gi,
+            `<a href="$1" target="_blank" style="color: #a6825c; text-decoration: underline;">$1</a>`
+        );
+        return escaped;
+    }
+
     function toggleChat() {
         const chatbox = document.getElementById('ntk-chatbox');
         const isOpening = (chatbox.style.display !== 'flex');
@@ -404,7 +431,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
                         const isUser = (m.sender_id === <?= json_encode(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '') ?>);
                         const msgClass = isUser ? 'msg-user' : 'msg-bot';
                         const label = isUser ? '' : '<b>Nhân viên:</b><br>';
-                        messagesDiv.innerHTML += `<div class="${msgClass}">${label}${m.message}</div>`;
+                        messagesDiv.innerHTML += `<div class="${msgClass}">${label}${formatChatMessage(m.message)}</div>`;
                     });
                     
                     const lastMsg = data.messages[data.messages.length - 1];
@@ -436,7 +463,7 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         const messagesDiv = document.getElementById('ntk-chat-messages');
         const chatMode = document.getElementById('chat-mode').value;
         
-        messagesDiv.innerHTML += `<div class="msg-user">${msgText}</div>`;
+        messagesDiv.innerHTML += `<div class="msg-user">${formatChatMessage(msgText)}</div>`;
         input.value = '';
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
@@ -484,6 +511,25 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
         }
     }
 
+    // Hàm mở khung chat và focus ô nhập liệu khi click thông báo
+    window.openUserChat = function() {
+        const chatbox = document.getElementById('ntk-chatbox');
+        const selectMode = document.getElementById('chat-mode');
+        if (chatbox) {
+            chatbox.style.display = 'flex';
+        }
+        if (selectMode && selectMode.value !== 'human') {
+            selectMode.value = 'human';
+            loadChatHistory();
+        } else {
+            loadChatHistory(true);
+        }
+        setTimeout(() => {
+            const input = document.getElementById('ntk-chat-input');
+            if (input) input.focus();
+        }, 150);
+    };
+
     // Hook nhận tin nhắn từ SSE
     if (typeof window.handleNewChatMessage === 'undefined' || window.handleNewChatMessage.name !== 'globalHandleNewChatMessage') {
         window.handleNewChatMessage = function globalHandleNewChatMessage(messages) {
@@ -498,15 +544,11 @@ $_FBASE = $_f_protocol . '://' . $_f_host . $_f_src_path;
             });
 
             if (hasNewFromStaff) {
-                // Tự động mở hộp chat nếu chưa mở
-                if (chatbox.style.display !== 'flex') {
-                    chatbox.style.display = 'flex';
+                // Chỉ tự động tải lịch sử nếu hộp chat đang mở và đang ở tab nhân viên (đảm bảo real-time không cần reload)
+                const isChatboxOpenAndHuman = chatbox && chatbox.style.display === 'flex' && selectMode && selectMode.value === 'human';
+                if (isChatboxOpenAndHuman) {
+                    loadChatHistory(true);
                 }
-                // Tự chuyển sang tab chat nhân viên và load lại
-                if (selectMode && selectMode.value !== 'human') {
-                    selectMode.value = 'human';
-                }
-                loadChatHistory(true);
             }
         };
     }

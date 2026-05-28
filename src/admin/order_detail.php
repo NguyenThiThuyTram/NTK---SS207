@@ -53,7 +53,7 @@ $returnReq = $stmt_ret->fetch(PDO::FETCH_ASSOC);
 // Subtotal calculation
 $subtotal = 0;
 foreach ($details as $d) {
-    $subtotal += ($d['unit_price'] * $d['quantity']);
+    $subtotal += ($d['price'] * $d['quantity']);
 }
 
 // Payment method mapping (1=COD, 2=Online/PayOS)
@@ -551,8 +551,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         </td>
                         <td style="text-align: center; color:#555;"><?= htmlspecialchars($d['size'] ?? '-') ?></td>
                         <td style="text-align: center; font-weight:500;"><?= (int)$d['quantity'] ?></td>
-                        <td style="text-align: right; color:#555;"><?= number_format($d['unit_price'], 0, ',', '.') ?> đ</td>
-                        <td style="text-align: right; font-weight:600; color:#111;"><?= number_format($d['unit_price'] * $d['quantity'], 0, ',', '.') ?> đ</td>
+                        <td style="text-align: right; color:#555;"><?= number_format($d['price'], 0, ',', '.') ?> đ</td>
+                        <td style="text-align: right; font-weight:600; color:#111;"><?= number_format($d['price'] * $d['quantity'], 0, ',', '.') ?> đ</td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -571,6 +571,12 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <div class="summary-row">
                     <span>Giảm giá đơn hàng:</span>
                     <span style="font-weight:500; color:#c0392b;">-<?= number_format($order['discount_value'], 0, ',', '.') ?> đ</span>
+                </div>
+                <?php endif; ?>
+                <?php if (!empty($order['tier_discount_value']) && floatval($order['tier_discount_value']) > 0): ?>
+                <div class="summary-row">
+                    <span>Chiết khấu hạng thành viên:</span>
+                    <span style="font-weight:500; color:#1565c0;">-<?= number_format($order['tier_discount_value'], 0, ',', '.') ?> đ</span>
                 </div>
                 <?php endif; ?>
                 <?php if (!empty($order['freeship_discount_value']) && $order['freeship_discount_value'] > 0): ?>
@@ -825,17 +831,17 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </main>
 
 <script>
-    const sseUrl = new URL('../api/sse_stream.php', window.location.href);
-    const eventSource = new EventSource(sseUrl.toString());
-
-    eventSource.addEventListener('message', function(e) {
-        const data = JSON.parse(e.data);
-        if (data.order_update && data.order_update.length > 0) {
-            // Hiển thị toast hoặc alert nhỏ rồi reload trang
-            alert('Trạng thái đơn hàng vừa được cập nhật, hệ thống sẽ tự động làm mới!');
-            setTimeout(() => window.location.reload(), 1000);
+    // Hook cho SSE toàn cục từ admin_sidebar
+    window.handleOrderUpdate = function(updates) {
+        if (updates && updates.length > 0) {
+            const thisOrderId = <?= json_encode($order['order_id']) ?>;
+            const hasChange = updates.some(u => u.order_id === thisOrderId);
+            if (hasChange) {
+                showToast('Đơn hàng cập nhật', 'Trạng thái đơn hàng này vừa được cập nhật, đang làm mới...');
+                setTimeout(() => window.location.reload(), 1500);
+            }
         }
-    });
+    };
 </script>
 </body>
 </html>

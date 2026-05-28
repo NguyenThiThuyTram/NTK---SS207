@@ -2,15 +2,22 @@
 /**
  * run_migration.php - Chạy migration DB từ command line
  */
-$host = 'localhost';
-$username = 'root';
-$password = '';
-$dbname = 'ntk';
+$host = getenv('DB_HOST') ?: 'localhost';
+$username = getenv('DB_USER') ?: 'root';
+$password = getenv('DB_PASS') ?: '';
+$dbname = getenv('DB_NAME') ?: 'ntk';
+
+$is_local = in_array($host, ['localhost', '127.0.0.1', '::1']);
+$pdo_options = [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+];
+if (!$is_local) {
+    $pdo_options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+    $pdo_options[PDO::MYSQL_ATTR_SSL_CA]                 = false;
+}
 
 try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
+    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password, $pdo_options);
 } catch (PDOException $e) {
     echo "Loi ket noi: " . $e->getMessage() . PHP_EOL;
     exit(1);
@@ -27,6 +34,8 @@ $sqls = [
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_number VARCHAR(100) DEFAULT NULL" => "orders.tracking_number",
     "ALTER TABLE order_returns ADD COLUMN IF NOT EXISTS admin_note VARCHAR(500) DEFAULT NULL" => "order_returns.admin_note",
     "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS parent_id INT(11) DEFAULT NULL" => "reviews.parent_id",
+    "ALTER TABLE reviews ADD COLUMN IF NOT EXISTS video VARCHAR(255) DEFAULT NULL" => "reviews.video",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS tier_discount_value DECIMAL(12,2) DEFAULT 0 AFTER discount_value" => "orders.tier_discount_value",
     "CREATE TABLE IF NOT EXISTS notifications (
         noti_id INT(11) NOT NULL AUTO_INCREMENT,
         user_id CHAR(5) DEFAULT NULL,

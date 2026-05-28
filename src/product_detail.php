@@ -545,10 +545,15 @@ include 'includes/header.php';
                                         <option value="1">1 ★</option>
                                     </select>
                                 </div>
-                                <div style="flex:1; min-width:260px;">
+                                <div style="flex:1; min-width:240px;">
                                     <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">Hình ảnh (tùy chọn):</label>
                                     <input id="main_review_image" type="file" accept="image/*" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
                                     <div id="main_review_image_preview" style="display:none; margin-top:10px;"><img src="" alt="Preview" style="max-width:100%; border-radius:6px; border:1px solid #eee;"></div>
+                                </div>
+                                <div style="flex:1; min-width:240px;">
+                                    <label style="font-size:13px; color:#666; display:block; margin-bottom:4px;">Video (tùy chọn):</label>
+                                    <input id="main_review_video" type="file" accept="video/*" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; font-size:13px;">
+                                    <div id="main_review_video_preview" style="display:none; margin-top:10px;"><video controls style="max-width:100%; border-radius:6px; border:1px solid #eee;"><source src="" type="video/mp4"></video></div>
                                 </div>
                                 <button type="button" onclick="submitReview(0)" style="background:#2f1c00; color:#fff; border:none; padding:12px 24px; border-radius:4px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap;">Gửi Đánh Giá</button>
                             </div>
@@ -585,8 +590,18 @@ include 'includes/header.php';
                                     </div>
                                     <p style="font-size: 14px; color: #333; margin: 8px 0;"><?= htmlspecialchars($rev['comment']) ?></p>
                                     <?php if (!empty($rev['image'])): ?>
-                                        <div style="margin: 10px 0;">
-                                            <img src="<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 190px; max-height: 190px; border-radius: 10px; border: 1px solid #eee; object-fit: cover;">
+                                        <div style="margin: 10px 0; display: inline-block;">
+                                            <a href="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" target="_blank">
+                                                <img src="<?= $_BASE ?>/<?= htmlspecialchars($rev['image']) ?>" alt="Hình đánh giá" style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover; cursor: zoom-in;">
+                                            </a>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($rev['video'])): ?>
+                                        <div style="margin: 10px 0; display: inline-block; vertical-align: top; margin-left: 10px;">
+                                            <video controls style="max-width: 200px; max-height: 120px; border-radius: 6px; border: 1px solid #eee; object-fit: cover;">
+                                                <source src="<?= $_BASE ?>/<?= htmlspecialchars($rev['video']) ?>" type="video/mp4">
+                                                Trình duyệt không hỗ trợ phát video.
+                                            </video>
                                         </div>
                                     <?php endif; ?>
                                     <div style="display:flex; gap:15px; align-items:center; margin-top:5px;">
@@ -662,6 +677,26 @@ include 'includes/header.php';
                 } else if (preview) {
                     preview.src = '';
                     document.getElementById('main_review_image_preview').style.display = 'none';
+                }
+            });
+        }
+
+        var mainVideoInput = document.getElementById('main_review_video');
+        if (mainVideoInput) {
+            mainVideoInput.addEventListener('change', function () {
+                var file = this.files[0];
+                var previewDiv = document.getElementById('main_review_video_preview');
+                var video = previewDiv ? previewDiv.querySelector('video') : null;
+                if (file && video) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        video.src = e.target.result;
+                        previewDiv.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else if (previewDiv) {
+                    if (video) video.src = '';
+                    previewDiv.style.display = 'none';
                 }
             });
         }
@@ -917,16 +952,27 @@ include 'includes/header.php';
         let comment = '';
         let rating = 5;
         let reviewImage = null;
+        let reviewVideo = null;
 
         if (parentId === 0) {
             comment = document.getElementById('main_comment_text').value.trim();
             rating = document.getElementById('main_rating_val').value;
             reviewImage = document.getElementById('main_review_image').files[0] || null;
+            reviewVideo = document.getElementById('main_review_video').files[0] || null;
         } else {
             comment = document.getElementById('reply_text_' + parentId).value.trim();
         }
 
         if (!comment) { alert('Vui lòng nhập nội dung!'); return; }
+
+        if (reviewImage && reviewImage.size > 5 * 1024 * 1024) {
+            alert('Hình ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
+            return;
+        }
+        if (reviewVideo && reviewVideo.size > 15 * 1024 * 1024) {
+            alert('Video quá lớn! Vui lòng chọn video dưới 15MB.');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('action', 'submit_comment');
@@ -936,6 +982,9 @@ include 'includes/header.php';
         formData.append('rating', rating);
         if (reviewImage) {
             formData.append('review_image', reviewImage);
+        }
+        if (reviewVideo) {
+            formData.append('review_video', reviewVideo);
         }
 
         fetch('ajax_review.php', {

@@ -1513,5 +1513,10 @@ function selectSuggestedCoupon(code) {
         applyCoupon();
     }
 }
+
+// Tự động hiện chiết khấu hạng khi tải trang
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotal();
+});
 </script>
 <?php include 'includes/footer.php'; ?>

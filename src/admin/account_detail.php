@@ -11,12 +11,10 @@ if (!$user_id) {
 // Lấy thông tin user + thống kê
 $stmt = $conn->prepare("
     SELECT u.*, 
-           COUNT(o.order_id) as total_orders, 
-           IFNULL(SUM(o.final_price), 0) as total_spent
+           (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as total_orders, 
+           (SELECT IFNULL(SUM(final_price), 0) FROM orders WHERE user_id = u.user_id AND order_status = 3) as total_spent
     FROM users u
-    LEFT JOIN orders o ON u.user_id = o.user_id AND o.payment_status = 1
     WHERE u.user_id = ?
-    GROUP BY u.user_id
 ");
 $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -140,6 +138,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <div class="info-label">Vai trò</div>
                 <div class="info-value"><?= $user['role'] == 1 ? 'Quản trị viên (Admin)' : 'Khách hàng' ?></div>
             </div>
+            <div class="info-group">
+                <div class="info-label">Hạng thành viên</div>
+                <div class="info-value bold" style="color: #d35400;"><?= htmlspecialchars($user['tier'] ?? 'Member') ?></div>
+            </div>
 
             <div class="stat-row">
                 <div class="stat-item">
@@ -149,6 +151,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 <div class="stat-item">
                     <div class="stat-val"><?= number_format($user['total_spent'], 0, ',', '.') ?>đ</div>
                     <div class="stat-lbl">Chi tiêu</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val"><?= number_format($user['accumulated_points'] ?? 0, 0, ',', '.') ?></div>
+                    <div class="stat-lbl">Điểm Loyalty</div>
                 </div>
             </div>
         </div>
