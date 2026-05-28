@@ -99,6 +99,20 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                 </div>
                 <div class="rac-text">“ <?= htmlspecialchars($r['comment']) ?> ”</div>
                 
+                <?php if (!empty($r['image'])): ?>
+                    <div style="margin: 10px 0;">
+                        <img src="../<?= htmlspecialchars($r['image']) ?>" alt="Hình đánh giá" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #eee; object-fit: cover;">
+                    </div>
+                <?php endif; ?>
+                <?php if (!empty($r['video'])): ?>
+                    <div style="margin: 10px 0;">
+                        <video controls style="max-width: 240px; max-height: 180px; border-radius: 8px; border: 1px solid #eee;">
+                            <source src="../<?= htmlspecialchars($r['video']) ?>" type="video/mp4">
+                            Trình duyệt không hỗ trợ phát video.
+                        </video>
+                    </div>
+                <?php endif; ?>
+                
                 <form action="" method="POST" class="reply-form-admin">
                     <input type="hidden" name="parent_id" value="<?= $r['review_id'] ?>">
                     <input type="hidden" name="product_id" value="<?= $r['product_id'] ?>">
