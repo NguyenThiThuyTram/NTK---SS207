@@ -29,12 +29,17 @@ function addLoyaltyPoints($conn, $user_id, $points, $reason) {
 }
 
 function checkTierUpgrade($conn, $user_id, $accumulated_points, $current_tier) {
+    // Tính tổng chi tiêu của khách hàng
+    $stmt = $conn->prepare("SELECT IFNULL(SUM(final_price), 0) FROM orders WHERE user_id = :uid AND order_status = 3");
+    $stmt->execute(['uid' => $user_id]);
+    $total_spent = (float)$stmt->fetchColumn();
+
     $new_tier = 'Member';
-    if ($accumulated_points >= 5000) {
+    if ($accumulated_points >= 5000 || $total_spent >= 50000000) {
         $new_tier = 'Diamond';
-    } elseif ($accumulated_points >= 1500) {
+    } elseif ($accumulated_points >= 1500 || $total_spent >= 15000000) {
         $new_tier = 'Gold';
-    } elseif ($accumulated_points >= 500) {
+    } elseif ($accumulated_points >= 500 || $total_spent >= 5000000) {
         $new_tier = 'Silver';
     }
 

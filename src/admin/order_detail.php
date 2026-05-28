@@ -53,7 +53,7 @@ $returnReq = $stmt_ret->fetch(PDO::FETCH_ASSOC);
 // Subtotal calculation
 $subtotal = 0;
 foreach ($details as $d) {
-    $subtotal += ($d['unit_price'] * $d['quantity']);
+    $subtotal += ($d['price'] * $d['quantity']);
 }
 
 // Payment method mapping (1=COD, 2=Online/PayOS)
@@ -551,8 +551,8 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         </td>
                         <td style="text-align: center; color:#555;"><?= htmlspecialchars($d['size'] ?? '-') ?></td>
                         <td style="text-align: center; font-weight:500;"><?= (int)$d['quantity'] ?></td>
-                        <td style="text-align: right; color:#555;"><?= number_format($d['unit_price'], 0, ',', '.') ?> đ</td>
-                        <td style="text-align: right; font-weight:600; color:#111;"><?= number_format($d['unit_price'] * $d['quantity'], 0, ',', '.') ?> đ</td>
+                        <td style="text-align: right; color:#555;"><?= number_format($d['price'], 0, ',', '.') ?> đ</td>
+                        <td style="text-align: right; font-weight:600; color:#111;"><?= number_format($d['price'] * $d['quantity'], 0, ',', '.') ?> đ</td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
