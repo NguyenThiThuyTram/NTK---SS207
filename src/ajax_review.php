@@ -27,6 +27,19 @@ if ($action === 'submit_comment') {
         exit;
     }
 
+    // KIỂM DUYỆT VĂN BẢN (Text Moderation)
+    $bad_words = [
+        'địt', 'đụ', 'lồn', 'cặc', 'buồi', 'đĩ', 'điếm', 'phò', 'đéo', 'vcl', 'vl', 'vãi lồn', 'đm', 'đmm', 'đkm', 'đcm', 'địt mẹ', 'chó đẻ', 'thằng chó', 'con chó', 'súc vật', 'cặn bã', 'rác rưởi', 'óc chó', 'ngu học', 'khốn nạn', 'mất dạy', 'vô giáo dục', 'bitch', 'fuck', 'shit', 'cunt', 'slut'
+    ];
+    $comment_lower = mb_strtolower($comment, 'UTF-8');
+    foreach ($bad_words as $word) {
+        // Kiểm tra từ khóa có xuất hiện trong nội dung không (sử dụng regex để kiểm tra từ đứng độc lập hoặc có dấu câu)
+        if (preg_match('/\b' . preg_quote($word, '/') . '\b/iu', $comment_lower) || strpos($comment_lower, $word) !== false) {
+            echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Nội dung đánh giá vi phạm tiêu chuẩn cộng đồng (chứa từ ngữ không phù hợp). Vui lòng chỉnh sửa lại!']);
+            exit;
+        }
+    }
+
     // PHÂN NHÁNH KIỂM TRA QUYỀN
     if (empty($parent_id)) {
         // TRƯỜNG HỢP 1: Đánh giá gốc -> Ép buộc phải mua hàng và đơn phải Hoàn thành (status = 3)
