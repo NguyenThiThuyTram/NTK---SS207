@@ -180,6 +180,44 @@ try {
     error_log("SSE flash_sale error for user $user_id: " . $e->getMessage());
 }
 
+// ── 6. Kiểm tra Sắp hết hàng MỚI (CHỈ ADMIN) ──────────────────────────────
+if ($role == 1) {
+    $ls_state_key = 'sse_low_stock_' . $user_id;
+    $prev_low_stock = $_SESSION[$ls_state_key] ?? null; 
+    
+    try {
+        if (isset($conn)) {
+            $stmt_ls = $conn->prepare("
+                SELECT pv.variant_id, p.name, pv.stock 
+                FROM product_variants pv 
+                JOIN products p ON pv.product_id = p.product_id 
+                WHERE pv.stock <= 10
+            ");
+            $stmt_ls->execute();
+            $current_low_stock = [];
+            while ($row = $stmt_ls->fetch(PDO::FETCH_ASSOC)) {
+                $current_low_stock[$row['variant_id']] = $row;
+            }
+            
+            $_SESSION[$ls_state_key] = $current_low_stock;
+            
+            if ($prev_low_stock !== null) {
+                $new_low = [];
+                foreach ($current_low_stock as $vid => $data) {
+                    if (!isset($prev_low_stock[$vid]) || $prev_low_stock[$vid]['stock'] > 10) {
+                        $new_low[] = $data;
+                    }
+                }
+                if (!empty($new_low)) {
+                    $events['low_stock'] = $new_low;
+                }
+            }
+        }
+    } catch (\Throwable $e) {
+        error_log("SSE low stock error: " . $e->getMessage());
+    }
+}
+
 // Lưu state phân tách theo user_id và đóng Session ngay lập tức
 $_SESSION[$state_key] = $new_state;
 session_write_close();

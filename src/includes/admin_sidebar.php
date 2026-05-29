@@ -1895,6 +1895,61 @@ eventSource.addEventListener('message', function(e) {
         }
     }
 
+    // Cảnh báo tồn kho (realtime cho admin)
+    if (data.low_stock && data.low_stock.length > 0) {
+        data.low_stock.forEach(function(item) {
+            var isOut = (item.stock == 0);
+            var title = isOut ? '❌ Hết hàng' : '⚠️ Sắp hết hàng';
+            var msg = 'Sản phẩm ' + item.name + ' chỉ còn ' + item.stock;
+            showToast(title, msg);
+            
+            var bellBadge = document.getElementById('notif-badge-bell');
+            if (!bellBadge) {
+                var bellBtn = document.querySelector('.topbar-icon-btn');
+                if (bellBtn) bellBtn.innerHTML += '<span class="topbar-badge" id="notif-badge-bell">1</span>';
+            } else {
+                var c = parseInt(bellBadge.textContent.replace('+', '')) || 0;
+                bellBadge.textContent = c < 9 ? (c + 1) : '9+';
+            }
+            
+            var fsCount = document.getElementById('notif-unread-count-fs');
+            if (fsCount) {
+                fsCount.textContent = (parseInt(fsCount.textContent) || 0) + 1;
+            }
+            
+            var list = document.querySelector('.notif-fs-list');
+            if (list) {
+                var emptyMsg = document.querySelector('.notif-fs-empty');
+                if (emptyMsg) emptyMsg.remove();
+                
+                var eventId = (isOut ? 'out_stock_' : 'low_stock_') + item.variant_id;
+                var iconClass = isOut ? 'fa-triangle-exclamation' : 'fa-box-open';
+                var iconColor = isOut ? '#e74c3c' : '#d48806';
+                var label = (isOut ? 'Hết hàng: ' : 'Sắp hết hàng: ') + item.name;
+                var redirectUrl = encodeURIComponent('inventory.php?search=' + item.name);
+                
+                var html = `
+                    <a href="read_notification.php?event_id=${eventId}&redirect=${redirectUrl}" data-event-id="${eventId}" class="notif-fs-item animate-in unread-noti" style="--delay: 0s; background: rgba(166,130,92,0.05); border-left: 3px solid ${iconColor};">
+                        <div class="notif-fs-icon-wrap" style="background:${iconColor}18; color:${iconColor}; box-shadow: 0 0 15px ${iconColor}15;">
+                            <i class="fa-solid ${iconClass}"></i>
+                        </div>
+                        <div class="notif-fs-body-content" style="position: relative;">
+                            <div class="notif-fs-label" style="font-weight: 800; color: #000;">
+                                ${label.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+                                <span style="display:inline-block; width:8px; height:8px; background:#e74c3c; border-radius:50%; margin-left:5px; vertical-align:middle;"></span>
+                            </div>
+                            <div class="notif-fs-time" style="font-weight: 600; color: #333;"><i class="fa-regular fa-clock"></i> Vừa xong</div>
+                        </div>
+                        <div class="notif-fs-action">
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </div>
+                    </a>
+                `;
+                list.insertAdjacentHTML('afterbegin', html);
+            }
+        });
+    }
+
     // Xử lý thông báo mới từ bảng notifications (realtime cho admin)
     if (data.notifications && data.notifications.length > 0) {
         data.notifications.forEach(function(notif) {
