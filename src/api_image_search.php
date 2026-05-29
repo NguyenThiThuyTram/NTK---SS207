@@ -1,25 +1,22 @@
 <?php
 header('Content-Type: application/json');
 
-// Check request method
+// ────── VALIDATE REQUEST ──────
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Yêu cầu không hợp lệ']);
     exit;
 }
 
-// Check uploaded file
 if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
     echo json_encode(['success' => false, 'message' => 'Không nhận được hình ảnh hoặc tệp lỗi']);
     exit;
 }
 
-// Check file size (max 5MB)
 if ($_FILES['image']['size'] > 5 * 1024 * 1024) {
     echo json_encode(['success' => false, 'message' => 'Tệp ảnh quá lớn (tối đa 5MB)']);
     exit;
 }
 
-// Check mime type
 $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 $imageType = $_FILES['image']['type'];
 if (!in_array($imageType, $allowedTypes)) {
@@ -27,12 +24,10 @@ if (!in_array($imageType, $allowedTypes)) {
     exit;
 }
 
-// Read image and encode to base64
-$tmpPath = $_FILES['image']['tmp_name'];
-
-// Result Caching by MD5 of image
+// ────── CACHE (MD5 of file) ──────
+$tmpPath   = $_FILES['image']['tmp_name'];
 $imageHash = md5_file($tmpPath);
-$cacheDir = __DIR__ . '/cache';
+$cacheDir  = __DIR__ . '/cache';
 $cacheFile = $cacheDir . '/' . $imageHash . '.json';
 
 if (!is_dir($cacheDir)) {
@@ -45,244 +40,235 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 3600)) {
     exit;
 }
 
-$imageData = base64_encode(file_get_contents($tmpPath));
-
-// API Key (load from api_key.php)
-require_once __DIR__ . '/api_key.php';
-$apiKey = $GEMINI_API_KEY;
-$url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey;
-
-// Primary Prompt - detailed analysis
-$promptText = "Bạn là trợ lý AI chuyên nghiệp phân tích thời trang cho shop NTK Fashion. 
-Hãy phân tích hình ảnh này và cho biết loại sản phẩm thời trang gì (ví dụ: áo thun, áo sơ mi, đầm hoa, quần tây, chân váy...). 
-Hãy chọn ra 1 đến 2 từ khóa tìm kiếm (bằng tiếng Việt) tốt nhất để tìm kiếm sản phẩm này hoặc các sản phẩm tương tự trong kho hàng của cửa hàng (ví dụ: 'áo thun trắng', 'quần tây đen', 'đầm hoa'). 
-
-BẮT BUỘC TRẢ VỀ ĐÚNG ĐỊNH DẠNG JSON SAU (Tuyệt đối không kèm ký tự ngoài JSON):
-{
-  \"keyword\": \"từ khóa chính để tìm kiếm bằng tiếng Việt, viết thường không dấu hoặc có dấu\",
-  \"description\": \"mô tả ngắn gọn 1 câu về kiểu dáng/màu sắc/đặc điểm nhận diện của sản phẩm trong ảnh\"
-}";
-
-// Fallback Prompt - simple category detection
-$fallbackPrompt = "Hãy xác định loại sản phẩm thời trang trong ảnh này bằng 1 đến 2 từ khóa đơn giản (ví dụ: áo thun, quần, đầm, v.v.). 
-
-Trả về JSON:
-{
-  \"keyword\": \"tên loại sản phẩm bằng tiếng Việt\"
-}";
-
-// Function to call Gemini API
-function callGeminiAPI($url, $payload, $timeout = 10) {
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-    
-    $response = curl_exec($ch);
-    $errorCode = curl_errno($ch);
-    $errorMsg = curl_error($ch);
-    curl_close($ch);
-    
-    return [
-        'response' => $response,
-        'error_code' => $errorCode,
-        'error_msg' => $errorMsg
-    ];
-}
-
-// ────── CONFIGURATION ──────
-$PRIMARY_TIMEOUT = 5;    // Phân tích chi tiết (5 giây)
-$FALLBACK_TIMEOUT = 3;   // Phân tích nhanh (3 giây)
-$DEFAULT_FALLBACK_KEYWORD = 'áo thun'; // Ép cứng danh mục mặc định ở đây
-
-// ────── TRY PRIMARY ANALYSIS (5 seconds) ──────
-$payload = [
-    "contents" => [
-        [
-            "parts" => [
-                ["text" => $promptText],
-                ["inlineData" => [
-                    "mimeType" => $imageType,
-                    "data" => $imageData
-                ]]
-            ]
-        ]
-    ],
-    "generationConfig" => ["responseMimeType" => "application/json"]
+// ────── HARD-CODED SHOP CATEGORIES (NTK Fashion) ──────
+// ONLY keywords that match what the shop actually sells.
+// AWS labels are mapped into this list; anything outside is ignored.
+$SHOP_CATEGORIES = [
+    // Tops
+    'T-Shirt'    => 'áo thun',
+    'Shirt'      => 'áo sơ mi',
+    'Blouse'     => 'áo kiểu',
+    'Sweater'    => 'áo len',
+    'Jacket'     => 'áo khoác',
+    'Coat'       => 'áo khoác',
+    'Hoodie'     => 'áo hoodie',
+    'Top'        => 'áo thun',
+    // Bottoms
+    'Pants'      => 'quần',
+    'Trousers'   => 'quần tây',
+    'Jeans'      => 'quần jean',
+    'Shorts'     => 'quần short',
+    'Skirt'      => 'chân váy',
+    // One-piece
+    'Dress'      => 'đầm',
+    'Gown'       => 'đầm dạ hội',
+    'Jumpsuit'   => 'jumpsuit',
+    // Accessories
+    'Hat'        => 'mũ',
+    'Handbag'    => 'túi xách',
+    'Bag'        => 'túi xách',
+    'Shoes'      => 'giày',
+    'Glasses'    => 'kính',
+    'Sunglasses' => 'kính mát',
+    // Suit
+    'Suit'       => 'vest',
+    'Blazer'     => 'vest',
 ];
 
-$result1 = callGeminiAPI($url, $payload, $PRIMARY_TIMEOUT);
-$aiData = ['keyword' => '', 'description' => ''];
-$fallback_used = false;
-$ai_success = false;
+// ────── COLOR MAP ──────
+$COLOR_MAP = [
+    'Red'       => 'đỏ',
+    'Blue'      => 'xanh dương',
+    'Navy Blue' => 'xanh navy',
+    'Black'     => 'đen',
+    'White'     => 'trắng',
+    'Green'     => 'xanh lá',
+    'Yellow'    => 'vàng',
+    'Pink'      => 'hồng',
+    'Purple'    => 'tím',
+    'Brown'     => 'nâu',
+    'Orange'    => 'cam',
+    'Gray'      => 'xám',
+    'Grey'      => 'xám',
+    'Beige'     => 'be',
+    'Cream'     => 'kem',
+    'Maroon'    => 'đỏ đô',
+];
 
-if (!$result1['error_code']) {
-    $result = json_decode($result1['response'], true);
-    if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-        $jsonString = $result['candidates'][0]['content']['parts'][0]['text'];
-        $aiData = json_decode($jsonString, true);
-        if ($aiData && !empty($aiData['keyword'])) {
+// ────── DEFAULT FALLBACK ──────
+$DEFAULT_FALLBACK_KEYWORD = 'áo thun';
+
+// ────── ANALYZE WITH AWS REKOGNITION (sole engine) ──────
+require_once __DIR__ . '/includes/aws_rekognition.php';
+
+$foundCategory = ''; // matched shop category keyword (VN)
+$foundColor    = ''; // matched color keyword (VN)
+$ai_success    = false;
+$log_file      = __DIR__ . '/image_search_log.txt';
+
+$rekognition = new AwsRekognition();
+
+if ($rekognition->isConfigured()) {
+    $rawBytes = file_get_contents($tmpPath);
+    $awsResult = $rekognition->detectLabels($rawBytes, 30, 50.0);
+
+    if (!isset($awsResult['error']) && isset($awsResult['Labels'])) {
+        foreach ($awsResult['Labels'] as $label) {
+            $name = $label['Name'];
+
+            // Map to hard-coded shop category (first match wins)
+            if (empty($foundCategory) && isset($SHOP_CATEGORIES[$name])) {
+                $foundCategory = $SHOP_CATEGORIES[$name];
+            }
+
+            // Map to color (first match wins)
+            if (empty($foundColor) && isset($COLOR_MAP[$name])) {
+                $foundColor = $COLOR_MAP[$name];
+            }
+
+            // Stop scanning once both are found
+            if (!empty($foundCategory) && !empty($foundColor)) {
+                break;
+            }
+        }
+
+        if (!empty($foundCategory)) {
             $ai_success = true;
-            file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Primary Analysis Success: ' . $aiData['keyword'] . PHP_EOL, FILE_APPEND);
+            file_put_contents($log_file,
+                date('Y-m-d H:i:s') . ' - AWS OK | Category: ' . $foundCategory . ' | Color: ' . $foundColor . PHP_EOL,
+                FILE_APPEND
+            );
         } else {
-            file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Primary Analysis Empty: ' . $result1['response'] . PHP_EOL, FILE_APPEND);
-            $fallback_used = true;
+            file_put_contents($log_file,
+                date('Y-m-d H:i:s') . ' - AWS: No matching shop category found in labels.' . PHP_EOL,
+                FILE_APPEND
+            );
         }
     } else {
-        file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Primary Parse Failed: ' . $result1['response'] . PHP_EOL, FILE_APPEND);
-        $fallback_used = true;
+        $errDetail = $awsResult['error'] ?? 'Unknown AWS error';
+        file_put_contents($log_file,
+            date('Y-m-d H:i:s') . ' - AWS Error: ' . $errDetail . PHP_EOL,
+            FILE_APPEND
+        );
     }
 } else {
-    file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - Primary Timeout/Error (Code ' . $result1['error_code'] . '): ' . $result1['error_msg'] . ' - Triggering fallback' . PHP_EOL, FILE_APPEND);
-    $fallback_used = true;
+    file_put_contents($log_file,
+        date('Y-m-d H:i:s') . ' - AWS Rekognition not configured.' . PHP_EOL,
+        FILE_APPEND
+    );
 }
 
-// ────── IF PRIMARY FAILED, TRY AWS REKOGNITION (Smart Fallback) ──────
-if ($fallback_used && !$ai_success) {
-    require_once __DIR__ . '/includes/aws_rekognition.php';
-    $rekognition = new AwsRekognition();
-    
-    if ($rekognition->isConfigured()) {
-        $rawBytes = base64_decode($imageData);
-        $awsResult = $rekognition->detectLabels($rawBytes, 30, 50.0);
-        
-        if (!isset($awsResult['error']) && isset($awsResult['Labels'])) {
-            // Chỉ định nghĩa các từ khóa CỤ THỂ, bỏ qua các từ khóa quá chung chung (Clothing, Apparel, Outfit)
-            $awsToVn = [
-                'T-Shirt' => 'áo thun', 'Shirt' => 'áo sơ mi', 'Dress' => 'đầm',
-                'Pants' => 'quần', 'Skirt' => 'chân váy', 'Jacket' => 'áo khoác',
-                'Sweater' => 'áo len', 'Shorts' => 'quần short', 'Suit' => 'vest',
-                'Hat' => 'mũ', 'Shoes' => 'giày', 'Coat' => 'áo khoác', 
-                'Blouse' => 'áo kiểu', 'Trousers' => 'quần tây', 'Jeans' => 'quần jean',
-                'Handbag' => 'túi xách', 'Glasses' => 'kính'
-            ];
-            
-            $colorToVn = [
-                'Red' => 'đỏ', 'Blue' => 'xanh dương', 'Black' => 'đen',
-                'White' => 'trắng', 'Green' => 'xanh lá', 'Yellow' => 'vàng',
-                'Pink' => 'hồng', 'Purple' => 'tím', 'Brown' => 'nâu'
-            ];
-            
-            $foundItem = '';
-            $foundColor = '';
-            
-            foreach ($awsResult['Labels'] as $label) {
-                $name = $label['Name'];
-                if (empty($foundItem) && isset($awsToVn[$name])) {
-                    $foundItem = $awsToVn[$name];
-                }
-                if (empty($foundColor) && isset($colorToVn[$name])) {
-                    $foundColor = $colorToVn[$name];
-                }
-            }
-            
-            if (!empty($foundItem)) {
-                $fallbackKeyword = $foundItem . ($foundColor ? ' ' . $foundColor : '');
-                $aiData = [
-                    'keyword' => $fallbackKeyword,
-                    'description' => 'AWS AI nhận diện: ' . ucfirst($fallbackKeyword)
-                ];
-                $ai_success = true;
-                file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - AWS Analysis Success: ' . $fallbackKeyword . PHP_EOL, FILE_APPEND);
-            }
-        }
-    }
-    
-    // Nếu AWS cũng thất bại hoặc không cấu hình, dùng mặc định
-    if (!$ai_success) {
-        file_put_contents(__DIR__ . '/gemini_error_log.txt', date('Y-m-d H:i:s') . ' - AWS Fallback Failed, using DEFAULT: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL, FILE_APPEND);
-        $aiData = ['keyword' => $DEFAULT_FALLBACK_KEYWORD, 'description' => 'Sử dụng danh mục mặc định do AI không nhận diện được'];
-    }
+// ────── BUILD DISPLAY KEYWORD & DESCRIPTION ──────
+if ($ai_success) {
+    $keyword     = $foundCategory;
+    $description = 'AWS AI nhận diện: ' . ucfirst($foundCategory) . ($foundColor ? ' màu ' . $foundColor : '');
+} else {
+    $keyword     = $DEFAULT_FALLBACK_KEYWORD;
+    $description = 'Hệ thống tự động gợi ý các mẫu mới nhất cho bạn.';
+    file_put_contents($log_file,
+        date('Y-m-d H:i:s') . ' - Using DEFAULT fallback: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL,
+        FILE_APPEND
+    );
 }
 
-$keyword = trim($aiData['keyword'] ?? '');
-$description = trim($aiData['description'] ?? '');
-
-// Connect Database and query
+// ────── DATABASE QUERY (3-level priority) ──────
 require_once __DIR__ . '/config/database.php';
 
-$products = [];
+$products    = [];
 $is_fallback = false;
+$search_mode = '';
 
 try {
-    // 1. TÌM KIẾM THEO TỪ KHÓA AI TRẢ VỀ
-    if (!empty($keyword)) {
+    // ── PRIORITY 1: Category AND Color (most similar to uploaded image) ──
+    if ($ai_success && !empty($foundColor)) {
         $stmt = $conn->prepare("
-            SELECT p.product_id, p.name, p.image, MIN(v.sale_price) as sale_price, MIN(v.original_price) as original_price
+            SELECT p.product_id, p.name, p.image,
+                   MIN(v.sale_price) as sale_price,
+                   MIN(v.original_price) as original_price
             FROM products p
             LEFT JOIN product_variants v ON p.product_id = v.product_id
-            WHERE p.status = 1 AND (p.name LIKE :keyword OR p.description LIKE :keyword)
-            GROUP BY p.product_id
-            LIMIT 4
-        ");
-        $stmt->execute(['keyword' => '%' . $keyword . '%']);
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // Thử tìm kiếm thu gọn từ khóa nếu từ khóa dài không ra kết quả
-        if (empty($products)) {
-            $words = preg_split('/\s+/', $keyword, -1, PREG_SPLIT_NO_EMPTY);
-            if (count($words) > 1) {
-                $shorterKeyword = $words[0] . ' ' . $words[1];
-                $stmt->execute(['keyword' => '%' . $shorterKeyword . '%']);
-                $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-        }
-    }
-
-    // 2. PHƯƠNG ÁN FALLBACK ÉP BUỘC: Nếu không tìm thấy sản phẩm nào, tự động lấy danh mục Áo Thun
-    if (empty($products)) {
-        $is_fallback = true;
-        $keyword = $DEFAULT_FALLBACK_KEYWORD; // Gán lại từ khóa hiển thị ra giao diện là "áo thun"
-        $description = 'Hệ thống tự động gợi ý các mẫu Áo thun mới nhất cho bạn.';
-        
-        $stmt = $conn->prepare("
-            SELECT p.product_id, p.name, p.image, MIN(v.sale_price) as sale_price, MIN(v.original_price) as original_price
-            FROM products p
-            LEFT JOIN product_variants v ON p.product_id = v.product_id
-            WHERE p.status = 1 AND (p.name LIKE :fallback_keyword OR p.description LIKE :fallback_keyword)
+            WHERE p.status = 1
+              AND (p.name LIKE :cat OR p.description LIKE :cat)
+              AND (p.name LIKE :col OR p.description LIKE :col)
             GROUP BY p.product_id
             ORDER BY p.product_id DESC
             LIMIT 4
         ");
-        $stmt->execute(['fallback_keyword' => '%' . $DEFAULT_FALLBACK_KEYWORD . '%']);
+        $stmt->execute([
+            'cat' => '%' . $foundCategory . '%',
+            'col' => '%' . $foundColor . '%',
+        ]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Trường hợp bất khả kháng nếu trong DB của bạn không có chữ "áo thun" nào, lấy đại 4 sản phẩm mới nhất
-        if (empty($products)) {
-            $stmt_backup = $conn->prepare("
-                SELECT p.product_id, p.name, p.image, MIN(v.sale_price) as sale_price, MIN(v.original_price) as original_price
-                FROM products p
-                LEFT JOIN product_variants v ON p.product_id = v.product_id
-                WHERE p.status = 1
-                GROUP BY p.product_id
-                ORDER BY p.product_id DESC
-                LIMIT 4
-            ");
-            $stmt_backup->execute();
-            $products = $stmt_backup->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($products)) {
+            $search_mode = 'category_and_color';
         }
     }
+
+    // ── PRIORITY 2: Category only ──
+    if (empty($products) && !empty($keyword)) {
+        $stmt = $conn->prepare("
+            SELECT p.product_id, p.name, p.image,
+                   MIN(v.sale_price) as sale_price,
+                   MIN(v.original_price) as original_price
+            FROM products p
+            LEFT JOIN product_variants v ON p.product_id = v.product_id
+            WHERE p.status = 1
+              AND (p.name LIKE :keyword OR p.description LIKE :keyword)
+            GROUP BY p.product_id
+            ORDER BY p.product_id DESC
+            LIMIT 4
+        ");
+        $stmt->execute(['keyword' => '%' . $keyword . '%']);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (!empty($products)) {
+            $search_mode = 'category_only';
+        }
+    }
+
+    // ── PRIORITY 3: Newest 4 products (prevent empty UI) ──
+    if (empty($products)) {
+        $is_fallback = true;
+        $keyword     = $DEFAULT_FALLBACK_KEYWORD;
+        $description = 'Hệ thống tự động gợi ý các sản phẩm mới nhất cho bạn.';
+        $search_mode = 'newest_fallback';
+
+        $stmt = $conn->prepare("
+            SELECT p.product_id, p.name, p.image,
+                   MIN(v.sale_price) as sale_price,
+                   MIN(v.original_price) as original_price
+            FROM products p
+            LEFT JOIN product_variants v ON p.product_id = v.product_id
+            WHERE p.status = 1
+            GROUP BY p.product_id
+            ORDER BY p.product_id DESC
+            LIMIT 4
+        ");
+        $stmt->execute();
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 } catch (PDOException $e) {
     $is_fallback = true;
-    $products = [];
+    $search_mode = 'db_error';
+    $products    = [];
+    file_put_contents($log_file,
+        date('Y-m-d H:i:s') . ' - DB Error: ' . $e->getMessage() . PHP_EOL,
+        FILE_APPEND
+    );
 }
 
-// Return JSON output
+// ────── RESPONSE ──────
 $output = [
-    'success' => true,
-    'keyword' => $keyword,
+    'success'     => true,
+    'keyword'     => $keyword,
     'description' => $description,
-    'ai_used_fallback' => $fallback_used, 
-    'is_fallback' => $is_fallback,         
-    'products' => $products
+    'search_mode' => $search_mode, // diagnostic: category_and_color | category_only | newest_fallback | db_error
+    'is_fallback' => $is_fallback,
+    'products'    => $products,
 ];
 
-// Chỉ lưu Cache nếu AI nhận diện thành công (Không lưu nếu bị ép dùng Fallback mặc định do lỗi)
-if (!$is_fallback && is_dir($cacheDir) && is_writable($cacheDir)) {
+// Cache only when AWS found a real match (not fallback)
+if (!$is_fallback && $ai_success && is_dir($cacheDir) && is_writable($cacheDir)) {
     @file_put_contents($cacheFile, json_encode($output));
 }
 
