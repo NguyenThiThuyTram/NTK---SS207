@@ -60,8 +60,9 @@ try {
     $conn->commit();
 
     echo json_encode(['status' => 'success', 'message' => "Đổi điểm thành công! Nhận " . number_format($vnd_amount, 0, ',', '.') . "đ."]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $conn->rollBack();
+    file_put_contents('debug.txt', date('[Y-m-d H:i:s] ') . $e->getMessage() . "\n", FILE_APPEND);
     echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>
