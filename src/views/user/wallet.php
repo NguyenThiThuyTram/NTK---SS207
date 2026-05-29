@@ -254,7 +254,7 @@ function redeemPoints() {
     }
 
     $.ajax({
-        url: 'ajax_redeem.php',
+        url: '../../ajax_redeem.php',
         method: 'POST',
         data: { points: amount },
         dataType: 'json',
