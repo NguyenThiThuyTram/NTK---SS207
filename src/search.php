@@ -16,22 +16,21 @@ try {
 // ==========================================
 // 2. BẮT CÁC THAM SỐ LỌC TỪ URL VÀ XỬ LÝ SQL
 // ==========================================
-$keyword = isset($_GET['q']) ? trim($_GET['q']) : '';
-$image_search = isset($_GET['image_search']) && $_GET['image_search'] === '1';
-$image_description = isset($_GET['image_desc']) ? trim($_GET['image_desc']) : '';
-$fallback_mode = (isset($_GET['fallback']) && $_GET['fallback'] === '1') || ($keyword === 'thời trang'); 
-$price_filter = isset($_GET['price']) ? $_GET['price'] : '';
-$sort_filter = isset($_GET['sort']) ? $_GET['sort'] : 'default';
-$cat_filter = isset($_GET['category']) ? $_GET['category'] : []; 
+$keyword          = isset($_GET['q']) ? trim($_GET['q']) : '';
+$image_search     = isset($_GET['image_search']) && $_GET['image_search'] === '1';
+$image_description= isset($_GET['image_desc'])  ? trim($_GET['image_desc'])  : '';
+$image_cat        = isset($_GET['image_cat'])   ? trim($_GET['image_cat'])   : '';  // category_id từ nhận diện ảnh
+$image_color      = isset($_GET['image_color']) ? trim($_GET['image_color']) : '';  // màu từ nhận diện ảnh
+$fallback_mode    = isset($_GET['fallback'])    && $_GET['fallback'] === '1';
+$price_filter     = isset($_GET['price'])       ? $_GET['price']             : '';
+$sort_filter      = isset($_GET['sort'])        ? $_GET['sort']              : 'default';
+$cat_filter       = isset($_GET['category'])    ? (array)$_GET['category']  : [];
 
-// SỬA LOGIC TỪ KHÓA TẠI ĐÂY: Nếu từ khóa là "thời trang", ép cứng nó chuyển sang tìm "áo thun" để kích hoạt fallback
-if ($image_search && ($keyword === 'thời trang' || empty($keyword))) {
-    $keyword = 'áo thun';
-    $fallback_mode = true;
-    if (empty($image_description)) {
-        $image_description = 'Hệ thống tự động gợi ý danh mục Áo thun bán chạy.';
-    }
+// Nếu tìm kiếm ảnh và sidebar chưa có category nào được tích nhưng image_cat có → tự động pre-fill
+if ($image_search && !empty($image_cat) && empty($cat_filter)) {
+    $cat_filter = [$image_cat];
 }
+
 
 $products = [];
 $fallback_products = [];
@@ -48,7 +47,7 @@ $sql = "
 
 $params = [];
 
-if ($keyword !== '') {
+if ($keyword !== '' && !($image_search && !empty($cat_filter))) {
     $sql .= " AND (p.name LIKE :keyword OR p.description LIKE :keyword) ";
     $params['keyword'] = '%' . $keyword . '%';
 }
@@ -91,36 +90,51 @@ try {
     $stmt->execute($params);
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
-    echo "Lỗi truy vấn: " . $e->getMessage();
+    error_log("search.php query: " . $e->getMessage());
+}
+
+// Sau khi fetch: nếu tìm kiếm ảnh có màu + sort mặc định
+// → đưa sản phẩm có variant màu khớp lên trước
+if ($image_search && !empty($image_color) && !empty($products) && $sort_filter === 'default') {
+    try {
+        $pidList = array_column($products, 'product_id');
+        $pidPlaceholders = implode(',', array_fill(0, count($pidList), '?'));
+        $colorStmt = $conn->prepare(
+            "SELECT DISTINCT product_id FROM product_variants
+             WHERE product_id IN ($pidPlaceholders) AND color LIKE ? AND is_active = 1"
+        );
+        $colorStmt->execute(array_merge($pidList, ['%' . $image_color . '%']));
+        $colorMatchIds = array_flip($colorStmt->fetchAll(PDO::FETCH_COLUMN));
+        // Sắp xếp: màu khớp (0) lên trước, không khớp (1) xuống sau
+        usort($products, function($a, $b) use ($colorMatchIds) {
+            $aM = isset($colorMatchIds[$a['product_id']]) ? 0 : 1;
+            $bM = isset($colorMatchIds[$b['product_id']]) ? 0 : 1;
+            return $aM - $bM;
+        });
+    } catch (PDOException $e) { /* giữ nguyên thứ tự nếu lỗi */ }
 }
 
 $count = count($products);
 
-// SỬA LẠI ĐOẠN HIỂN THỊ DỮ LIỆU DỰ PHÒNG: Nếu kết quả rỗng, lấy sản phẩm có tên liên quan đến áo thun
-if ($count === 0 && $image_search) {
+// Fallback: chỉ khi image_search VÀ không có category filter hoặc bị lọc giá quá khắt
+// (Nếu đã có cat_filter từ image search → để trống là ổn, không cần fallback cũ)
+if ($count === 0 && $image_search && empty($cat_filter)) {
     try {
         $stmt = $conn->prepare(
-            "SELECT p.product_id, p.name, p.image, p.rating, p.sold_count, MIN(pv.original_price) as original_price, MIN(pv.sale_price) as sale_price
-             FROM products p
-             LEFT JOIN product_variants pv ON p.product_id = pv.product_id
-             WHERE p.status = 1 AND (p.name LIKE '%áo thun%' OR p.description LIKE '%áo thun%')
-             GROUP BY p.product_id
-             ORDER BY p.sold_count DESC
-             LIMIT 4"
+            "SELECT p.product_id, p.name, p.image, p.rating, p.sold_count,
+                    MIN(pv.original_price) as original_price, MIN(pv.sale_price) as sale_price
+             FROM products p LEFT JOIN product_variants pv ON p.product_id = pv.product_id
+             WHERE p.status = 1
+             GROUP BY p.product_id ORDER BY p.sold_count DESC LIMIT 8"
         );
         $stmt->execute();
         $fallback_products = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Nếu ngặt nghèo trong DB không có sản phẩm nào tên chứa chữ áo thun, mới lấy 4 sản phẩm bán chạy nhất
-        if (empty($fallback_products)) {
-            $stmt_backup = $conn->query("SELECT p.product_id, p.name, p.image, p.rating, p.sold_count, MIN(pv.original_price) as original_price, MIN(pv.sale_price) as sale_price FROM products p LEFT JOIN product_variants pv ON p.product_id = pv.product_id WHERE p.status = 1 GROUP BY p.product_id ORDER BY p.sold_count DESC LIMIT 4");
-            $fallback_products = $stmt_backup->fetchAll(PDO::FETCH_ASSOC);
-        }
         $fallback_mode = true;
     } catch (PDOException $e) {
         $fallback_products = [];
     }
 }
+
 ?>
 
 <style>
@@ -165,10 +179,27 @@ if ($count === 0 && $image_search) {
 
 <div class="search-page-container">
     <div class="search-header">
-        <h2><?php echo $keyword !== '' ? 'Kết quả tìm kiếm: "' . htmlspecialchars($keyword) . '"' : 'Tất cả sản phẩm'; ?></h2>
+        <?php
+            // Tiêu đề trang
+            if ($image_search && !empty($image_cat)) {
+                $catNameMap = [
+                    'CAT01'=>'Áo thun','CAT02'=>'Áo khoác','CAT03'=>'Hoodie & Sweater',
+                    'CAT04'=>'Quần','CAT05'=>'Áo sơ mi','CAT06'=>'Quần đùi',
+                    'CAT07'=>'Áo polo','CAT08'=>'Quần jeans','CAT09'=>'Chân váy',
+                    'CAT10'=>'Áo len & cardigan'
+                ];
+                $pageTitle = 'Gợi ý ảnh: ' . ($catNameMap[$image_cat] ?? $image_cat);
+                if (!empty($image_color)) $pageTitle .= ' màu ' . htmlspecialchars($image_color);
+            } elseif ($keyword !== '') {
+                $pageTitle = 'Kết quả tìm kiếm: &ldquo;' . htmlspecialchars($keyword) . '&rdquo;';
+            } else {
+                $pageTitle = 'Tất cả sản phẩm';
+            }
+        ?>
+        <h2><?= $pageTitle ?></h2>
         <p>
             <?php if ($image_search): ?>
-                Gợi ý sản phẩm dựa trên ảnh của bạn<?php if ($keyword !== ''): ?> (từ khóa: "<?= htmlspecialchars($keyword) ?>")<?php endif; ?>.
+                Tìm thấy <strong><?= $count ?></strong> sản phẩm<?= (!empty($image_color) ? ' — màu <strong>' . htmlspecialchars($image_color) . '</strong> ưu tiên lên đầu' : '') ?>.
             <?php else: ?>
                 Tìm thấy <?php echo $count; ?> sản phẩm phù hợp.
             <?php endif; ?>
@@ -178,12 +209,16 @@ if ($count === 0 && $image_search) {
     <div class="search-layout">
         <aside class="sidebar-filter">
             <form action="search.php" method="GET" id="filterForm">
-                <?php if($keyword !== ''): ?>
+                <?php if($keyword !== '' && !($image_search && !empty($cat_filter))): ?>
                     <input type="hidden" name="q" value="<?php echo htmlspecialchars($keyword); ?>">
                 <?php endif; ?>
                 <?php if ($image_search): ?>
                     <input type="hidden" name="image_search" value="1">
-                    <input type="hidden" name="image_desc" value="<?php echo htmlspecialchars($image_description); ?>">
+                    <input type="hidden" name="image_desc"  value="<?php echo htmlspecialchars($image_description); ?>">
+                    <input type="hidden" name="image_cat"   value="<?php echo htmlspecialchars($image_cat); ?>">
+                    <?php if (!empty($image_color)): ?>
+                        <input type="hidden" name="image_color" value="<?php echo htmlspecialchars($image_color); ?>">
+                    <?php endif; ?>
                 <?php endif; ?>
 
                 <div class="filter-group">
@@ -223,23 +258,41 @@ if ($count === 0 && $image_search) {
                         <div>
                             <h3 style="margin:0 0 6px; font-size:17px; color:#333;">Gợi ý từ ảnh</h3>
                             <p style="margin:0; color:#5b4a20; font-size:14px; line-height:1.5;">
-                                <?php if ($fallback_mode): ?>
-                                    <i class="fa-solid fa-hourglass-end"></i> Đang hiển thị các mẫu Áo thun mới nhất của cửa hàng.
-                                <?php else: ?>
-                                    <?= $image_description ? htmlspecialchars($image_description) : 'Hệ thống đã phân tích ảnh và đưa ra những sản phẩm tương tự.' ?>
-                                <?php endif; ?>
+                                <?php echo $image_description ? htmlspecialchars($image_description) : 'Hệ thống đã phân tích ảnh và đưa ra những sản phẩm tương tự.'; ?>
                             </p>
                         </div>
-                        <span style="background:#fff3cd; color:#7a5000; padding:8px 12px; border-radius:20px; font-weight:600; font-size:13px;">Từ khóa: <?= htmlspecialchars($keyword) ?></span>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                            <?php if (!empty($image_cat)): ?>
+                                <?php
+                                    $catNames = [
+                                        'CAT01'=>'Áo thun','CAT02'=>'Áo khoác','CAT03'=>'Hoodie &amp; Sweater',
+                                        'CAT04'=>'Quần','CAT05'=>'Áo sơ mi','CAT06'=>'Quần đùi',
+                                        'CAT07'=>'Áo polo','CAT08'=>'Quần jeans','CAT09'=>'Chân váy',
+                                        'CAT10'=>'Áo len &amp; cardigan'
+                                    ];
+                                    $catLabel = $catNames[$image_cat] ?? $image_cat;
+                                ?>
+                                <span style="background:#fff3cd; color:#7a5000; padding:7px 14px; border-radius:20px; font-weight:600; font-size:13px;">
+                                    🛈 Danh mục: <?= $catLabel ?>
+                                </span>
+                            <?php endif; ?>
+                            <?php if (!empty($image_color)): ?>
+                                <span style="background:#fce4ec; color:#880e4f; padding:7px 14px; border-radius:20px; font-weight:600; font-size:13px;">
+                                    🎨 Màu: <?= htmlspecialchars($image_color) ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
+
 
             <?php 
             $renderList = $count > 0 ? $products : $fallback_products; 
             if (!empty($renderList)):
                 foreach ($renderList as $p): 
             ?>
+
                 <div class="product-card">
                     <a href="product_detail.php?id=<?php echo $p['product_id']; ?>" style="text-decoration: none; color: inherit; display: block; height: 100%;">
                     <?php 

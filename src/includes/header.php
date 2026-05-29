@@ -242,19 +242,25 @@ try {
                 clearTimeout(timeoutId);
                 if (data.success) {
                     statusText.style.color = '#27ae60';
-                    
-                    // SỬA TẠI ĐÂY: Nếu API chạy ở chế độ fallback sản phẩm, đổi luôn từ khóa redirect thành 'áo thun'
-                    const query = data.is_fallback ? 'áo thun' : (data.keyword ? data.keyword : 'áo thun');
-                    const desc = data.is_fallback ? 'Hệ thống tự động gợi ý các mẫu Áo thun mới nhất do không tìm thấy sản phẩm trùng khớp.' : (data.description || '');
-                    
-                    statusText.innerHTML = '<i class="fa-solid fa-circle-check"></i> Phân tích xong! Từ khóa: "<strong>' + query + '</strong>".<br><small style="color: #666;">Đang tìm sản phẩm...</small>';
-                    
+
+                    // Dùng category_id để redirect → search.php lọc theo category_id
+                    // Sidebar sẽ tự tích đúng danh mục nhận diện được
+                    const catId   = data.category_id   || 'CAT01';
+                    const keyword = data.keyword        || 'áo thun';
+                    const desc    = data.description    || '';
+                    const color   = data.color_matched  || '';
+
+                    statusText.innerHTML = '<i class="fa-solid fa-circle-check"></i> Nhận diện: <strong>' + keyword + (color ? ' màu ' + color : '') + '</strong><br><small style="color:#666">Đang tải sản phẩm...</small>';
+
                     setTimeout(() => {
                         const searchUrl = new URL('<?= $_BASE ?>/search.php', window.location.origin);
-                        searchUrl.searchParams.set('q', query);
+                        // Truyền category_id để search.php filter đúng danh mục
+                        searchUrl.searchParams.append('category[]', catId);
                         searchUrl.searchParams.set('image_search', '1');
                         searchUrl.searchParams.set('image_desc', desc);
-                        if(data.is_fallback) searchUrl.searchParams.set('fallback', '1');
+                        searchUrl.searchParams.set('image_cat', catId);
+                        if (color) searchUrl.searchParams.set('image_color', color);
+                        if (data.is_fallback) searchUrl.searchParams.set('fallback', '1');
                         window.location.href = searchUrl.toString();
                     }, 1200);
                 } else {
@@ -266,13 +272,15 @@ try {
                 if (error.name === 'AbortError') {
                     statusText.style.color = '#f39c12';
                     statusText.innerHTML = '<i class="fa-solid fa-hourglass-end"></i> Phân tích quá lâu, đang tìm sản phẩm tương tự...';
-                    
+
                     setTimeout(() => {
                         const searchUrl = new URL('<?= $_BASE ?>/search.php', window.location.origin);
-                        searchUrl.searchParams.set('q', 'áo thun'); // SỬA TẠI ĐÂY: Quá hạn ép thẳng về 'áo thun' thay vì 'thời trang'
+                        // Timeout → fallback về CAT01 (Áo thun) vẫn đúng danh mục NTK
+                        searchUrl.searchParams.append('category[]', 'CAT01');
                         searchUrl.searchParams.set('image_search', '1');
+                        searchUrl.searchParams.set('image_cat', 'CAT01');
                         searchUrl.searchParams.set('fallback', '1');
-                        searchUrl.searchParams.set('image_desc', 'Hệ thống tự động gợi ý danh mục áo thun do phản hồi từ AI quá hạn.');
+                        searchUrl.searchParams.set('image_desc', 'Hệ thống tự động gợi ý danh mục Áo thun do phản hồi AI quá hạn.');
                         window.location.href = searchUrl.toString();
                     }, 1500);
                 } else {
