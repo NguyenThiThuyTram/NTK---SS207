@@ -20,7 +20,7 @@ try {
     $conn->beginTransaction();
 
     // Lấy số điểm hiện tại
-    $stmt = $conn->prepare("SELECT current_points, wallet_balance FROM users WHERE user_id = :uid FOR UPDATE");
+    $stmt = $conn->prepare("SELECT current_points FROM users WHERE user_id = :uid FOR UPDATE");
     $stmt->execute(['uid' => $user_id]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -35,11 +35,10 @@ try {
     // Tỷ lệ đổi: 1 điểm = 100 VNĐ
     $vnd_amount = $points_to_redeem * 100;
 
-    // Trừ điểm và cộng tiền ví
-    $stmt_update = $conn->prepare("UPDATE users SET current_points = current_points - :pts, wallet_balance = wallet_balance + :amt WHERE user_id = :uid");
+    // Trừ điểm trong bảng users
+    $stmt_update = $conn->prepare("UPDATE users SET current_points = current_points - :pts WHERE user_id = :uid");
     $stmt_update->execute([
         'pts' => $points_to_redeem,
-        'amt' => $vnd_amount,
         'uid' => $user_id
     ]);
 
@@ -52,7 +51,7 @@ try {
     ]);
 
     // Thêm thông báo
-    $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, message, is_read, created_at) VALUES (:uid, :msg, 0, NOW())");
+    $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, type, title, message) VALUES (:uid, 'system', 'Đổi điểm thành công', :msg)");
     $stmt_notif->execute([
         'uid' => $user_id,
         'msg' => "Bạn đã đổi $points_to_redeem điểm Loyalty thành " . number_format($vnd_amount, 0, ',', '.') . "đ thành công!"
