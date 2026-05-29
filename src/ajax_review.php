@@ -29,7 +29,20 @@ if ($action === 'submit_comment') {
 
     // KIỂM DUYỆT VĂN BẢN (Text Moderation)
     $bad_words = [
-        'địt', 'đụ', 'lồn', 'cặc', 'buồi', 'đĩ', 'điếm', 'phò', 'đéo', 'vcl', 'vl', 'vãi lồn', 'đm', 'đmm', 'đkm', 'đcm', 'địt mẹ', 'chó đẻ', 'thằng chó', 'con chó', 'súc vật', 'cặn bã', 'rác rưởi', 'óc chó', 'ngu học', 'khốn nạn', 'mất dạy', 'vô giáo dục', 'bitch', 'fuck', 'shit', 'cunt', 'slut'
+        // Chửi thề, tục tĩu chung
+        'địt', 'đụ', 'lồn', 'cặc', 'buồi', 'đĩ', 'điếm', 'phò', 'đéo', 'vcl', 'vl', 'vãi lồn', 'đm', 'đmm', 'đkm', 'đcm', 'chó đẻ', 'thằng chó', 'con chó', 'súc vật', 'cặn bã', 'rác rưởi', 'óc chó', 'ngu học', 'khốn nạn', 'mất dạy', 'vô giáo dục', 'bitch', 'fuck', 'shit', 'cunt', 'slut', 'nứng',
+        
+        // Chửi cha chửi mẹ, gia đình
+        'địt mẹ', 'đụ má', 'địt cha', 'tổ tông', 'địt cụ', 'con mẹ mày', 'thằng cha mày', 'ông nội mày', 'bà nội mày', 'mồ mả', 'bàn thờ', 'chết cha', 'chết mẹ', 'đĩ mẹ', 'tạp chủng', 'đjt mẹ', 'duma',
+        
+        // Ma túy, chất kích thích, tệ nạn
+        'ma túy', 'hê rô in', 'heroin', 'đập đá', 'chơi đá', 'hút cần', 'cần sa', 'cỏ mỹ', 'thuốc lắc', 'kẹo ke', 'xì ke', 'nghiện ngập', 'phê cần', 'bay phòng', 'đánh bài', 'cờ bạc', 'cá độ', 'tài xỉu', 'lô đề',
+        
+        // Chết chóc, tự tử, bạo lực
+        'tự tử', 'chết đi', 'đi chết đi', 'tự sát', 'cắt cổ', 'giết người', 'đâm chém', 'chém giết', 'đổ máu', 'thắt cổ', 'nhảy lầu', 'thuốc độc',
+        
+        // Từ lóng, viết tắt
+        'cave', 'gái gọi', 'nulo', 'vkl', 'đjt', 'dklm'
     ];
     $comment_lower = mb_strtolower($comment, 'UTF-8');
     foreach ($bad_words as $word) {
@@ -214,6 +227,74 @@ if ($action === 'toggle_like') {
         echo json_encode(['status' => 'success', 'like_status' => $status, 'total_likes' => $total_likes]);
     } catch (PDOException $e) {
         echo json_encode(['status' => 'error', 'message' => 'Lỗi tương tác: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// ===================== XỬ LÝ XÓA BÌNH LUẬN =====================
+if ($action === 'delete_review') {
+    $review_id = intval($_POST['review_id'] ?? 0);
+
+    if ($review_id <= 0) {
+        echo json_encode(['status' => 'error', 'message' => 'ID đánh giá không hợp lệ!']);
+        exit;
+    }
+
+    try {
+        // Kiểm tra xem review này có tồn tại và thuộc về user đang đăng nhập (hoặc user là admin)
+        $stmt_check = $conn->prepare("SELECT user_id, image, video FROM reviews WHERE review_id = :rid");
+        $stmt_check->execute(['rid' => $review_id]);
+        $review = $stmt_check->fetch(PDO::FETCH_ASSOC);
+
+        if (!$review) {
+            echo json_encode(['status' => 'error', 'message' => 'Đánh giá không tồn tại!']);
+            exit;
+        }
+
+        // Kiểm tra quyền: Chỉ admin (role = 1) hoặc chủ sở hữu đánh giá mới được xóa
+        if (intval($user_role) !== 1 && intval($review['user_id']) !== intval($user_id)) {
+            echo json_encode(['status' => 'error', 'message' => 'Bạn không có quyền xóa đánh giá này!']);
+            exit;
+        }
+
+        // Tìm tất cả các phản hồi con để xóa file media nếu có
+        $stmt_children = $conn->prepare("SELECT image, video FROM reviews WHERE parent_id = :rid");
+        $stmt_children->execute(['rid' => $review_id]);
+        $children = $stmt_children->fetchAll(PDO::FETCH_ASSOC);
+
+        // Xóa file media của các phản hồi con (nếu có)
+        foreach ($children as $child) {
+            if (!empty($child['image']) && file_exists(__DIR__ . '/../' . $child['image'])) {
+                unlink(__DIR__ . '/../' . $child['image']);
+            }
+            if (!empty($child['video']) && file_exists(__DIR__ . '/../' . $child['video'])) {
+                unlink(__DIR__ . '/../' . $child['video']);
+            }
+        }
+
+        // Xóa các phản hồi con trong database
+        $stmt_del_children = $conn->prepare("DELETE FROM reviews WHERE parent_id = :rid");
+        $stmt_del_children->execute(['rid' => $review_id]);
+
+        // Xóa file media của đánh giá gốc
+        if (!empty($review['image']) && file_exists(__DIR__ . '/../' . $review['image'])) {
+            unlink(__DIR__ . '/../' . $review['image']);
+        }
+        if (!empty($review['video']) && file_exists(__DIR__ . '/../' . $review['video'])) {
+            unlink(__DIR__ . '/../' . $review['video']);
+        }
+
+        // Xóa các likes liên quan
+        $stmt_del_likes = $conn->prepare("DELETE FROM review_likes WHERE review_id = :rid");
+        $stmt_del_likes->execute(['rid' => $review_id]);
+
+        // Cuối cùng xóa đánh giá gốc
+        $stmt_del = $conn->prepare("DELETE FROM reviews WHERE review_id = :rid");
+        $stmt_del->execute(['rid' => $review_id]);
+
+        echo json_encode(['status' => 'success', 'message' => 'Đã xóa đánh giá thành công!']);
+    } catch (PDOException $e) {
+        echo json_encode(['status' => 'error', 'message' => 'Lỗi hệ thống: ' . $e->getMessage()]);
     }
     exit;
 }

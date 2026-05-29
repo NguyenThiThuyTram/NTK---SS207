@@ -166,6 +166,12 @@ function renderReviewReplies($conn, $parent_id, $product_id, $user_id_session, $
         if ($user_role_session === 1) {
             echo '  <button type="button" class="reply-trigger-btn" onclick="openReplyForm('.$reply['review_id'].')" style="background:none; border:none; color:#a6825c; font-size:12px; cursor:pointer; padding:0; font-weight:600;"><i class="fa-regular fa-comment-dots"></i> Phản hồi</button>';
         }
+        
+        // NÚT XÓA CHO ADMIN HOẶC NGƯỜI VIẾT BÌNH LUẬN
+        if ($user_role_session === 1 || ($user_id_session && $reply['user_id'] == $user_id_session)) {
+            echo '  <button type="button" class="reply-trigger-btn" onclick="deleteReview('.$reply['review_id'].')" style="background:none; border:none; color:#e74c3c; font-size:12px; cursor:pointer; padding:0; font-weight:600;"><i class="fa-regular fa-trash-can"></i> Xóa</button>';
+        }
+
         echo '  </div>';
         echo '  <div class="reply-form-container" id="reply-form-'.$reply['review_id'].'" style="display:none; margin-top:10px;"></div>';
         
@@ -581,6 +587,9 @@ include 'includes/header.php';
                                         
                                         <?php if ($user_role_session === 1): ?>
                                             <button type="button" class="reply-trigger-btn" onclick="openReplyForm(<?= $rev['review_id'] ?>)" style="background:none; border:none; color:#a6825c; font-size:13px; cursor:pointer; padding:0; font-weight:600;"><i class="fa-regular fa-comment-dots"></i> Phản hồi</button>
+                                        <?php endif; ?>
+                                        <?php if ($user_role_session === 1 || ($user_id_session && $rev['user_id'] == $user_id_session)): ?>
+                                            <button type="button" class="reply-trigger-btn" onclick="deleteReview(<?= $rev['review_id'] ?>)" style="background:none; border:none; color:#e74c3c; font-size:13px; cursor:pointer; padding:0; font-weight:600;"><i class="fa-regular fa-trash-can"></i> Xóa</button>
                                         <?php endif; ?>
                                     </div>
                                     <div class="reply-form-container" id="reply-form-<?= $rev['review_id'] ?>" style="display:none; margin-top:10px;"></div>
@@ -1001,6 +1010,24 @@ include 'includes/header.php';
                         btn.style.color = '#888';
                         icon.className = 'fa-regular fa-thumbs-up';
                     }
+                } else {
+                    alert(res.message);
+                }
+            }
+        });
+    }
+
+    function deleteReview(reviewId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa đánh giá này không? Mọi phản hồi liên quan cũng sẽ bị xóa.')) return;
+        $.ajax({
+            url: 'ajax_review.php',
+            method: 'POST',
+            data: { action: 'delete_review', review_id: reviewId },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status === 'success') {
+                    alert(res.message);
+                    window.location.reload();
                 } else {
                     alert(res.message);
                 }

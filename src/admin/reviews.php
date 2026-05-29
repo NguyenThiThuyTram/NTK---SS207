@@ -95,7 +95,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             <?php for ($i = 1; $i <= 5; $i++) echo ($i <= $r['rating']) ? '★' : '☆'; ?>
                         </span>
                     </div>
-                    <div class="rac-prod">Sản phẩm: <?= htmlspecialchars($r['product_name']) ?></div>
+                    <div style="display:flex; align-items:center; gap:15px;">
+                        <span class="rac-prod">Sản phẩm: <?= htmlspecialchars($r['product_name']) ?></span>
+                        <button type="button" onclick="deleteReview(<?= $r['review_id'] ?>)" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:13px; font-weight:600;"><i class="fa-regular fa-trash-can"></i> Xóa</button>
+                    </div>
                 </div>
                 <div class="rac-text">“ <?= htmlspecialchars($r['comment']) ?> ”</div>
                 
@@ -135,5 +138,37 @@ include __DIR__ . '/../includes/admin_sidebar.php';
 </div>
 
 </div></main>
+
+<script>
+    function deleteReview(reviewId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa đánh giá này không?')) return;
+        
+        // Vì file ajax_review.php ở thư mục ngoài (src/) nên cần chỉ đường dẫn chính xác: ../ajax_review.php
+        fetch('../ajax_review.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'delete_review',
+                'review_id': reviewId
+            })
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.status === 'success') {
+                alert(res.message);
+                window.location.reload();
+            } else {
+                alert(res.message || 'Có lỗi xảy ra');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Lỗi kết nối máy chủ');
+        });
+    }
+</script>
+
 </body>
 </html>
