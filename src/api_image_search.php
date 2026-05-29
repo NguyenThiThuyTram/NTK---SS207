@@ -24,7 +24,7 @@ if (!in_array($imageType, $allowedTypes)) {
     exit;
 }
 
-// ────── CACHE (MD5 of file) ──────
+// ────── CACHE ──────
 $tmpPath   = $_FILES['image']['tmp_name'];
 $imageHash = md5_file($tmpPath);
 $cacheDir  = __DIR__ . '/cache';
@@ -40,138 +40,206 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 3600)) {
     exit;
 }
 
-// ────── HARD-CODED SHOP CATEGORIES (NTK Fashion) ──────
-// ONLY keywords that match what the shop actually sells.
-// AWS labels are mapped into this list; anything outside is ignored.
-$SHOP_CATEGORIES = [
-    // Tops
-    'T-Shirt'    => 'áo thun',
-    'Shirt'      => 'áo sơ mi',
-    'Blouse'     => 'áo kiểu',
-    'Sweater'    => 'áo len',
-    'Jacket'     => 'áo khoác',
-    'Coat'       => 'áo khoác',
-    'Hoodie'     => 'áo hoodie',
-    'Top'        => 'áo thun',
-    // Bottoms
-    'Pants'      => 'quần',
-    'Trousers'   => 'quần tây',
-    'Jeans'      => 'quần jean',
-    'Shorts'     => 'quần short',
-    'Skirt'      => 'chân váy',
-    // One-piece
-    'Dress'      => 'đầm',
-    'Gown'       => 'đầm dạ hội',
-    'Jumpsuit'   => 'jumpsuit',
-    // Accessories
-    'Hat'        => 'mũ',
-    'Handbag'    => 'túi xách',
-    'Bag'        => 'túi xách',
-    'Shoes'      => 'giày',
-    'Glasses'    => 'kính',
-    'Sunglasses' => 'kính mát',
-    // Suit
-    'Suit'       => 'vest',
-    'Blazer'     => 'vest',
+// ──────────────────────────────────────────────────────────────────
+// HARD-CODED SHOP CATEGORIES – mapping AWS label → category_id của NTK
+// Chỉ các danh mục shop thực sự bán mới được phép trả về.
+// ──────────────────────────────────────────────────────────────────
+$CATEGORY_MAP = [
+    // CAT01 – Áo thun
+    'T-Shirt'      => 'CAT01',
+    'Tee'          => 'CAT01',
+    'Crop Top'     => 'CAT01',
+    // CAT02 – Áo khoác
+    'Jacket'       => 'CAT02',
+    'Coat'         => 'CAT02',
+    'Windbreaker'  => 'CAT02',
+    'Parka'        => 'CAT02',
+    'Outerwear'    => 'CAT02',
+    // CAT03 – Hoodie & Sweater
+    'Hoodie'       => 'CAT03',
+    'Sweatshirt'   => 'CAT03',
+    'Sweater'      => 'CAT03',
+    'Pullover'     => 'CAT03',
+    // CAT04 – Quần (kaki, vải dù, parachute…)
+    'Pants'        => 'CAT04',
+    'Trousers'     => 'CAT04',
+    'Cargo'        => 'CAT04',
+    // CAT05 – Áo sơ mi
+    'Shirt'        => 'CAT05',
+    'Blouse'       => 'CAT05',
+    'Button Down'  => 'CAT05',
+    // CAT06 – Quần đùi / short
+    'Shorts'       => 'CAT06',
+    'Short'        => 'CAT06',
+    // CAT07 – Áo polo
+    'Polo'         => 'CAT07',
+    'Polo Shirt'   => 'CAT07',
+    // CAT08 – Quần jeans
+    'Jeans'        => 'CAT08',
+    'Denim'        => 'CAT08',
+    // CAT09 – Chân váy
+    'Skirt'        => 'CAT09',
+    'Mini Skirt'   => 'CAT09',
+    // CAT10 – Áo len & cardigan
+    'Cardigan'     => 'CAT10',
+    'Knitwear'     => 'CAT10',
+    'Knit'         => 'CAT10',
 ];
 
-// ────── COLOR MAP ──────
+// Tên hiển thị của từng category (dùng cho description + keyword trả về frontend)
+$CATEGORY_NAMES = [
+    'CAT01' => 'áo thun',
+    'CAT02' => 'áo khoác',
+    'CAT03' => 'hoodie & sweater',
+    'CAT04' => 'quần',
+    'CAT05' => 'áo sơ mi',
+    'CAT06' => 'quần đùi',
+    'CAT07' => 'áo polo',
+    'CAT08' => 'quần jeans',
+    'CAT09' => 'chân váy',
+    'CAT10' => 'áo len & cardigan',
+];
+
+// Danh mục mặc định khi AWS không nhận ra được gì
+$DEFAULT_CATEGORY_ID   = 'CAT01';
+$DEFAULT_CATEGORY_NAME = 'áo thun';
+
+// ──────────────────────────────────────────────────────────────────
+// COLOR MAP: AWS label → màu tiếng Việt (khớp với product_variants.color)
+// Các màu được lấy trực tiếp từ dữ liệu product_variants trong database:
+// Trắng, Đen, Xanh, Xanh Navy, Xanh Nhạt, Hồng, Vàng, Nâu, Ghi, Kem,
+// Tím, Đỏ, Xám, Sắc Bé (Beige), Đỏ Đô (Maroon), v.v.
+// ──────────────────────────────────────────────────────────────────
 $COLOR_MAP = [
-    'Red'       => 'đỏ',
-    'Blue'      => 'xanh dương',
-    'Navy Blue' => 'xanh navy',
-    'Black'     => 'đen',
-    'White'     => 'trắng',
-    'Green'     => 'xanh lá',
-    'Yellow'    => 'vàng',
-    'Pink'      => 'hồng',
-    'Purple'    => 'tím',
-    'Brown'     => 'nâu',
-    'Orange'    => 'cam',
-    'Gray'      => 'xám',
-    'Grey'      => 'xám',
-    'Beige'     => 'be',
-    'Cream'     => 'kem',
-    'Maroon'    => 'đỏ đô',
+    // Trắng
+    'White'         => 'Trắng',
+    // Đen
+    'Black'         => 'Đen',
+    // Xanh (dương / lá – AWS thường dùng Blue/Green)
+    'Blue'          => 'Xanh',
+    'Green'         => 'Xanh',
+    'Navy Blue'     => 'Xanh Navy',
+    'Navy'          => 'Xanh Navy',
+    'Light Blue'    => 'Xanh Nhạt',
+    'Cyan'          => 'Xanh',
+    'Teal'          => 'Xanh',
+    // Hồng
+    'Pink'          => 'Hồng',
+    'Rose'          => 'Hồng',
+    'Salmon'        => 'Hồng',
+    // Vàng
+    'Yellow'        => 'Vàng',
+    'Gold'          => 'Vàng',
+    // Nâu
+    'Brown'         => 'Nâu',
+    'Tan'           => 'Nâu',
+    'Camel'         => 'Nâu',
+    // Xám / Ghi
+    'Gray'          => 'Ghi',
+    'Grey'          => 'Ghi',
+    'Silver'        => 'Ghi',
+    // Kem / Be
+    'Beige'         => 'Kem',
+    'Cream'         => 'Kem',
+    'Off White'     => 'Kem',
+    'Ivory'         => 'Kem',
+    // Tím
+    'Purple'        => 'Tím',
+    'Violet'        => 'Tím',
+    'Lavender'      => 'Tím',
+    // Đỏ
+    'Red'           => 'Đỏ',
+    'Maroon'        => 'Đỏ',
+    'Burgundy'      => 'Đỏ',
+    // Cam
+    'Orange'        => 'Cam',
+    // Đỏ Đô
+    'Dark Red'      => 'Đỏ',
 ];
 
-// ────── DEFAULT FALLBACK ──────
-$DEFAULT_FALLBACK_KEYWORD = 'áo thun';
+// ────── LOG FILE ──────
+$log_file = __DIR__ . '/image_search_log.txt';
 
-// ────── ANALYZE WITH AWS REKOGNITION (sole engine) ──────
+// ────── AWS REKOGNITION ANALYSIS ──────
 require_once __DIR__ . '/includes/aws_rekognition.php';
 
-$foundCategory = ''; // matched shop category keyword (VN)
-$foundColor    = ''; // matched color keyword (VN)
-$ai_success    = false;
-$log_file      = __DIR__ . '/image_search_log.txt';
+$foundCategoryId   = '';
+$foundCategoryName = '';
+$foundColor        = '';   // màu tiếng Việt khớp với product_variants.color
+$ai_success        = false;
 
 $rekognition = new AwsRekognition();
 
 if ($rekognition->isConfigured()) {
-    $rawBytes = file_get_contents($tmpPath);
+    $rawBytes  = file_get_contents($tmpPath);
     $awsResult = $rekognition->detectLabels($rawBytes, 30, 50.0);
 
     if (!isset($awsResult['error']) && isset($awsResult['Labels'])) {
         foreach ($awsResult['Labels'] as $label) {
             $name = $label['Name'];
 
-            // Map to hard-coded shop category (first match wins)
-            if (empty($foundCategory) && isset($SHOP_CATEGORIES[$name])) {
-                $foundCategory = $SHOP_CATEGORIES[$name];
+            // Map sang category_id của shop (first match wins)
+            if (empty($foundCategoryId) && isset($CATEGORY_MAP[$name])) {
+                $foundCategoryId   = $CATEGORY_MAP[$name];
+                $foundCategoryName = $CATEGORY_NAMES[$foundCategoryId];
             }
 
-            // Map to color (first match wins)
+            // Map sang màu tiếng Việt (first match wins)
             if (empty($foundColor) && isset($COLOR_MAP[$name])) {
                 $foundColor = $COLOR_MAP[$name];
             }
 
-            // Stop scanning once both are found
-            if (!empty($foundCategory) && !empty($foundColor)) {
+            // Dừng scan khi đã có cả hai
+            if (!empty($foundCategoryId) && !empty($foundColor)) {
                 break;
             }
         }
 
-        if (!empty($foundCategory)) {
+        if (!empty($foundCategoryId)) {
             $ai_success = true;
             file_put_contents($log_file,
-                date('Y-m-d H:i:s') . ' - AWS OK | Category: ' . $foundCategory . ' | Color: ' . $foundColor . PHP_EOL,
+                date('Y-m-d H:i:s') . " - AWS OK | CategoryID: $foundCategoryId ($foundCategoryName) | Color: $foundColor\n",
                 FILE_APPEND
             );
         } else {
             file_put_contents($log_file,
-                date('Y-m-d H:i:s') . ' - AWS: No matching shop category found in labels.' . PHP_EOL,
+                date('Y-m-d H:i:s') . " - AWS: No matching shop category in labels.\n",
                 FILE_APPEND
             );
         }
     } else {
         $errDetail = $awsResult['error'] ?? 'Unknown AWS error';
         file_put_contents($log_file,
-            date('Y-m-d H:i:s') . ' - AWS Error: ' . $errDetail . PHP_EOL,
+            date('Y-m-d H:i:s') . " - AWS Error: $errDetail\n",
             FILE_APPEND
         );
     }
 } else {
     file_put_contents($log_file,
-        date('Y-m-d H:i:s') . ' - AWS Rekognition not configured.' . PHP_EOL,
+        date('Y-m-d H:i:s') . " - AWS Rekognition not configured.\n",
         FILE_APPEND
     );
 }
 
-// ────── BUILD DISPLAY KEYWORD & DESCRIPTION ──────
-if ($ai_success) {
-    $keyword     = $foundCategory;
-    $description = 'AWS AI nhận diện: ' . ucfirst($foundCategory) . ($foundColor ? ' màu ' . $foundColor : '');
-} else {
-    $keyword     = $DEFAULT_FALLBACK_KEYWORD;
-    $description = 'Hệ thống tự động gợi ý các mẫu mới nhất cho bạn.';
+// Gán fallback nếu AWS không nhận ra
+if (!$ai_success) {
+    $foundCategoryId   = $DEFAULT_CATEGORY_ID;
+    $foundCategoryName = $DEFAULT_CATEGORY_NAME;
     file_put_contents($log_file,
-        date('Y-m-d H:i:s') . ' - Using DEFAULT fallback: ' . $DEFAULT_FALLBACK_KEYWORD . PHP_EOL,
+        date('Y-m-d H:i:s') . " - Using DEFAULT category: $DEFAULT_CATEGORY_ID\n",
         FILE_APPEND
     );
 }
 
-// ────── DATABASE QUERY (3-level priority) ──────
+$keyword     = $foundCategoryName;
+$description = 'AWS AI nhận diện: ' . ucfirst($foundCategoryName) . ($foundColor ? ' màu ' . $foundColor : '');
+
+// ──────────────────────────────────────────────────────────────────
+// DATABASE QUERY – 3 cấp ưu tiên
+// Ưu tiên 1: Đúng category_id VÀ có variant màu phù hợp → sản phẩm giống ảnh nhất
+// Ưu tiên 2: Đúng category_id (bất kỳ màu)
+// Ưu tiên 3: 4 sản phẩm mới nhất (tránh giao diện trống)
+// ──────────────────────────────────────────────────────────────────
 require_once __DIR__ . '/config/database.php';
 
 $products    = [];
@@ -179,24 +247,28 @@ $is_fallback = false;
 $search_mode = '';
 
 try {
-    // ── PRIORITY 1: Category AND Color (most similar to uploaded image) ──
-    if ($ai_success && !empty($foundColor)) {
+    // ── PRIORITY 1: category_id + màu sắc khớp ──
+    if (!empty($foundColor)) {
         $stmt = $conn->prepare("
-            SELECT p.product_id, p.name, p.image,
-                   MIN(v.sale_price) as sale_price,
-                   MIN(v.original_price) as original_price
+            SELECT
+                p.product_id,
+                p.name,
+                p.image,
+                MIN(v.sale_price)     AS sale_price,
+                MIN(v.original_price) AS original_price
             FROM products p
-            LEFT JOIN product_variants v ON p.product_id = v.product_id
+            INNER JOIN product_variants v ON p.product_id = v.product_id
             WHERE p.status = 1
-              AND (p.name LIKE :cat OR p.description LIKE :cat)
-              AND (p.name LIKE :col OR p.description LIKE :col)
+              AND p.category_id = :cat_id
+              AND v.color LIKE :color
+              AND v.is_active = 1
             GROUP BY p.product_id
             ORDER BY p.product_id DESC
             LIMIT 4
         ");
         $stmt->execute([
-            'cat' => '%' . $foundCategory . '%',
-            'col' => '%' . $foundColor . '%',
+            'cat_id' => $foundCategoryId,
+            'color'  => '%' . $foundColor . '%',
         ]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (!empty($products)) {
@@ -204,38 +276,44 @@ try {
         }
     }
 
-    // ── PRIORITY 2: Category only ──
-    if (empty($products) && !empty($keyword)) {
+    // ── PRIORITY 2: category_id (bất kỳ màu) ──
+    if (empty($products)) {
         $stmt = $conn->prepare("
-            SELECT p.product_id, p.name, p.image,
-                   MIN(v.sale_price) as sale_price,
-                   MIN(v.original_price) as original_price
+            SELECT
+                p.product_id,
+                p.name,
+                p.image,
+                MIN(v.sale_price)     AS sale_price,
+                MIN(v.original_price) AS original_price
             FROM products p
             LEFT JOIN product_variants v ON p.product_id = v.product_id
             WHERE p.status = 1
-              AND (p.name LIKE :keyword OR p.description LIKE :keyword)
+              AND p.category_id = :cat_id
             GROUP BY p.product_id
             ORDER BY p.product_id DESC
             LIMIT 4
         ");
-        $stmt->execute(['keyword' => '%' . $keyword . '%']);
+        $stmt->execute(['cat_id' => $foundCategoryId]);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if (!empty($products)) {
             $search_mode = 'category_only';
         }
     }
 
-    // ── PRIORITY 3: Newest 4 products (prevent empty UI) ──
+    // ── PRIORITY 3: 4 sản phẩm mới nhất (tránh trang trống) ──
     if (empty($products)) {
         $is_fallback = true;
-        $keyword     = $DEFAULT_FALLBACK_KEYWORD;
+        $keyword     = $DEFAULT_CATEGORY_NAME;
         $description = 'Hệ thống tự động gợi ý các sản phẩm mới nhất cho bạn.';
         $search_mode = 'newest_fallback';
 
         $stmt = $conn->prepare("
-            SELECT p.product_id, p.name, p.image,
-                   MIN(v.sale_price) as sale_price,
-                   MIN(v.original_price) as original_price
+            SELECT
+                p.product_id,
+                p.name,
+                p.image,
+                MIN(v.sale_price)     AS sale_price,
+                MIN(v.original_price) AS original_price
             FROM products p
             LEFT JOIN product_variants v ON p.product_id = v.product_id
             WHERE p.status = 1
@@ -252,22 +330,24 @@ try {
     $search_mode = 'db_error';
     $products    = [];
     file_put_contents($log_file,
-        date('Y-m-d H:i:s') . ' - DB Error: ' . $e->getMessage() . PHP_EOL,
+        date('Y-m-d H:i:s') . ' - DB Error: ' . $e->getMessage() . "\n",
         FILE_APPEND
     );
 }
 
 // ────── RESPONSE ──────
 $output = [
-    'success'     => true,
-    'keyword'     => $keyword,
-    'description' => $description,
-    'search_mode' => $search_mode, // diagnostic: category_and_color | category_only | newest_fallback | db_error
-    'is_fallback' => $is_fallback,
-    'products'    => $products,
+    'success'       => true,
+    'keyword'       => $keyword,
+    'description'   => $description,
+    'category_id'   => $foundCategoryId,
+    'color_matched' => $foundColor,
+    'search_mode'   => $search_mode,   // category_and_color | category_only | newest_fallback | db_error
+    'is_fallback'   => $is_fallback,
+    'products'      => $products,
 ];
 
-// Cache only when AWS found a real match (not fallback)
+// Cache chỉ khi tìm thấy kết quả thật (không phải fallback)
 if (!$is_fallback && $ai_success && is_dir($cacheDir) && is_writable($cacheDir)) {
     @file_put_contents($cacheFile, json_encode($output));
 }
