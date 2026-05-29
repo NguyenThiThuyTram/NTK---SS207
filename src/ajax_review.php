@@ -29,7 +29,20 @@ if ($action === 'submit_comment') {
 
     // KIỂM DUYỆT VĂN BẢN (Text Moderation)
     $bad_words = [
-        'địt', 'đụ', 'lồn', 'cặc', 'buồi', 'đĩ', 'điếm', 'phò', 'đéo', 'vcl', 'vl', 'vãi lồn', 'đm', 'đmm', 'đkm', 'đcm', 'địt mẹ', 'chó đẻ', 'thằng chó', 'con chó', 'súc vật', 'cặn bã', 'rác rưởi', 'óc chó', 'ngu học', 'khốn nạn', 'mất dạy', 'vô giáo dục', 'bitch', 'fuck', 'shit', 'cunt', 'slut'
+        // Chửi thề, tục tĩu chung
+        'địt', 'đụ', 'lồn', 'cặc', 'buồi', 'đĩ', 'điếm', 'phò', 'đéo', 'vcl', 'vl', 'vãi lồn', 'đm', 'đmm', 'đkm', 'đcm', 'chó đẻ', 'thằng chó', 'con chó', 'súc vật', 'cặn bã', 'rác rưởi', 'óc chó', 'ngu học', 'khốn nạn', 'mất dạy', 'vô giáo dục', 'bitch', 'fuck', 'shit', 'cunt', 'slut', 'nứng',
+        
+        // Chửi cha chửi mẹ, gia đình
+        'địt mẹ', 'đụ má', 'địt cha', 'tổ tông', 'địt cụ', 'con mẹ mày', 'thằng cha mày', 'ông nội mày', 'bà nội mày', 'mồ mả', 'bàn thờ', 'chết cha', 'chết mẹ', 'đĩ mẹ', 'tạp chủng', 'đjt mẹ', 'duma',
+        
+        // Ma túy, chất kích thích, tệ nạn
+        'ma túy', 'hê rô in', 'heroin', 'đập đá', 'chơi đá', 'hút cần', 'cần sa', 'cỏ mỹ', 'thuốc lắc', 'kẹo ke', 'xì ke', 'nghiện ngập', 'phê cần', 'bay phòng', 'đánh bài', 'cờ bạc', 'cá độ', 'tài xỉu', 'lô đề',
+        
+        // Chết chóc, tự tử, bạo lực
+        'tự tử', 'chết đi', 'đi chết đi', 'tự sát', 'cắt cổ', 'giết người', 'đâm chém', 'chém giết', 'đổ máu', 'thắt cổ', 'nhảy lầu', 'thuốc độc',
+        
+        // Từ lóng, viết tắt
+        'cave', 'gái gọi', 'nulo', 'vkl', 'đjt', 'dklm'
     ];
     $comment_lower = mb_strtolower($comment, 'UTF-8');
     foreach ($bad_words as $word) {
