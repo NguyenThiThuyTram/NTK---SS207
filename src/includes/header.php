@@ -495,6 +495,18 @@ try {
                     window.handleNewOrder(data.new_order);
                 }
             }
+
+            // 5. Voucher mới được tạo/cập nhật → thông báo + auto-reload trang voucher
+            if (data.new_coupon) {
+                showToast(
+                    '🎫 Voucher mới!',
+                    'Có voucher mới được cập nhật. Kiểm tra ngay!'
+                );
+                // Nếu user đang ở trang kho voucher → tự động reload danh sách
+                if (typeof window.handleNewCoupon === 'function') {
+                    window.handleNewCoupon(data.new_coupon);
+                }
+            }
         });
 
         function showToast(title, message) {

@@ -360,4 +360,146 @@ function copyCoupon(code, el) {
         alert('Đã sao chép mã: ' + code);
     });
 }
+
+// ── REAL-TIME: Auto-reload kho voucher khi admin tạo voucher mới ──
+function fmtMoneyJS(amount) {
+    return parseInt(amount).toLocaleString('vi-VN') + 'đ';
+}
+
+window.handleNewCoupon = function(couponData) {
+    // Fetch danh sách voucher mới từ API
+    fetch('../../api/get_coupons.php')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const wrapper = document.querySelector('.coupon-wrapper');
+            if (!wrapper) return;
+
+            const coupons = data.coupons;
+
+            // Cập nhật count badge
+            const countBadge = wrapper.querySelector('.coupon-count');
+            if (countBadge) {
+                countBadge.textContent = coupons.length + ' mã khả dụng';
+            }
+
+            // Xóa empty state hoặc grid cũ
+            const emptyState = wrapper.querySelector('.coupon-empty');
+            if (emptyState) emptyState.remove();
+            let grid = wrapper.querySelector('.coupon-grid');
+
+            if (coupons.length === 0) {
+                if (grid) grid.remove();
+                // Hiển thị empty state
+                const empty = document.createElement('div');
+                empty.className = 'coupon-empty';
+                empty.innerHTML = '<i class="fa-solid fa-ticket-simple"></i> Hiện tại chưa có voucher nào đang hoạt động.';
+                wrapper.appendChild(empty);
+                if (countBadge) countBadge.style.display = 'none';
+                return;
+            }
+
+            // Tạo hoặc xóa nội dung grid
+            if (!grid) {
+                grid = document.createElement('div');
+                grid.className = 'coupon-grid';
+                wrapper.appendChild(grid);
+            }
+            
+            // Lưu lại danh sách coupon_id hiện có
+            const existingIds = new Set();
+            grid.querySelectorAll('.coupon-card').forEach(card => {
+                const cid = card.getAttribute('data-coupon-id');
+                if (cid) existingIds.add(cid);
+            });
+
+            // Build lại toàn bộ grid
+            grid.innerHTML = '';
+
+            coupons.forEach(cp => {
+                const isPercent = (cp.discount_type == 0);
+                const val = cp.discount_value;
+                const noExpiry = !cp.end_date;
+                const expireStr = noExpiry ? 'Không giới hạn' : formatDateVN(cp.end_date);
+                const remaining = cp.quantity - (cp.used_count || 0);
+
+                let title = '';
+                if (isPercent) {
+                    title = 'Giảm ' + parseInt(val) + '%';
+                    if (cp.max_discount_amount && cp.max_discount_amount > 0) {
+                        title += ' (Tối đa ' + fmtMoneyJS(cp.max_discount_amount) + ')';
+                    }
+                } else {
+                    title = 'Giảm ' + fmtMoneyJS(val);
+                }
+
+                const isNew = !existingIds.has(cp.coupon_id);
+
+                const card = document.createElement('div');
+                card.className = 'coupon-card';
+                card.setAttribute('data-coupon-id', cp.coupon_id);
+                if (isNew) {
+                    card.style.animation = 'couponFadeIn 0.5s ease-out';
+                }
+
+                card.innerHTML = `
+                    ${noExpiry ? '<span class="badge-unlimited">Không giới hạn</span>' : ''}
+                    <div class="coupon-left">
+                        <i class="fa-solid fa-tag c-icon"></i>
+                        ${isPercent 
+                            ? `<div class="c-pct">${parseInt(val)}%</div><div class="c-type">Giảm giá</div>`
+                            : `<div class="c-pct" style="font-size:13px;">${fmtMoneyJS(val)}</div><div class="c-type">Cố định</div>`
+                        }
+                    </div>
+                    <div class="coupon-right">
+                        <div>
+                            <div class="c-title">${escapeHtml(title)}</div>
+                            <div class="c-meta">
+                                <span>Đơn tối thiểu: ${fmtMoneyJS(cp.min_order_value || 0)}</span>
+                                ${!noExpiry ? `<span class="c-expire"><i class="fa-regular fa-clock" style="margin-right:3px;"></i>HSD: ${expireStr}</span>` : ''}
+                                ${cp.quantity ? `<span>Còn: ${remaining} lượt</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="c-footer">
+                            <span class="c-code-tag" onclick="copyCoupon('${escapeHtml(cp.code)}', this)">
+                                ${escapeHtml(cp.code)}
+                            </span>
+                            <button class="c-copy-btn" onclick="copyCoupon('${escapeHtml(cp.code)}', this)" id="btn-${cp.coupon_id}">
+                                <i class="fa-regular fa-copy"></i> Sao chép
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+
+            // Hiện lại count badge
+            if (countBadge) {
+                countBadge.style.display = '';
+            }
+        })
+        .catch(err => console.error('Lỗi fetch coupons:', err));
+};
+
+function formatDateVN(dateStr) {
+    const d = new Date(dateStr);
+    return d.getDate().toString().padStart(2, '0') + '/' +
+           (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
+           d.getFullYear();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 </script>
+
+<style>
+@keyframes couponFadeIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+</style>

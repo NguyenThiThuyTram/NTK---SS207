@@ -258,4 +258,119 @@ function copyCoupon(code, btn) {
         setTimeout(() => { btn.textContent = orig; }, 2000);
     });
 }
+
+// ── REAL-TIME: Auto-reload trang khám phá voucher khi admin tạo voucher mới ──
+function fmtMoneyDiscover(amount) {
+    return parseInt(amount).toLocaleString('vi-VN') + 'đ';
+}
+
+function formatDateDiscover(dateStr) {
+    const d = new Date(dateStr);
+    return d.getDate().toString().padStart(2, '0') + '/' +
+           (d.getMonth() + 1).toString().padStart(2, '0') + '/' +
+           d.getFullYear();
+}
+
+function escapeHtmlDiscover(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+window.handleNewCoupon = function(couponData) {
+    fetch('../../api/get_coupons.php')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const wrapper = document.querySelector('.discover-wrapper');
+            if (!wrapper) return;
+
+            const coupons = data.coupons;
+
+            // Xóa empty state hoặc grid cũ
+            const emptyState = wrapper.querySelector('.empty-state');
+            if (emptyState) emptyState.remove();
+            let grid = wrapper.querySelector('.coupon-grid');
+
+            if (coupons.length === 0) {
+                if (grid) grid.remove();
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.innerHTML = '<p>Hiện tại không có chương trình khuyến mãi nào. Vui lòng quay lại sau nhé!</p>';
+                wrapper.appendChild(empty);
+                return;
+            }
+
+            if (!grid) {
+                grid = document.createElement('div');
+                grid.className = 'coupon-grid';
+                wrapper.appendChild(grid);
+            }
+
+            // Lưu lại danh sách coupon_id hiện có
+            const existingIds = new Set();
+            grid.querySelectorAll('.coupon-card').forEach(card => {
+                const cid = card.getAttribute('data-coupon-id');
+                if (cid) existingIds.add(cid);
+            });
+
+            grid.innerHTML = '';
+
+            coupons.forEach(cp => {
+                const isPercent = (cp.discount_type == 0);
+                const val = cp.discount_value;
+
+                let title = '';
+                if (isPercent) {
+                    title = 'Giảm ' + parseInt(val) + '%';
+                    if (cp.max_discount_amount && cp.max_discount_amount > 0) {
+                        title += ' (Tối đa ' + fmtMoneyDiscover(cp.max_discount_amount) + ')';
+                    }
+                } else {
+                    title = 'Giảm ' + fmtMoneyDiscover(val);
+                }
+
+                const isNew = !existingIds.has(cp.coupon_id);
+
+                const card = document.createElement('div');
+                card.className = 'coupon-card';
+                card.setAttribute('data-coupon-id', cp.coupon_id);
+                if (isNew) {
+                    card.style.animation = 'couponDiscoverFadeIn 0.5s ease-out';
+                }
+
+                card.innerHTML = `
+                    <div class="coupon-left">
+                        <span class="tag">
+                            ${isPercent ? 'Giảm %' : 'Giảm Tiền'}
+                        </span>
+                    </div>
+                    <div class="coupon-right">
+                        <div>
+                            <div class="c-title">${escapeHtmlDiscover(title)}</div>
+                            <div class="c-desc">Đơn Tối Thiểu ${fmtMoneyDiscover(cp.min_order_value || 0)}</div>
+                            <div class="c-desc">HSD: ${cp.end_date ? formatDateDiscover(cp.end_date) : 'Không giới hạn'}</div>
+                        </div>
+                        <div class="c-action">
+                            <span class="c-code" id="code-${cp.coupon_id}">${escapeHtmlDiscover(cp.code)}</span>
+                            <button class="c-btn-save" onclick="copyCoupon('${escapeHtmlDiscover(cp.code)}', this)">
+                                Sao chép mã
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        })
+        .catch(err => console.error('Lỗi fetch coupons:', err));
+};
 </script>
+
+<style>
+@keyframes couponDiscoverFadeIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+</style>

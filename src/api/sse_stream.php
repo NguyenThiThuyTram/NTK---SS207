@@ -132,6 +132,31 @@ try {
     error_log("SSE orders error for user $user_id: " . $e->getMessage());
 }
 
+// ── 4. Kiểm tra VOUCHER MỚI ───────────────────────────────────────────────
+$coupon_state_key = 'sse_coupon_count_' . $user_id;
+$prev_coupon_count = $_SESSION[$coupon_state_key] ?? -1; // -1 = lần đầu
+$is_first_coupon_load = ($prev_coupon_count === -1);
+
+try {
+    if (isset($conn)) {
+        $stmt_cp = $conn->prepare("SELECT COUNT(*) as cnt FROM coupons WHERE status = 1 AND (end_date IS NULL OR end_date >= NOW())");
+        $stmt_cp->execute();
+        $current_coupon_count = (int)$stmt_cp->fetchColumn();
+
+        $_SESSION[$coupon_state_key] = $current_coupon_count;
+
+        // Chỉ phát event khi KHÔNG phải lần đầu load VÀ có thay đổi số lượng coupon
+        if (!$is_first_coupon_load && $current_coupon_count !== $prev_coupon_count) {
+            $events['new_coupon'] = [
+                'count' => $current_coupon_count,
+                'prev_count' => $prev_coupon_count
+            ];
+        }
+    }
+} catch (\Throwable $e) {
+    error_log("SSE coupon error for user $user_id: " . $e->getMessage());
+}
+
 // Lưu state phân tách theo user_id và đóng Session ngay lập tức
 $_SESSION[$state_key] = $new_state;
 session_write_close();
