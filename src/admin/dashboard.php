@@ -89,11 +89,21 @@ function renderGrowthBadge($percent) {
 }
 
 // 5. Đơn hàng trong 7 ngày gần đây, xếp theo thứ tự đặt hàng (cũ → mới)
+// $stmt = $conn->prepare("
+//     SELECT o.order_id, o.fullname, o.order_date, o.final_price, o.order_status
+//     FROM orders o
+//     WHERE o.order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+//     ORDER BY o.order_date ASC
+// ");
+// $stmt->execute();
+// $recent_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 5. Danh sách 7 đơn hàng gần đây nhất (Sắp xếp từ mới đến cũ, giới hạn đúng 7 đơn)
 $stmt = $conn->prepare("
     SELECT o.order_id, o.fullname, o.order_date, o.final_price, o.order_status
     FROM orders o
-    WHERE o.order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-    ORDER BY o.order_date ASC
+    ORDER BY o.order_date DESC
+    LIMIT 7
 ");
 $stmt->execute();
 $recent_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
