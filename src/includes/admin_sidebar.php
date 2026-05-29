@@ -15,7 +15,6 @@ $page_titles = [
     'flash_sales.php'=> 'Flash Sale',
     'accounts.php'   => 'Tài khoản',
     'chat.php'       => 'Live Chat',
-    'best_sellers.php' => 'Phân tích dữ liệu',
 ];
 $current_page_title = $page_titles[$admin_current_page] ?? '';
 // ── THÔNG BÁO ADMIN ────────────────────────────────────────────
@@ -1521,9 +1520,6 @@ try {
         </a>
         <a href="chat.php" class="nav-item <?= ($admin_current_page === 'chat.php') ? 'active' : '' ?>">
             <i class="fa-solid fa-comments"></i> Live Chat
-        </a>
-        <a href="best_sellers.php" class="nav-item <?= ($admin_current_page === 'best_sellers.php') ? 'active' : '' ?>">
-            <i class="fa-solid fa-chart-line"></i> Phân tích dữ liệu
         </a>
         <a href="aws_settings.php" class="nav-item <?= ($admin_current_page === 'aws_settings.php') ? 'active' : '' ?>">
             <i class="fa-brands fa-aws"></i> AWS Rekognition

@@ -116,6 +116,74 @@ function getOrderStatusLabel(int $status): array {
     return $map[$status] ?? ['label' => 'Không rõ', 'class' => 'status-pending'];
 }
 
+// ── CUSTOMER CHURN RISK PREDICTION QUERY (FROM BEST_SELLERS.PHP) ──
+$stmt_churn = $conn->prepare("
+    SELECT 
+        u.user_id,
+        COALESCE(NULLIF(u.fullname, ''), u.username) as customer_name,
+        u.email,
+        COALESCE(SUM(CASE WHEN o.order_status IN (1, 2, 3) THEN o.final_price ELSE 0 END), 0) AS TotalSpent,
+        COUNT(o.order_id) AS TotalOrders,
+        MAX(o.order_date) AS LastOrderDate,
+        DATEDIFF(NOW(), MAX(o.order_date)) AS DaysSinceLastOrder
+    FROM users u
+    INNER JOIN orders o ON u.user_id = o.user_id
+    GROUP BY u.user_id, u.fullname, u.username, u.email
+    HAVING DaysSinceLastOrder > 30
+    ORDER BY DaysSinceLastOrder DESC
+    LIMIT 10
+");
+$stmt_churn->execute();
+$churn_customers = $stmt_churn->fetchAll(PDO::FETCH_ASSOC);
+
+// ── PRODUCT PERFORMANCE QUERY (NO LIMIT) (FROM BEST_SELLERS.PHP) ──
+$stmt_table = $conn->prepare("
+    SELECT 
+        p.product_id, 
+        p.name, 
+        p.image, 
+        p.sold_count, 
+        c.name as category_name,
+        COALESCE(SUM(pv.stock), 0) as total_stock,
+        MIN(COALESCE(NULLIF(pv.sale_price, 0), pv.original_price)) as price
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.category_id
+    LEFT JOIN product_variants pv ON p.product_id = pv.product_id AND pv.is_active = 1
+    WHERE p.status = 1
+    GROUP BY p.product_id
+    ORDER BY p.sold_count DESC
+");
+$stmt_table->execute();
+$products = $stmt_table->fetchAll(PDO::FETCH_ASSOC);
+
+// Calculate global metrics from the product list for Product Performance table contribution
+$total_global_revenue_bs = 0.0;
+foreach ($products as $prod) {
+    $sold = (int)$prod['sold_count'];
+    $price = (float)($prod['price'] ?? 0);
+    $total_global_revenue_bs += $sold * $price;
+}
+
+// ── VIP CUSTOMERS QUERY (FROM BEST_SELLERS.PHP) ──
+$stmt_vip = $conn->prepare("
+    SELECT 
+        u.user_id,
+        COALESCE(NULLIF(u.fullname, ''), u.username) as customer_name,
+        u.email,
+        COALESCE(SUM(CASE WHEN o.order_status IN (1, 2, 3) THEN o.final_price ELSE 0 END), 0) AS TotalSpent,
+        COUNT(o.order_id) AS TotalOrders,
+        MAX(o.order_date) AS LastOrderDate,
+        DATEDIFF(NOW(), MAX(o.order_date)) AS DaysSinceLastOrder
+    FROM users u
+    INNER JOIN orders o ON u.user_id = o.user_id
+    GROUP BY u.user_id, u.fullname, u.username, u.email
+    HAVING TotalOrders >= 3 AND TotalSpent >= 2000000
+    ORDER BY TotalSpent DESC
+    LIMIT 10
+");
+$stmt_vip->execute();
+$vip_customers = $stmt_vip->fetchAll(PDO::FETCH_ASSOC);
+
 // ── Include sidebar (cũng gồm cả topbar + DOCTYPE) ───────────────────
 include __DIR__ . '/../includes/admin_sidebar.php';
 ?>
@@ -359,7 +427,7 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         <div class="stat-label">Tổng đơn hàng</div>
     </a>
 
-    <a href="best_sellers.php" class="stat-card" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.stat-label').style.textDecoration='underline'" onmouseout="this.querySelector('.stat-label').style.textDecoration='none'">
+    <a href="#financial-performance" class="stat-card" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.stat-label').style.textDecoration='underline'" onmouseout="this.querySelector('.stat-label').style.textDecoration='none'">
         <div class="stat-card-top">
             <div class="stat-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
             <?= renderGrowthBadge($growth_revenue) ?>
@@ -437,6 +505,219 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             <?php endif; ?>
         </tbody>
     </table>
-</div></main>
+</div>
+
+<div class="section-card">
+    <div class="section-header">
+        <div class="section-title">Khách hàng tiềm năng</div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Khách Hàng</th>
+                    <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
+                    <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
+                    <th style="text-align: center; width: 180px;">Ngày Đặt Đơn Cuối</th>
+                    <th style="text-align: right; width: 140px;">Thời Gian Kể Từ Đơn Cuối</th>
+                    <th style="padding-left: 30px; width: 180px;">Hạng Dự Kiến</th>
+                    <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($vip_customers)): ?>
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #888888;">
+                        Chưa tìm thấy khách hàng nào đạt tiêu chí VIP (Mua >= 3 đơn và Chi tiêu >= 2M).
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($vip_customers as $vip): 
+                        $v_days = (int)$vip['DaysSinceLastOrder'];
+                        $v_spent = (float)$vip['TotalSpent'];
+                        $v_orders = (int)$vip['TotalOrders'];
+
+                        if ($v_spent >= 10000000) {
+                            $v_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf0ef; color: #c0392b;"><i class="fa-solid fa-crown"></i> Đối tác Kim Cương</span>';
+                            $v_recommend = '<span style="font-weight: 600; font-size: 13.5px; color: #c0392b;">Tặng Quà Tri Ân Đặc Biệt</span>';
+                        } elseif ($v_spent >= 5000000) {
+                            $v_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf6ec; color: #e6a23c;"><i class="fa-solid fa-star"></i> Khách Hàng Vàng</span>';
+                            $v_recommend = '<span style="font-weight: 600; font-size: 13.5px; color: #e6a23c;">Mới Vào Nhóm Trải Nghiệm Sớm</span>';
+                        } else {
+                            $v_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #eafaf1; color: #27ae60;"><i class="fa-solid fa-user-check"></i> Thành Viên Bạc</span>';
+                            $v_recommend = '<span style="font-weight: 600; font-size: 13.5px; color: #27ae60;">Gửi Khuyến Mãi Độc Quyền</span>';
+                        }
+                    ?>
+                    <tr>
+                        <td>
+                            <a href="account_detail.php?id=<?= urlencode($vip['user_id']) ?>" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.vip-name-title').style.textDecoration='underline', this.querySelector('.vip-name-title').style.color='#a6825c'" onmouseout="this.querySelector('.vip-name-title').style.textDecoration='none', this.querySelector('.vip-name-title').style.color='#111111'">
+                                <div class="vip-name-title" style="font-weight: 600; color: #111111; transition: color 0.2s;"><?= htmlspecialchars($vip['customer_name']) ?></div>
+                                <div style="font-size: 12px; color: #888888; margin-top: 2px;"><?= htmlspecialchars($vip['email'] ?? 'Không có email') ?></div>
+                            </a>
+                        </td>
+                        <td style="text-align: right; font-weight: 600;"><?= number_format($v_orders) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($v_spent, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: center; color: #888888;"><?= date('d/m/Y', strtotime($vip['LastOrderDate'])) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: #888888;"><?= number_format($v_days) ?> ngày trước</td>
+                        <td style="padding-left: 30px;"><?= $v_badge ?></td>
+                        <td style="padding-left: 20px;"><?= $v_recommend ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section-card">
+    <div class="section-header">
+        <div class="section-title">Khách hàng có nguy cơ rời bỏ</div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Khách Hàng</th>
+                    <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
+                    <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
+                    <th style="text-align: center; width: 180px;">Ngày Đặt Đơn Cuối</th>
+                    <th style="text-align: right; width: 140px;">Thời Gian Kể Từ Đơn Cuối</th>
+                    <th style="padding-left: 30px; width: 180px;">Trạng Thái Dự Báo</th>
+                    <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($churn_customers)): ?>
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #888888;">
+                        Không phát hiện khách hàng có nguy cơ rời bỏ (DaysSinceLastOrder > 30)
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php foreach ($churn_customers as $cust): 
+                        $days = (int)$cust['DaysSinceLastOrder'];
+                        $spent = (float)$cust['TotalSpent'];
+                        $orders_count = (int)$cust['TotalOrders'];
+
+                        if ($days >= 31 && $days <= 90 && ($spent >= 2000000 || $orders_count >= 2)) {
+                            $status_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf6ec; color: #e6a23c;"><i class="fa-solid fa-triangle-exclamation"></i> Nguy cơ rời bỏ</span>';
+                            $recommendation = '<span style="font-weight: 600; font-size: 13.5px; color: #e6a23c;">Gửi Mail Tặng Voucher 15%</span>';
+                        } elseif ($days > 90) {
+                            $status_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf0ef; color: #c0392b;"><i class="fa-solid fa-snowflake"></i> Đã rời bỏ</span>';
+                            $recommendation = '<span style="font-weight: 600; font-size: 13.5px; color: #c0392b;">Chiến dịch Re-marketing</span>';
+                        } else {
+                            $status_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #f4f4f5; color: #909399;"><i class="fa-solid fa-circle-check"></i> Vận hành ổn định</span>';
+                            $recommendation = '<span style="font-weight: 600; font-size: 13.5px; color: #27ae60;">Chăm sóc &amp; Duy trì liên hệ</span>';
+                        }
+                    ?>
+                    <tr>
+                        <td>
+                            <a href="account_detail.php?id=<?= urlencode($cust['user_id']) ?>" style="text-decoration: none; color: inherit; display: block;" onmouseover="this.querySelector('.cust-name-title').style.textDecoration='underline', this.querySelector('.cust-name-title').style.color='#a6825c'" onmouseout="this.querySelector('.cust-name-title').style.textDecoration='none', this.querySelector('.cust-name-title').style.color='#111111'">
+                                <div class="cust-name-title" style="font-weight: 600; color: #111111; transition: color 0.2s;"><?= htmlspecialchars($cust['customer_name']) ?></div>
+                                <div style="font-size: 12px; color: #888888; margin-top: 2px;"><?= htmlspecialchars($cust['email'] ?? 'Không có email') ?></div>
+                            </a>
+                        </td>
+                        <td style="text-align: right; font-weight: 600;"><?= number_format($orders_count) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($spent, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: center; color: #888888;"><?= date('d/m/Y', strtotime($cust['LastOrderDate'])) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: #c0392b;"><?= number_format($days) ?> ngày</td>
+                        <td style="padding-left: 30px;"><?= $status_badge ?></td>
+                        <td style="padding-left: 20px;"><?= $recommendation ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section-card" id="financial-performance">
+    <div class="section-header">
+        <div class="section-title">Hiệu suất tài chính sản phẩm</div>
+    </div>
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px; text-align: center;">Hạng</th>
+                    <th>Sản phẩm</th>
+                    <th style="text-align: right; width: 110px;">Đã bán</th>
+                    <th style="text-align: right; width: 110px;">Tồn kho</th>
+                    <th style="text-align: right; width: 120px;">Giá bán</th>
+                    <th style="text-align: right; width: 140px;">Doanh thu</th>
+                    <th style="text-align: right; width: 160px;">Tỷ trọng doanh thu</th>
+                    <th style="padding-left: 30px;">Nhận định &amp; Khuyến nghị</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($products)): ?>
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #888888;">
+                        Không có sản phẩm nào đang hoạt động
+                    </td>
+                </tr>
+                <?php else: ?>
+                    <?php 
+                    $rank = 1;
+                    foreach ($products as $prod): 
+                        $sold = (int)$prod['sold_count'];
+                        $price = (float)$prod['price'];
+                        $stock = (int)$prod['total_stock'];
+                        
+                        $prod_revenue = $sold * $price;
+                        $revenue_contribution = $total_global_revenue_bs > 0 ? ($prod_revenue / $total_global_revenue_bs) * 100 : 0;
+                        
+                        $badges = [];
+                        if ($rank <= 3) {
+                            $badges[] = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #eafaf1; color: #27ae60;"><i class="fa-solid fa-star"></i> Best Seller</span>';
+                        }
+                        if ($revenue_contribution > 8) {
+                            $badges[] = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf6ec; color: #e6a23c;"><i class="fa-solid fa-money-bill-wave"></i> Tỷ trọng doanh thu cao</span>';
+                        }
+                        if ($revenue_contribution < 1.5 && $stock > 300) {
+                            $badges[] = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf0ef; color: #c0392b;"><i class="fa-solid fa-chart-line-down"></i> Cần Kích Cầu</span>';
+                        }
+                        
+                        if (empty($badges)) {
+                            $badges[] = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #f4f4f5; color: #909399;"><i class="fa-solid fa-check"></i> Vận Hành Ổn Định</span>';
+                        }
+                    ?>
+                    <tr>
+                        <td style="text-align: center;"><span style="font-weight: 700; font-size: 15px; color: #a6825c; text-align: center; display: inline-block; width: 24px;">#<?= $rank ?></span></td>
+                        <td>
+                            <a href="product_detail.php?id=<?= urlencode($prod['product_id']) ?>" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px;" onmouseover="this.querySelector('.prod-name-title').style.textDecoration='underline', this.querySelector('.prod-name-title').style.color='#a6825c'" onmouseout="this.querySelector('.prod-name-title').style.textDecoration='none', this.querySelector('.prod-name-title').style.color='#111111'">
+                                <?php if(!empty($prod['image'])): ?>
+                                    <?php $img_src = (strpos($prod['image'], 'http') === 0) ? $prod['image'] : '../' . $prod['image']; ?>
+                                    <img src="<?= htmlspecialchars($img_src) ?>" style="width: 44px; height: 44px; border-radius: 6px; object-fit: cover; background: #f5f1eb; border: 1px solid #e5e5e5; flex-shrink: 0;" alt="Product Image" onerror="this.outerHTML='<div style=\'width: 44px; height: 44px; border-radius: 6px; border: 1px solid #e5e5e5; display:flex;align-items:center;justify-content:center;color:#aaa;\'><i class=\'fa-solid fa-image\'></i></div>';">
+                                <?php else: ?>
+                                    <div style="width: 44px; height: 44px; border-radius: 6px; border: 1px solid #e5e5e5; display:flex;align-items:center;justify-content:center;color:#aaa;"><i class="fa-solid fa-image"></i></div>
+                                <?php endif; ?>
+                                <div>
+                                    <div class="prod-name-title" style="font-weight: 600; color: #111111; line-height: 1.4; transition: color 0.2s;"><?= htmlspecialchars($prod['name']) ?></div>
+                                    <div style="font-size: 11.5px; color: #888888; margin-top: 2px; font-weight: 500;"><?= htmlspecialchars($prod['category_name'] ?? 'Không có danh mục') ?></div>
+                                </div>
+                            </a>
+                        </td>
+                        <td style="text-align: right; font-weight: 600;"><?= number_format($sold) ?></td>
+                        <td style="text-align: right; font-weight: 600; color: #a6825c;"><?= number_format($stock) ?></td>
+                        <td style="text-align: right; color: #888888;"><?= number_format($price, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: right; font-weight: 600;"><?= number_format($prod_revenue, 0, ',', '.') ?>đ</td>
+                        <td style="text-align: right; font-weight: 600; color: #2e7d32;"><?= number_format($revenue_contribution, 2) ?>%</td>
+                        <td style="padding-left: 30px;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <?= implode(' ', $badges) ?>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php 
+                        $rank++;
+                    endforeach; 
+                    ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+</main>
 </body>
 </html>
