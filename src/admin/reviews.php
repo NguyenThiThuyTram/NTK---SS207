@@ -29,7 +29,13 @@ if (isset($_POST['submit_reply'])) {
             $msg = "Người bán đã phản hồi đánh giá của bạn và tặng bạn một Voucher giảm 30K (Mã: $coupon_code) cho đơn hàng tiếp theo.";
             $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, type, title, message) VALUES (:uid, 'system', 'Quà tặng từ Shop', :msg)");
             $stmt_notif->execute(['uid' => $user_id_of_review, 'msg' => $msg]);
+        } else if ($user_id_of_review) {
+            // Thông báo mặc định khi Admin phản hồi
+            $msg = "Quản trị viên đã phản hồi đánh giá của bạn.";
+            $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, type, title, message) VALUES (:uid, 'system', 'Phản hồi từ Shop', :msg)");
+            $stmt_notif->execute(['uid' => $user_id_of_review, 'msg' => $msg]);
         }
+
 
         $stmt_upd = $conn->prepare("UPDATE reviews SET is_pinned = :pin, reward_coupon_id = :cid WHERE review_id = :rid");
         $stmt_upd->execute(['pin' => $is_pinned, 'cid' => $coupon_id, 'rid' => $parent_id]);

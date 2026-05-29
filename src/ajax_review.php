@@ -190,6 +190,19 @@ if ($action === 'submit_comment') {
             }
         }
 
+        // Gửi thông báo cho người viết đánh giá gốc nếu Admin phản hồi
+        if (!empty($parent_id) && intval($user_role) === 1) {
+            $stmt_get_owner = $conn->prepare("SELECT user_id FROM reviews WHERE review_id = :rid");
+            $stmt_get_owner->execute(['rid' => $parent_id]);
+            $owner_id = $stmt_get_owner->fetchColumn();
+            
+            if ($owner_id && $owner_id != $user_id) {
+                $msg = "Quản trị viên đã phản hồi đánh giá của bạn.";
+                $stmt_notif = $conn->prepare("INSERT INTO notifications (user_id, type, title, message) VALUES (:uid, 'system', 'Phản hồi từ Shop', :msg)");
+                $stmt_notif->execute(['uid' => $owner_id, 'msg' => $msg]);
+            }
+        }
+
         echo json_encode(['status' => 'success', 'success' => true, 'points_earned' => $reward_points, 'message' => 'Gửi dữ liệu thành công!']);
     } catch (PDOException $e) {
         echo json_encode(['status' => 'error', 'success' => false, 'message' => 'Lỗi: ' . $e->getMessage()]);

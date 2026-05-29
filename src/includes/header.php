@@ -572,4 +572,59 @@ try {
         }
     </script>
     <?php endif; ?>
+
+    <!-- REALTIME NOTIFICATION POLLING -->
+    <script>
+    $(document).ready(function() {
+        <?php if(isset($_SESSION['user_id'])): ?>
+        var currentUnread = parseInt($('#badge-notif').text()) || 0;
+        
+        setInterval(function() {
+            $.ajax({
+                url: '<?= $_BASE ?>/api/get_unread_notif.php',
+                method: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    var badge = $('#badge-notif');
+                    var newUnread = parseInt(res.unread) || 0;
+                    
+                    if (newUnread > 0) {
+                        badge.text(newUnread).show();
+                        
+                        if (newUnread > currentUnread) {
+                            showRealtimeToast('🔔 Bạn có thông báo mới!');
+                        }
+                    } else {
+                        badge.hide();
+                    }
+                    currentUnread = newUnread;
+                }
+            });
+        }, 10000);
+
+        function showRealtimeToast(msg) {
+            if ($('#rt-toast-container').length === 0) {
+                $('body').append('<div id="rt-toast-container" style="position: fixed; top: 80px; right: 20px; z-index: 10000;"></div>');
+            }
+            var toast = $('<div style="background: #2f1c00; color: #fff; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 10px; opacity: 0; transform: translateX(50px); transition: all 0.3s ease; font-size: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer;">' + msg + '</div>');
+            
+            toast.on('click', function() {
+                window.location.href = '<?= $_BASE ?>/views/user/dashboard.php?view=thongbao';
+            });
+
+            $('#rt-toast-container').append(toast);
+            
+            setTimeout(function() {
+                toast.css({ 'opacity': '1', 'transform': 'translateX(0)' });
+            }, 10);
+            
+            setTimeout(function() {
+                toast.css({ 'opacity': '0', 'transform': 'translateX(50px)' });
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 5000);
+        }
+        <?php endif; ?>
+    });
+    </script>
+
     <main class="main-content">
