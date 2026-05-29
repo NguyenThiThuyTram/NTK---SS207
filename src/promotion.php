@@ -135,6 +135,87 @@ body.dark-mode .product-card:hover {
     border-color: #f1c40f !important;
     box-shadow: 0 4px 12px rgba(241, 196, 15, 0.2);
 }
+
+/* Animation cho sản phẩm mới */
+@keyframes flashSaleFadeIn {
+    from { opacity: 0; transform: translateY(15px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 </style>
+
+<script>
+// ── REAL-TIME: Auto-reload Flash Sale khi admin thêm sản phẩm ──
+function fmtMoneyPromo(amount) {
+    return parseInt(amount).toLocaleString('vi-VN');
+}
+
+function escapeHtmlPromo(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+window.handleNewFlashSale = function(fsData) {
+    fetch('<?= $_BASE ?>/api/get_flash_sales.php')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return;
+
+            const grid = document.querySelector('.product-grid');
+            if (!grid) return;
+
+            const products = data.products;
+
+            // Lưu lại danh sách product_id hiện có
+            const existingIds = new Set();
+            grid.querySelectorAll('.product-card').forEach(card => {
+                const pid = card.getAttribute('data-product-id');
+                if (pid) existingIds.add(pid);
+            });
+
+            // Rebuild grid
+            grid.innerHTML = '';
+
+            if (products.length === 0) {
+                grid.innerHTML = '<div style="text-align:center; padding:40px; color:#999; grid-column:1/-1;">Hiện tại không có sản phẩm Flash Sale nào.</div>';
+                return;
+            }
+
+            products.forEach(p => {
+                const isNew = !existingIds.has(p.product_id);
+
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.setAttribute('data-product-id', p.product_id);
+                if (isNew) {
+                    card.style.animation = 'flashSaleFadeIn 0.5s ease-out';
+                }
+
+                card.innerHTML = `
+                    <a href="product_detail.php?id=${escapeHtmlPromo(p.product_id)}">
+                        <div class="img-wrapper">
+                            <img src="${escapeHtmlPromo(p.image)}" alt="">
+                            <span class="badge-sale">SALE</span>
+                        </div>
+                        <div class="product-info">
+                            <h3 class="product-name">${escapeHtmlPromo(p.name)}</h3>
+                            <div class="product-meta">
+                                <span class="product-stars">★★★★★</span>
+                                <span class="product-sold">| Đã bán ${parseInt(p.sold_count)}</span>
+                            </div>
+                            <div class="price-container">
+                                <span class="current-price">${fmtMoneyPromo(p.sale_price)}đ</span>
+                                <span class="old-price-strike">${fmtMoneyPromo(p.original_price)}đ</span>
+                            </div>
+                        </div>
+                    </a>
+                `;
+
+                grid.appendChild(card);
+            });
+        })
+        .catch(err => console.error('Lỗi fetch flash sales:', err));
+};
+</script>
 
 <?php include 'includes/footer.php'; ?>

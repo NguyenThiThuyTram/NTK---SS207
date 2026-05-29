@@ -156,6 +156,29 @@ try {
 } catch (\Throwable $e) {
     error_log("SSE coupon error for user $user_id: " . $e->getMessage());
 }
+// ── 5. Kiểm tra FLASH SALE MỚI ────────────────────────────────────────────
+$fs_state_key = 'sse_flash_sale_count_' . $user_id;
+$prev_fs_count = $_SESSION[$fs_state_key] ?? -1;
+$is_first_fs_load = ($prev_fs_count === -1);
+
+try {
+    if (isset($conn)) {
+        $stmt_fs = $conn->prepare("SELECT COUNT(*) FROM flash_sales WHERE status = 1 AND sale_date = CURRENT_DATE()");
+        $stmt_fs->execute();
+        $current_fs_count = (int)$stmt_fs->fetchColumn();
+
+        $_SESSION[$fs_state_key] = $current_fs_count;
+
+        if (!$is_first_fs_load && $current_fs_count !== $prev_fs_count) {
+            $events['new_flash_sale'] = [
+                'count' => $current_fs_count,
+                'prev_count' => $prev_fs_count
+            ];
+        }
+    }
+} catch (\Throwable $e) {
+    error_log("SSE flash_sale error for user $user_id: " . $e->getMessage());
+}
 
 // Lưu state phân tách theo user_id và đóng Session ngay lập tức
 $_SESSION[$state_key] = $new_state;

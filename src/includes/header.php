@@ -507,6 +507,17 @@ try {
                     window.handleNewCoupon(data.new_coupon);
                 }
             }
+
+            // 6. Flash Sale mới → thông báo + auto-reload trang khuyến mãi
+            if (data.new_flash_sale) {
+                showToast(
+                    '⚡ Flash Sale mới!',
+                    'Có sản phẩm Flash Sale mới. Săn deal ngay!'
+                );
+                if (typeof window.handleNewFlashSale === 'function') {
+                    window.handleNewFlashSale(data.new_flash_sale);
+                }
+            }
         });
 
         function showToast(title, message) {
