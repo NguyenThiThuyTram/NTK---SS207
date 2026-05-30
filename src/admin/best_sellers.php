@@ -387,9 +387,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
         ORDER BY TotalSpent DESC
         LIMIT 10
     ");
+   
     $stmt_vip->execute();
     $vip_customers = $stmt_vip->fetchAll(PDO::FETCH_ASSOC);
-    ?>
+?>
 
     <div class="section-card" style="margin-top: 30px;">
         <h2 class="section-title">
@@ -399,13 +400,13 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             <table class="data-table">
                 <thead>
                     <tr>
-                       <th>Khách Hàng</th>
-                            <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
-                            <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
-                            <th style="text-align: center; width: 180px;">Ngày Đặt Đơn Cuối</th>
-                            <th style="text-align: right; width: 140px;">Thời Gian Kể Từ Ngày Đặt Đơn Cuối</th>
-                            <th style="padding-left: 30px; width: 180px;">Hạng Dự Kiến</th>
-                            <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
+                        <th>Khách Hàng</th>
+                        <th style="text-align: right; width: 130px;">Số Đơn Đã Mua</th>
+                        <th style="text-align: right; width: 150px;">Tổng Chi Tiêu</th>
+                        <th style="text-align: center; width: 180px;">Ngày Đặt Đơn Cuối</th>
+                        <th style="text-align: right; width: 140px;">Thời Gian Kể Từ Ngày Đặt Đơn Cuối</th>
+                        <th style="padding-left: 30px; width: 180px;">Hạng Dự Kiến</th>
+                        <th style="padding-left: 20px;">Hành Động Khuyến Nghị</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -421,15 +422,19 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             $v_spent = (float)$vip['TotalSpent'];
                             $v_orders = (int)$vip['TotalOrders'];
 
+                            // Logic thiết lập nhãn hạng và màu nút bấm theo số tiền
                             if ($v_spent >= 10000000) {
                                 $v_badge = '<span class="badge badge-danger"><i class="fa-solid fa-crown"></i> Đối tác Kim Cương</span>';
-                                $v_recommend = '<span class="recommendation-text text-danger">Tặng Quà Tri Ân Đặc Biệt</span>';
+                                $btn_bg = '#c0392b'; // Màu đỏ đậm quyền lực
+                                $btn_text = '<i class="fa-solid fa-gift"></i> TẶNG VOUCHER TRI ÂN';
                             } elseif ($v_spent >= 5000000) {
                                 $v_badge = '<span class="badge badge-warning"><i class="fa-solid fa-star"></i> Khách Hàng Vàng</span>';
-                                $v_recommend = '<span class="recommendation-text text-warning">Mời Vào Nhóm Trải Nghiệm Sớm</span>';
+                                $btn_bg = '#e67e22'; // Màu cam ấm áp
+                                $btn_text = '<i class="fa-solid fa-paper-plane"></i> TẶNG VOUCHER ƯU ĐÃI';
                             } else {
                                 $v_badge = '<span class="badge badge-success"><i class="fa-solid fa-user-check"></i> Thành Viên Bạc</span>';
-                                $v_recommend = '<span class="recommendation-text text-success">Gửi Khuyến Mãi Độc Quyền</span>';
+                                $btn_bg = '#27ae60'; // Màu xanh lá cây thân thiện
+                                $btn_text = '<i class="fa-solid fa-ticket"></i> TẶNG VOUCHER KHUYẾN MÃI';
                             }
                         ?>
                         <tr>
@@ -444,7 +449,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                             <td style="text-align: center; color: var(--text-secondary);"><?= date('d/m/Y', strtotime($vip['LastOrderDate'])) ?></td>
                             <td style="text-align: right; font-weight: 600; color: var(--text-secondary);"><?= number_format($v_days) ?> ngày trước</td>
                             <td style="padding-left: 30px;"><?= $v_badge ?></td>
-                            <td style="padding-left: 20px;"><?= $v_recommend ?></td>
+                            
+                            <td style="padding-left: 20px; vertical-align: middle;">
+                                <a href="give_coupon.php?user_id=<?= urlencode($vip['user_id']) ?>&name=<?= urlencode($vip['customer_name']) ?>" 
+                                   style="text-decoration: none; padding: 8px 14px; font-size: 11px; font-weight: 700; color: #ffffff; background: <?= $btn_bg ?>; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+                                   onmouseover="this.style.opacity='0.85', this.style.transform='translateY(-1px)'" 
+                                   onmouseout="this.style.opacity='1', this.style.transform='translateY(0)'">
+                                    <?= $btn_text ?>
+                                </a>
+                            </td>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
@@ -452,6 +465,10 @@ include __DIR__ . '/../includes/admin_sidebar.php';
             </table>
         </div>
     </div>
+
+<?php>
+
+
 <!-- Section 2: Customer Churn Risk Prediction (TOP SECTION) -->
 <div class="section-card">
     <h2 class="section-title">

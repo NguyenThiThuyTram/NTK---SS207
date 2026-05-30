@@ -547,15 +547,19 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         $v_spent = (float)$vip['TotalSpent'];
                         $v_orders = (int)$vip['TotalOrders'];
 
+                        // Phân hạng và cấu hình nút bấm tặng voucher tương ứng theo số tiền
                         if ($v_spent >= 10000000) {
                             $v_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf0ef; color: #c0392b;"><i class="fa-solid fa-crown"></i> Đối tác Kim Cương</span>';
-                            $v_recommend = '<span style="font-weight: 600; font-size: 13.5px; color: #c0392b;">Tặng Quà Tri Ân Đặc Biệt</span>';
+                            $btn_bg = '#c0392b'; // Màu đỏ đậm
+                            $btn_text = '<i class="fa-solid fa-gift"></i> TẶNG VOUCHER TRI ÂN';
                         } elseif ($v_spent >= 5000000) {
                             $v_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #fdf6ec; color: #e6a23c;"><i class="fa-solid fa-star"></i> Khách Hàng Vàng</span>';
-                            $v_recommend = '<span style="font-weight: 600; font-size: 13.5px; color: #e6a23c;">Mới Vào Nhóm Trải Nghiệm Sớm</span>';
+                            $btn_bg = '#e6a23c'; // Màu cam
+                            $btn_text = '<i class="fa-solid fa-paper-plane"></i> TẶNG VOUCHER ƯU ĐÃI';
                         } else {
                             $v_badge = '<span style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; background-color: #eafaf1; color: #27ae60;"><i class="fa-solid fa-user-check"></i> Thành Viên Bạc</span>';
-                            $v_recommend = '<span style="font-weight: 600; font-size: 13.5px; color: #27ae60;">Gửi Khuyến Mãi Độc Quyền</span>';
+                            $btn_bg = '#27ae60'; // Màu xanh lá
+                            $btn_text = '<i class="fa-solid fa-ticket"></i> TẶNG VOUCHER KHUYẾN MÃI';
                         }
                     ?>
                     <tr>
@@ -570,7 +574,15 @@ include __DIR__ . '/../includes/admin_sidebar.php';
                         <td style="text-align: center; color: #888888;"><?= date('d/m/Y', strtotime($vip['LastOrderDate'])) ?></td>
                         <td style="text-align: right; font-weight: 600; color: #888888;"><?= number_format($v_days) ?> ngày trước</td>
                         <td style="padding-left: 30px;"><?= $v_badge ?></td>
-                        <td style="padding-left: 20px;"><?= $v_recommend ?></td>
+                        
+                        <td style="padding-left: 20px; vertical-align: middle;">
+                            <a href="give_coupon.php?user_id=<?= urlencode($vip['user_id']) ?>&name=<?= urlencode($vip['customer_name']) ?>" 
+                               style="text-decoration: none; padding: 7px 14px; font-size: 11px; font-weight: 700; color: #ffffff; background-color: <?= $btn_bg ?>; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;"
+                               onmouseover="this.style.opacity='0.85', this.style.transform='translateY(-1px)'" 
+                               onmouseout="this.style.opacity='1', this.style.transform='translateY(0)'">
+                                <?= $btn_text ?>
+                            </a>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

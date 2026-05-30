@@ -681,3 +681,4 @@ UPDATE products
 SET view_count = (sold_count * 3) + FLOOR(10 + (RAND() * 40)) 
 WHERE view_count <= sold_count AND sold_count > 0;
 
+ALTER TABLE coupons ADD user_id VARCHAR(50);

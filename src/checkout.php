@@ -35,14 +35,51 @@ $stmt_user->execute(['uid' => $user_id]);
 $user_info = $stmt_user->fetch(PDO::FETCH_ASSOC);
 
 // Lấy danh sách Voucher còn hạn và còn số lượng
+// $today = date('Y-m-d H:i:s');
+// $sql_coupons = "SELECT * FROM coupons 
+//                 WHERE status = 1 
+//                 AND end_date >= :today 
+//                 AND quantity > used_count 
+//                 ORDER BY discount_value DESC";
+// $stmt_cp = $conn->prepare($sql_coupons);
+// $stmt_cp->execute(['today' => $today]);
+// $coupons = $stmt_cp->fetchAll(PDO::FETCH_ASSOC);
+
 $today = date('Y-m-d H:i:s');
-$sql_coupons = "SELECT * FROM coupons 
-                WHERE status = 1 
-                AND end_date >= :today 
-                AND quantity > used_count 
-                ORDER BY discount_value DESC";
-$stmt_cp = $conn->prepare($sql_coupons);
-$stmt_cp->execute(['today' => $today]);
+
+// 1. Lấy ID của khách hàng đang đăng nhập (ông thay đổi tên SESSION theo hệ thống của ông nhé)
+$current_user_id = $_SESSION['user_id'] ?? null; 
+
+// 2. Tách logic truy vấn tùy thuộc vào việc khách hàng đã đăng nhập hay chưa
+if ($current_user_id) {
+    // Nếu ĐÃ đăng nhập: Lấy voucher chung (IS NULL) HOẶC voucher được tặng riêng cho chính họ (= :user_id)
+    $sql_coupons = "SELECT * FROM coupons 
+                    WHERE status = 1 
+                    AND end_date >= :today 
+                    AND quantity > used_count 
+                    AND (user_id IS NULL OR user_id = :user_id)
+                    ORDER BY discount_value DESC";
+    
+    $stmt_cp = $conn->prepare($sql_coupons);
+    $stmt_cp->execute([
+        'today' => $today,
+        'user_id' => $current_user_id
+    ]);
+} else {
+    // Nếu CHƯA đăng nhập (Khách vãng lai): CHỈ lấy các voucher dùng chung công khai (IS NULL)
+    $sql_coupons = "SELECT * FROM coupons 
+                    WHERE status = 1 
+                    AND end_date >= :today 
+                    AND quantity > used_count 
+                    AND user_id IS NULL
+                    ORDER BY discount_value DESC";
+                    
+    $stmt_cp = $conn->prepare($sql_coupons);
+    $stmt_cp->execute([
+        'today' => $today
+    ]);
+}
+
 $coupons = $stmt_cp->fetchAll(PDO::FETCH_ASSOC);
 
 // Tính toán tiền tạm tính ban đầu để JS xử lý
@@ -81,9 +118,27 @@ $cart_coupon = $_SESSION['cart_coupon'] ?? null;
 // Giữ session để user có thể navigate back và coupon vẫn còn
 
 // 5. Lấy danh sách voucher còn hiệu lực để đề xuất
+// $available_coupons = [];
+// try {
+//     $stmt_coupons = $conn->prepare("
+//         SELECT coupon_id, code, discount_type, discount_value,
+//                min_order_value, max_discount_amount, end_date, quantity, used_count, coupon_type
+//         FROM coupons
+//         WHERE status = 1
+//           AND (start_date IS NULL OR start_date <= NOW())
+//           AND (end_date IS NULL OR end_date >= NOW())
+//           AND (quantity IS NULL OR used_count < quantity) 
+//         ORDER BY discount_value DESC
+//     ");
+//     $stmt_coupons->execute();
+//     $raw_coupons = $stmt_coupons->fetchAll(PDO::FETCH_ASSOC);
+
+// 5. Lấy danh sách voucher còn hiệu lực để đề xuất (Đã bảo mật theo user_id)
 $available_coupons = [];
 try {
-    $stmt_coupons = $conn->prepare("
+    $current_user_id = $_SESSION['user_id'] ?? null;
+    
+    $sql_suggest_coupons = "
         SELECT coupon_id, code, discount_type, discount_value,
                min_order_value, max_discount_amount, end_date, quantity, used_count, coupon_type
         FROM coupons
@@ -91,10 +146,22 @@ try {
           AND (start_date IS NULL OR start_date <= NOW())
           AND (end_date IS NULL OR end_date >= NOW())
           AND (quantity IS NULL OR used_count < quantity) 
+          AND (user_id IS NULL " . ($current_user_id ? "OR user_id = :user_id" : "") . ")
         ORDER BY discount_value DESC
-    ");
-    $stmt_coupons->execute();
+    ";
+    
+    $stmt_coupons = $conn->prepare($sql_suggest_coupons);
+    
+    if ($current_user_id) {
+        $stmt_coupons->execute(['user_id' => $current_user_id]);
+    } else {
+        $stmt_coupons->execute();
+    }
+    
     $raw_coupons = $stmt_coupons->fetchAll(PDO::FETCH_ASSOC);
+
+    // Tính toán discount thực tế cho từng coupon dựa trên subtotal hiện tại hoặc shipping fee
+    // (Đoạn tính toán bên dưới của ông giữ nguyên...)
 
     // Tính toán discount thực tế cho từng coupon dựa trên subtotal hiện tại hoặc shipping fee
     foreach ($raw_coupons as $cp) {

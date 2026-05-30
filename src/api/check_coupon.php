@@ -2,14 +2,16 @@
 /**
  * API: Kiểm tra mã giảm giá
  * GET params:
- *   code       - mã coupon cần kiểm tra
- *   order_total - tổng đơn hàng (subtotal + shipping) trước khi giảm
+ * code        - mã coupon cần kiểm tra
+ * order_total - tổng đơn hàng (subtotal + shipping) trước khi giảm
  */
+session_start(); // Phải gọi session để biết ai đang đăng nhập
 require_once '../config/database.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $code        = strtoupper(trim($_POST['code'] ?? $_GET['code'] ?? ''));
 $order_total = floatval($_POST['order_total'] ?? $_GET['order_total'] ?? 0);
+$current_user_id = $_SESSION['user_id'] ?? null; // Lấy ID của khách đang thao tác trên web
 
 if (!$code) {
     echo json_encode(['valid' => false, 'message' => 'Vui lòng nhập mã giảm giá.']);
@@ -32,6 +34,14 @@ try {
         echo json_encode(['valid' => false, 'message' => 'Mã giảm giá không tồn tại hoặc đã hết hạn.']);
         exit;
     }
+
+    // ── 🛡️ KIỂM TRA ĐẶC QUYỀN USER (ĐOẠN MỚI THÊM) ──────────────────
+    // Nếu mã này có gắn user_id (mã tặng riêng), mà ID khách đang đăng nhập không khớp -> CẤM
+    if (!empty($coupon['user_id']) && $coupon['user_id'] !== $current_user_id) {
+        echo json_encode(['valid' => false, 'message' => 'Rất tiếc, mã giảm giá này là đặc quyền dành riêng cho khách hàng khác!']);
+        exit;
+    }
+    // ─────────────────────────────────────────────────────────────────
 
     // Kiểm tra số lượng
     if ($coupon['quantity'] !== null && $coupon['used_count'] >= $coupon['quantity']) {
