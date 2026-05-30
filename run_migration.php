@@ -25,6 +25,7 @@ try {
 
 $sqls = [
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(500) DEFAULT NULL" => "cancel_reason",
+    "ALTER TABLE coupons ADD COLUMN IF NOT EXISTS user_id VARCHAR(50) DEFAULT NULL" => "coupons.user_id",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_requested_at DATETIME DEFAULT NULL" => "cancel_requested_at",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS return_reason VARCHAR(500) DEFAULT NULL" => "return_reason",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS return_image VARCHAR(500) DEFAULT NULL" => "return_image",
